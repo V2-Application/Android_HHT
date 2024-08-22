@@ -80,7 +80,10 @@ public class MenuFragmentStoreDisplayInernal extends Fragment implements View.On
                 fragment = FragmentStoreDisplayInternalTaggingIROD.newInstance("Display > Internal");
                 break;
             case R.id.store_display_internal_detagging_irod:
-                fragment = FragmentStoreDisplayInternalTaggingIROD.newInstance("Display > Internal");
+                fragment = FragmentStoreDisplayInternalDeTagIROD.newInstance("Display > Internal");
+                break;
+            case R.id.store_display_internal_irod_nature:
+                fragment = FragmentStoreDisplayInternalIRODNature.newInstance("Display > Internal");
                 break;
         }
 

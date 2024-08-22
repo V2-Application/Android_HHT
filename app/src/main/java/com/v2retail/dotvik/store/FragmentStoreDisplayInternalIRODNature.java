@@ -16,9 +16,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.android.volley.AuthFailureError;
@@ -34,15 +37,10 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
-import com.v2retail.dotvik.modal.irod.EXData;
-import com.v2retail.dotvik.modal.putaway.ETDataStorePutway;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
@@ -51,52 +49,50 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Narayanan
  * @version 11.72
- * {@code Author: Narayanan, Revision: 1, Created: 16th Aug 2024, Modified: 16th Aug 2024}
+ * {@code Author: Narayanan, Revision: 1, Created: 22nd Aug 2024, Modified: 22nd Aug 2024}
  */
-public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implements View.OnClickListener {
+public class FragmentStoreDisplayInternalIRODNature extends Fragment implements View.OnClickListener {
 
     View view;
     Context con;
     FragmentManager fm;
     AlertBox box;
     ProgressDialog dialog;
-    String TAG = FragmentStoreDisplayInternalTaggingIROD.class.getName();
-    private static final int REQUEST_VALIDATE_BIN = 5401;
-    private static final int REQUEST_VALIDATE_IROD = 5402;
+    String TAG = FragmentStoreDisplayInternalIRODNature.class.getName();
+    private static final int REQUEST_IROD_NATURE = 5401;
     private static final int REQUEST_SAVE = 5403;
     String URL;
     String WERKS;
     String USER;
     private static String parent;
     Button btn_back, btn_reset, btn_next, btn_save;
-    EditText txt_store, txt_sloc, txt_bin, txt_irod, txt_scanned_irod;
+    EditText txt_store, txt_sloc, txt_irod, txt_scanned_irod;
+    Spinner dd_nature_list;
     LinearLayout ll_screen2;
     String title;
-    Map<String, List<EXData>> irods;
-    public FragmentStoreDisplayInternalTaggingIROD() {
-        // Required empty public constructor
-    }
+    List<String> natures = new ArrayList<String>();
+    ArrayAdapter<String> natureAdapter;
 
-    public static FragmentStoreDisplayInternalTaggingIROD newInstance(String breadcrumb) {
-        FragmentStoreDisplayInternalTaggingIROD fragment = new FragmentStoreDisplayInternalTaggingIROD();
-        fragment.title = breadcrumb;
-        return fragment;
+    public FragmentStoreDisplayInternalIRODNature() {
+        // Required empty public constructor
     }
 
     @Override
     public void onResume() {
         super.onResume();
         ((Home_Activity) getActivity())
-                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + " > TAGGING IROD WITH GANDOLA"));
+                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + " > IROD NATURE ASSIGNMT."));
+    }
+
+    public static FragmentStoreDisplayInternalIRODNature newInstance(String breadcrumb) {
+        FragmentStoreDisplayInternalIRODNature fragment = new FragmentStoreDisplayInternalIRODNature();
+        fragment.title = breadcrumb;
+        return fragment;
     }
 
     @Override
@@ -109,7 +105,8 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        view = inflater.inflate(R.layout.fragment_store_display_internal_tagging_irod, container, false);
+        view = inflater.inflate(R.layout.fragment_store_display_inernal_irod_nature, container, false);
+        
         con = getContext();
         box = new AlertBox(con);
         dialog = new ProgressDialog(con);
@@ -117,19 +114,23 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
+        txt_store = view.findViewById(R.id.txt_disp_internal_irod_nature_store);
+        txt_sloc = view.findViewById(R.id.txt_disp_internal_irod_nature_sloc);
+        txt_scanned_irod = view.findViewById(R.id.txt_disp_internal_irod_nature_scanned_irod);
+        txt_irod = view.findViewById(R.id.txt_disp_internal_irod_nature_irod);
 
-        txt_store = view.findViewById(R.id.txt_disp_internal_tag_irod_store);
-        txt_sloc = view.findViewById(R.id.txt_disp_internal_tag_irod_sloc);
-        txt_irod = view.findViewById(R.id.txt_disp_internal_tag_irod_scan_irod);
-        txt_bin = view.findViewById(R.id.txt_disp_internal_tag_irod_scan_bin);
-        txt_scanned_irod = view.findViewById(R.id.txt_disp_internal_tag_irod_scanned_irod);
+        dd_nature_list = view.findViewById(R.id.dd_disp_internal_irod_nature_nature);
+        dd_nature_list.setSelection(0);
+        natureAdapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1, natures);
+        natureAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dd_nature_list.setAdapter(natureAdapter);
 
-        btn_back = view.findViewById(R.id.txt_disp_internal_tag_irod_back);
-        btn_reset = view.findViewById(R.id.txt_disp_internal_tag_irod_reset);
-        btn_next = view.findViewById(R.id.txt_disp_internal_tag_irod_next);
-        btn_save = view.findViewById(R.id.txt_disp_internal_tag_irod_save);
+        btn_back = view.findViewById(R.id.btn_disp_internal_irod_nature_back);
+        btn_reset = view.findViewById(R.id.btn_disp_internal_irod_nature_reset);
+        btn_next = view.findViewById(R.id.btn_disp_internal_irod_nature_next);
+        btn_save = view.findViewById(R.id.btn_disp_internal_irod_nature_save);
 
-        ll_screen2 = view.findViewById(R.id.ll_disp_art_irod_screen2);
+        ll_screen2 = view.findViewById(R.id.ll_disp_internal_irod_nature_screen2);
 
         btn_back.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
@@ -143,72 +144,13 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
         addInputEvents();
         step2();
 
+        if(natureAdapter.getCount() == 0) {
+            getNatureList();
+        }
+
         return view;
     }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.txt_disp_internal_tag_irod_back:
-                box.confirmBack(fm, con);
-                break;
-            case R.id.txt_disp_internal_tag_irod_reset:
-                box.getBox("Confirm", "Reset! Are you sure?", (dialogInterface, i) -> {
-                    step2();
-                }, (dialogInterface, i) -> {
-                    return;
-                });
-                break;
-            case R.id.txt_disp_internal_tag_irod_next:
-                step2();
-                break;
-            case R.id.txt_disp_internal_tag_irod_save:
-                saveData();
-                break;
-        }
-    }
-
     private void addInputEvents() {
-        txt_bin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    String value = UIFuncs.toUpperTrim(txt_bin);
-                    if (value.length() > 0) {
-                        validateBin();
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
-        txt_bin.addTextChangedListener(new TextWatcher() {
-            boolean scannerReading = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String value = s.toString().toUpperCase().trim();
-                if (value.length() > 0 && scannerReading) {
-                    validateBin();
-                }
-            }
-        });
-
         txt_irod.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
@@ -216,7 +158,9 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_irod);
                     if (value.length() > 0) {
-                        validateIrod();
+                        txt_scanned_irod.setText(value);
+                        txt_irod.setText("");
+                        dd_nature_list.requestFocus();
                         return true;
                     }
                 }
@@ -244,10 +188,78 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (value.length() > 0 && scannerReading) {
-                    validateIrod();
+                    txt_scanned_irod.setText(value);
+                    txt_irod.setText("");
+                    dd_nature_list.requestFocus();
                 }
             }
         });
+    }
+    private void getNatureList(){
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_STORE_IROD_NATURE);
+            args.put("IM_USER", USER);
+            args.put("IM_WERKS", WERKS);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_NATURE, REQUEST_IROD_NATURE, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            if(dialog!=null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+    public void setNatureData(JSONObject responsebody){
+        try
+        {
+            JSONArray arrExData = responsebody.getJSONArray("EX_DATA");
+            int totalExRecords = arrExData.length() - 1;
+            natures.clear();
+            natures.add("Select");
+            if(totalExRecords > 0){
+                for(int recordIndex = 0; recordIndex < totalExRecords; recordIndex++){
+                    JSONObject EX_RECORD  = arrExData.getJSONObject(recordIndex);
+                    natures.add(EX_RECORD.getString("TYPE") + "");
+                }
+                ((BaseAdapter) dd_nature_list.getAdapter()).notifyDataSetChanged();
+                dd_nature_list.invalidate();
+                dd_nature_list.setSelection(0);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btn_disp_internal_irod_nature_back:
+                box.confirmBack(fm, con);
+                break;
+            case R.id.btn_disp_internal_irod_nature_reset:
+                box.getBox("Confirm", "Reset! Are you sure?", (dialogInterface, i) -> {
+                    step2();
+                    getNatureList();
+                }, (dialogInterface, i) -> {
+                    return;
+                });
+                break;
+            case R.id.btn_disp_internal_irod_nature_next:
+                step2();
+                break;
+            case R.id.btn_disp_internal_irod_nature_save:
+                String value = UIFuncs.toUpperTrim(txt_scanned_irod);
+                if (value.length() > 0 && natureAdapter.getCount() > 0 && dd_nature_list.getSelectedItemPosition() > 0) {
+                    validateIrodAndSave(value);
+                }else{
+                    showError("Missing Input", "Please scan IROD and Select nature before tagging");
+                }
+                break;
+        }
     }
 
     private void clear() {
@@ -259,15 +271,14 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
     }
 
     private void step2() {
-        irods = new HashMap<>();
         ll_screen2.setVisibility(View.VISIBLE);
         btn_reset.setVisibility(View.VISIBLE);
         btn_next.setVisibility(View.GONE);
         btn_save.setVisibility(View.VISIBLE);
         txt_irod.setText("");
-        txt_bin.setText("");
-        UIFuncs.disableInput(con, txt_irod);
-        UIFuncs.enableInput(con, txt_bin);
+        txt_scanned_irod.setText("");
+        dd_nature_list.setSelection(0);
+        UIFuncs.enableInput(con, txt_irod);
     }
 
     private void showError(String title, String message) {
@@ -276,15 +287,15 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
         box.getBox(title, message);
     }
 
-    private void validateBin() {
+    private void validateIrodAndSave(String irod) {
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_GANDOLA_VALIDATE);
+            args.put("bapiname", Vars.ZWM_STORE_IROD_NATURE_MAPPING);
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
-            args.put("IM_LGNUM","SDC");
-            args.put("IM_LGPLA", UIFuncs.toUpperTrim(txt_bin));
-            showProcessingAndSubmit(Vars.ZWM_STORE_GANDOLA_VALIDATE, REQUEST_VALIDATE_BIN, args);
+            args.put("IM_NATR",dd_nature_list.getSelectedItem().toString());
+            args.put("IM_IROD", irod);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_NATURE_MAPPING, REQUEST_SAVE, args);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -296,108 +307,6 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
             AlertBox box = new AlertBox(getContext());
             box.getErrBox(e);
         }
-    }
-
-    private void validateIrod() {
-        String scannedirod = UIFuncs.toUpperTrim(txt_irod);
-        for (Map.Entry<String, List<EXData>> irod: irods.entrySet()) {
-            String binno = irod.getKey();
-            for (EXData data:irod.getValue()) {
-                if(scannedirod.equals(data.getIrod())){
-                    showError("Already Scanned", "IROD "+scannedirod+" is already tagged with BIN "+binno);
-                    txt_irod.setText("");
-                    txt_irod.requestFocus();
-                    return;
-                }
-            }
-        }
-        JSONObject args = new JSONObject();
-        try {
-            args.put("bapiname", Vars.ZWM_STORE_IROD_VALIDATE);
-            args.put("IM_WERKS", WERKS);
-            args.put("IM_USER", USER);
-            args.put("IM_LGNUM","SDC");
-            args.put("IM_LGPLA", UIFuncs.toUpperTrim(txt_bin));
-            args.put("IM_IROD", scannedirod);
-            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_VALIDATE, REQUEST_VALIDATE_IROD, args);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
-            if (dialog != null) {
-                dialog.dismiss();
-                dialog = null;
-            }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
-        }
-    }
-
-    private void setData() {
-        try {
-            String binno = UIFuncs.toUpperTrim(txt_bin);
-            List<EXData> binrecords = new ArrayList<>();
-            if(irods.containsKey(binno)){
-                binrecords = irods.get(binno);
-            }
-            String irod = UIFuncs.toUpperTrim(txt_irod);
-            binrecords.add(new EXData(WERKS, "SDC", "", irod, binno));
-            irods.put(binno, binrecords);
-            txt_scanned_irod.setText(irod);
-        } catch (Exception exce) {
-            box.getErrBox(exce);
-        }
-        txt_irod.setText("");
-        UIFuncs.enableInput(con, txt_irod);
-    }
-
-    private void saveData() {
-        JSONArray itdata = getScanDataToSubmit();
-        if(itdata != null){
-            JSONObject args = new JSONObject();
-            try {
-
-                args.put("bapiname", Vars.ZWM_STORE_IROD_TAG);
-                args.put("IM_WERKS", WERKS);
-                args.put("IM_USER", USER);
-                args.put("IM_LGNUM","SDC");
-                args.put("IT_DATA", itdata);
-                showProcessingAndSubmit(Vars.ZWM_STORE_IROD_TAG, REQUEST_SAVE, args);
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-                UIFuncs.errorSound(con);
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
-            }
-        }
-    }
-
-    private JSONArray getScanDataToSubmit(){
-        try {
-            JSONArray arrScanData = new JSONArray();
-            for (Map.Entry<String, List<EXData>> irod : irods.entrySet()) {
-                List<EXData> records = irod.getValue();
-                for (EXData data: records) {
-                    String scanDataJsonString = new Gson().toJson(data);
-                    JSONObject itDataJson = new JSONObject(scanDataJsonString);
-                    arrScanData.put(itDataJson);
-                }
-            }
-            if (arrScanData.length() == 0) {
-                showError("Empty Request", "Noting to submit, please scan some IROD");
-            }else{
-                return arrScanData;
-            }
-        }catch (Exception exce){
-            box.getErrBox(exce);
-        }
-        txt_irod.requestFocus();
-        return null;
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -465,26 +374,11 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
                                         UIFuncs.errorSound(getContext());
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
-                                        if (request == REQUEST_VALIDATE_BIN) {
-                                            step2();
-                                        }
-                                        if (request == REQUEST_VALIDATE_IROD) {
-                                            txt_irod.setText("");
-                                            txt_irod.requestFocus();
-                                        }
                                     } else {
-                                        if (request == REQUEST_VALIDATE_BIN) {
-                                            UIFuncs.disableInput(con, txt_bin);
-                                            UIFuncs.enableInput(con, txt_irod);
-                                            return;
-                                        }
-                                        if (request == REQUEST_VALIDATE_IROD) {
-                                            setData();
-                                            return;
+                                        if (request == REQUEST_IROD_NATURE) {
+                                            setNatureData(responsebody);
                                         }
                                         if (request == REQUEST_SAVE) {
-                                            AlertBox box = new AlertBox(getContext());
-                                            box.getBox("Success", returnobj.getString("MESSAGE"));
                                             step2();
                                             return;
                                         }

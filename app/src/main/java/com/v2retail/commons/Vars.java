@@ -118,4 +118,9 @@ public class Vars {
     public static String ZWM_STORE_GANDOLA_VALIDATE = "ZWM_STORE_GANDOLA_VALIDATE";
     public static String ZWM_STORE_IROD_VALIDATE = "ZWM_STORE_IROD_VALIDATE";
     public static String ZWM_STORE_IROD_TAG = "ZWM_STORE_IROD_TAG";
+    public static String ZWM_STORE_IROD_DTAG_VALIDATE = "ZWM_STORE_IROD_DTAG_VALIDATE";
+    public static String ZWM_STORE_IROD_DTAG = "ZWM_STORE_IROD_DTAG";
+    public static String ZWM_STORE_IROD_NATURE = "ZWM_STORE_IROD_NATURE";
+    public static String ZWM_STORE_IROD_NATURE_MAPPING = "ZWM_STORE_IROD_NATURE_MAPPING";
+
 }

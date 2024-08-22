@@ -38,7 +38,6 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:textColor="@color/white"
-                android:visibility="gone"
                 android:id="@+id/store_display_internal_detagging_irod"
                 android:background="@color/buttonColor"
                 android:text="De-Tagging IROD With Gandola" />
@@ -49,7 +48,6 @@
                 android:textColor="@color/white"
                 android:id="@+id/store_display_internal_irod_nature"
                 android:background="@color/buttonColor"
-                android:visibility="gone"
                 android:text="IROD Nature Assignment" />
         </LinearLayout>
     </ScrollView>
