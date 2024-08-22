@@ -57,7 +57,6 @@ android {
         includeInApk true
         includeInBundle true
     }
-    buildToolsVersion '31.0.0'
     ndkVersion '21.3.6528147'
     namespace 'com.v2retail.dotvik'
 }
