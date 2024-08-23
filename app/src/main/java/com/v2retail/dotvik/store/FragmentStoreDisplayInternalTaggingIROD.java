@@ -35,14 +35,11 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
-import com.v2retail.dotvik.modal.irod.EXData;
-import com.v2retail.dotvik.modal.putaway.ETDataStorePutway;
+import com.v2retail.dotvik.modal.irod.BinTag;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
@@ -52,10 +49,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Narayanan
@@ -81,7 +76,7 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
     EditText txt_store, txt_sloc, txt_bin, txt_irod, txt_scanned_irod;
     LinearLayout ll_screen2;
     String title;
-    Map<String, List<EXData>> irods;
+    Map<String, List<BinTag>> irods;
     public FragmentStoreDisplayInternalTaggingIROD() {
         // Required empty public constructor
     }
@@ -300,9 +295,9 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
 
     private void validateIrod() {
         String scannedirod = UIFuncs.toUpperTrim(txt_irod);
-        for (Map.Entry<String, List<EXData>> irod: irods.entrySet()) {
+        for (Map.Entry<String, List<BinTag>> irod: irods.entrySet()) {
             String binno = irod.getKey();
-            for (EXData data:irod.getValue()) {
+            for (BinTag data:irod.getValue()) {
                 if(scannedirod.equals(data.getIrod())){
                     showError("Already Scanned", "IROD "+scannedirod+" is already tagged with BIN "+binno);
                     txt_irod.setText("");
@@ -336,12 +331,12 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
     private void setData() {
         try {
             String binno = UIFuncs.toUpperTrim(txt_bin);
-            List<EXData> binrecords = new ArrayList<>();
+            List<BinTag> binrecords = new ArrayList<>();
             if(irods.containsKey(binno)){
                 binrecords = irods.get(binno);
             }
             String irod = UIFuncs.toUpperTrim(txt_irod);
-            binrecords.add(new EXData(WERKS, "SDC", "", irod, binno));
+            binrecords.add(new BinTag(WERKS, "SDC", "", irod, binno));
             irods.put(binno, binrecords);
             txt_scanned_irod.setText(irod);
         } catch (Exception exce) {
@@ -380,9 +375,9 @@ public class FragmentStoreDisplayInternalTaggingIROD extends Fragment  implement
     private JSONArray getScanDataToSubmit(){
         try {
             JSONArray arrScanData = new JSONArray();
-            for (Map.Entry<String, List<EXData>> irod : irods.entrySet()) {
-                List<EXData> records = irod.getValue();
-                for (EXData data: records) {
+            for (Map.Entry<String, List<BinTag>> irod : irods.entrySet()) {
+                List<BinTag> records = irod.getValue();
+                for (BinTag data: records) {
                     String scanDataJsonString = new Gson().toJson(data);
                     JSONObject itDataJson = new JSONObject(scanDataJsonString);
                     arrScanData.put(itDataJson);

@@ -2,7 +2,7 @@ package com.v2retail.dotvik.modal.irod;
 
 import com.google.gson.annotations.SerializedName;
 
-public class EXData{
+public class BinTag {
     @SerializedName("MANDT")
     private String mandt;
     @SerializedName("WERKS")
@@ -16,7 +16,7 @@ public class EXData{
     @SerializedName("LGPLA")
     private String lgpla;
 
-    public EXData(String werks, String lgnum, String lgtyp, String irod, String lgpla){
+    public BinTag(String werks, String lgnum, String lgtyp, String irod, String lgpla){
         this.werks = werks;
         this.lgnum = lgnum;
         this.lgtyp = lgtyp;

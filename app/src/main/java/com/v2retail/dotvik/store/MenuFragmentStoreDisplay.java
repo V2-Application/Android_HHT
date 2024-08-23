@@ -25,7 +25,8 @@ import com.v2retail.util.AlertBox;
 public class MenuFragmentStoreDisplay extends Fragment implements View.OnClickListener,
     MenuFragmentStoreDisplayInbound.OnFragmentInteractionListener,
     MenuFragmentStoreDisplayOutbound.OnFragmentInteractionListener,
-    MenuFragmentStoreDisplayInernal.OnFragmentInteractionListener{
+    MenuFragmentStoreDisplayInernal.OnFragmentInteractionListener,
+    MenuFragmentStoreDisplayInernalIRODToIROD.OnFragmentInteractionListener{
     Context con;
     FragmentManager fm;
     AlertBox box;

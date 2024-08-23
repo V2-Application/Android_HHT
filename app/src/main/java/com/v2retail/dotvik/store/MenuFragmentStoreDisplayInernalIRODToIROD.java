@@ -19,23 +19,22 @@ import com.v2retail.util.AlertBox;
 /**
  * @author Narayanan
  * @version 11.72
- * {@code Author: Narayanan, Revision: 1, Created: 16th Aug 2024, Modified: 16th Aug 2024}
+ * {@code Author: Narayanan, Revision: 1, Created: 23rd Aug 2024, Modified: 23rd Aug 2024}
  */
-public class MenuFragmentStoreDisplayInernal extends Fragment implements View.OnClickListener,
-        MenuFragmentStoreDisplayInernalIRODToIROD.OnFragmentInteractionListener {
+public class MenuFragmentStoreDisplayInernalIRODToIROD extends Fragment implements View.OnClickListener{
 
     Context con;
     FragmentManager fm;
     AlertBox box;
     private OnFragmentInteractionListener mListener;
-    Button art_irod_identifier, tagging_irod, detagging_irod, irod_nature, irod_to_irod;
+    Button picking, putway;
 
-    public MenuFragmentStoreDisplayInernal() {
+    public MenuFragmentStoreDisplayInernalIRODToIROD() {
         // Required empty public constructor
     }
 
-    public static MenuFragmentStoreDisplayInernal newInstance(String param1, String param2) {
-        MenuFragmentStoreDisplayInernal fragment = new MenuFragmentStoreDisplayInernal();
+    public static MenuFragmentStoreDisplayInernalIRODToIROD newInstance() {
+        MenuFragmentStoreDisplayInernalIRODToIROD fragment = new MenuFragmentStoreDisplayInernalIRODToIROD();
         return fragment;
     }
 
@@ -47,26 +46,21 @@ public class MenuFragmentStoreDisplayInernal extends Fragment implements View.On
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.menu_fragment_store_display_inernal, container, false);
+        View view = inflater.inflate(R.layout.fragment_menu_store_display_inernal_irod_to_irod, container, false);
 
         con=getContext();
         box=new AlertBox(con);
         fm=getActivity().getSupportFragmentManager();
 
-        art_irod_identifier = view.findViewById(R.id.store_display_internal_art_irod);
-        tagging_irod = view.findViewById(R.id.store_display_internal_tagging_irod);
-        detagging_irod = view.findViewById(R.id.store_display_internal_detagging_irod);
-        irod_nature = view.findViewById(R.id.store_display_internal_irod_nature);
-        irod_to_irod = view.findViewById(R.id.store_display_internal_irod_to_irod);
+        picking = view.findViewById(R.id.store_display_internal_irod_to_irod_picking);
+        putway = view.findViewById(R.id.store_display_internal_irod_to_irod_putway);
 
-        art_irod_identifier.setOnClickListener(this);
-        tagging_irod.setOnClickListener(this);
-        detagging_irod.setOnClickListener(this);
-        irod_nature.setOnClickListener(this);
-        irod_to_irod.setOnClickListener(this);
+        picking.setOnClickListener(this);
+        putway.setOnClickListener(this);
 
         return view;
     }
+
     @Override
     public void onClick(View view) {
         setFragment(view.getId());
@@ -76,27 +70,18 @@ public class MenuFragmentStoreDisplayInernal extends Fragment implements View.On
         Fragment fragment = null;
         switch (fragmentID) {
 
-            case R.id.store_display_internal_art_irod:
-                fragment = FragmentStoreDisplayInternalArtIrod.newInstance("Display > Internal");
+            case R.id.store_display_internal_irod_to_irod_picking:
+                fragment = FragmentStoreDisplayInternalIRODToIRODPicking.newInstance("IROD To IROD");
                 break;
-            case R.id.store_display_internal_tagging_irod:
-                fragment = FragmentStoreDisplayInternalTaggingIROD.newInstance("Display > Internal");
-                break;
-            case R.id.store_display_internal_detagging_irod:
-                fragment = FragmentStoreDisplayInternalDeTagIROD.newInstance("Display > Internal");
-                break;
-            case R.id.store_display_internal_irod_nature:
-                fragment = FragmentStoreDisplayInternalIRODNature.newInstance("Display > Internal");
-                break;
-            case R.id.store_display_internal_irod_to_irod:
-                fragment = MenuFragmentStoreDisplayInernalIRODToIROD.newInstance();
+            case R.id.store_display_internal_irod_to_irod_putway:
+                fragment = FragmentStoreDisplayInternalIRODToIRODPutway.newInstance("IROD To IROD");
                 break;
         }
 
         if (fragment != null) {
             FragmentTransaction ft =fm.beginTransaction();
-            ft.replace(R.id.home, fragment, "StoreDisplayInternal");
-            ft.addToBackStack("StoreDisplayInternal");
+            ft.replace(R.id.home, fragment, "StoreDisplayInternalIrodToIrod");
+            ft.addToBackStack("StoreDisplayInternalIrodToIrod");
             ft.commit();
         }
     }
@@ -136,15 +121,10 @@ public class MenuFragmentStoreDisplayInernal extends Fragment implements View.On
     public void onResume() {
         super.onResume();
         ((Home_Activity) getActivity())
-                .setActionBarTitle("Display > Internal");
+                .setActionBarTitle("Display > Irod To Irod");
     }
 
     public interface OnFragmentInteractionListener {
         void onFragmentInteraction(Uri uri);
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 }

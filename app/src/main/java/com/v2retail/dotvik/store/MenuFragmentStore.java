@@ -32,7 +32,8 @@ public class MenuFragmentStore extends Fragment implements
         InboundFragment.OnFragmentInteractionListener,
         StockTakeFragment.OnFragmentInteractionListener,
         Retail_App_Fragment.OnFragmentInteractionListener,
-        MenuFragmentStoreDisplayInernal.OnFragmentInteractionListener {
+        MenuFragmentStoreDisplayInernal.OnFragmentInteractionListener,
+        MenuFragmentStoreDisplayInernalIRODToIROD.OnFragmentInteractionListener {
 
     Context con;
     FragmentManager fm;

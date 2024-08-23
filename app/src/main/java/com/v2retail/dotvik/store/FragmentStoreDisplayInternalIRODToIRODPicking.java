@@ -34,55 +34,50 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
-import com.v2retail.dotvik.modal.irod.BinTag;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
 /**
  * @author Narayanan
  * @version 11.72
- * {@code Author: Narayanan, Revision: 1, Created: 18th Aug 2024, Modified: 22nd Aug 2024}
+ * {@code Author: Narayanan, Revision: 1, Created: 16th Aug 2024, Modified: 16th Aug 2024}
  */
-public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements View.OnClickListener {
+public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment implements View.OnClickListener {
 
     View view;
     Context con;
     FragmentManager fm;
     AlertBox box;
     ProgressDialog dialog;
-    String TAG = FragmentStoreDisplayInternalDeTagIROD.class.getName();
-    private static final int REQUEST_VALIDATE_IROD = 5402;
+    String TAG = FragmentStoreDisplayInternalIRODToIRODPicking.class.getName();
+    private static final int REQUEST_VALIDATE_IROD = 5401;
+    private static final int REQUEST_VALIDATE_EAN = 5402;
     private static final int REQUEST_SAVE = 5403;
     String URL;
     String WERKS;
     String USER;
     private static String parent;
-    Button btn_back, btn_reset, btn_next, btn_save;
-    EditText txt_store, txt_sloc, txt_sqty, txt_irod, txt_scanned_irod;
+    Button btn_back, btn_reset, btn_next, btn_exit;
+    EditText txt_store, txt_sloc, txt_irod, txt_scanned_irod, txt_ean, txt_article, txt_description, txt_sqty, txt_tqty;
     LinearLayout ll_screen2;
     String title;
-    List<BinTag> irods;
-    int scannedQty;
 
-    public FragmentStoreDisplayInternalDeTagIROD() {
+    public FragmentStoreDisplayInternalIRODToIRODPicking() {
         // Required empty public constructor
     }
 
-    public static FragmentStoreDisplayInternalDeTagIROD newInstance(String breadcrumb) {
-        FragmentStoreDisplayInternalDeTagIROD fragment = new FragmentStoreDisplayInternalDeTagIROD();
-        fragment.title = breadcrumb;
+    public static FragmentStoreDisplayInternalIRODToIRODPicking newInstance(String breadcrumb) {
+        FragmentStoreDisplayInternalIRODToIRODPicking fragment = new FragmentStoreDisplayInternalIRODToIRODPicking();
+        fragment.title  = breadcrumb;
         return fragment;
     }
 
@@ -90,7 +85,7 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     public void onResume() {
         super.onResume();
         ((Home_Activity) getActivity())
-                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + " > DE-TAG IROD WITH GANDOLA"));
+                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + " > PICKING"));
     }
 
     @Override
@@ -102,7 +97,8 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        view = inflater.inflate(R.layout.fragment_store_display_internal_detag_irod, container, false);
+        // Inflate the layout for this fragment
+        view = inflater.inflate(R.layout.fragment_store_display_internal_irod_to_irod_picking, container, false);
 
         con = getContext();
         box = new AlertBox(con);
@@ -112,23 +108,27 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
         WERKS = data.read("WERKS");
         USER = data.read("USER");
 
-        txt_store = view.findViewById(R.id.txt_disp_internal_detag_irod_store);
-        txt_sloc = view.findViewById(R.id.txt_disp_internal_detag_irod_sloc);
-        txt_scanned_irod = view.findViewById(R.id.txt_disp_internal_detag_irod_scanned_irod);
-        txt_irod = view.findViewById(R.id.txt_disp_internal_detag_irod_irod);
-        txt_sqty = view.findViewById(R.id.txt_disp_internal_detag_irod_scanned_qty);
+        txt_store = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_store);
+        txt_sloc = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_sloc);
+        txt_irod = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_irod);
+        txt_scanned_irod = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_scanned_irod);
+        txt_ean = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_ean);
+        txt_article = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_articleno);
+        txt_description = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_description);
+        txt_sqty = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_sqty);
+        txt_tqty = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_tqty);
 
-        btn_back = view.findViewById(R.id.txt_disp_internal_detag_irod_back);
-        btn_reset = view.findViewById(R.id.txt_disp_internal_detag_irod_reset);
-        btn_next = view.findViewById(R.id.txt_disp_internal_detag_irod_next);
-        btn_save = view.findViewById(R.id.txt_disp_internal_detag_irod_save);
+        btn_back = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_back);
+        btn_reset = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_reset);
+        btn_next = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_next);
+        btn_exit = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_exit);
 
-        ll_screen2 = view.findViewById(R.id.ll_disp_art_irod_screen2);
+        ll_screen2 = view.findViewById(R.id.ll_disp_internal_irod_to_irod_picking_screen2);
 
         btn_back.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
         btn_next.setOnClickListener(this);
-        btn_save.setOnClickListener(this);
+        btn_exit.setOnClickListener(this);
 
         txt_store.setText(WERKS);
         txt_sloc.setText("0001");
@@ -136,26 +136,27 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
         clear();
         addInputEvents();
         step2();
-
+        
         return view;
     }
+
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.txt_disp_internal_detag_irod_back:
+            case R.id.btn_disp_internal_irod_to_irod_picking_back:
                 box.confirmBack(fm, con);
                 break;
-            case R.id.txt_disp_internal_detag_irod_reset:
+            case R.id.btn_disp_internal_irod_to_irod_picking_reset:
                 box.getBox("Confirm", "Reset! Are you sure?", (dialogInterface, i) -> {
                     step2();
                 }, (dialogInterface, i) -> {
                     return;
                 });
                 break;
-            case R.id.txt_disp_internal_detag_irod_next:
+            case R.id.btn_disp_internal_irod_to_irod_picking_next:
                 step2();
                 break;
-            case R.id.txt_disp_internal_detag_irod_save:
+            case R.id.btn_disp_internal_irod_to_irod_picking_exit:
                 saveData();
                 break;
         }
@@ -201,6 +202,45 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
                 }
             }
         });
+        txt_ean.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    String value = UIFuncs.toUpperTrim(txt_ean);
+                    if (value.length() > 0) {
+                        validateArticle();
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+        txt_ean.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if ((before == 0 && start == 0) && count > 3) {
+                    scannerReading = true;
+                } else {
+                    scannerReading = false;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().toUpperCase().trim();
+                if (value.length() > 0 && scannerReading) {
+                    validateArticle();
+                }
+            }
+        });
     }
 
     private void clear() {
@@ -208,20 +248,22 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
         ll_screen2.setVisibility(View.GONE);
         btn_reset.setVisibility(View.INVISIBLE);
         btn_next.setVisibility(View.VISIBLE);
-        btn_save.setVisibility(View.GONE);
+        btn_exit.setVisibility(View.GONE);
     }
 
     private void step2() {
-        irods = new ArrayList<>();
-        scannedQty = 0;
         ll_screen2.setVisibility(View.VISIBLE);
         btn_reset.setVisibility(View.VISIBLE);
         btn_next.setVisibility(View.GONE);
-        btn_save.setVisibility(View.VISIBLE);
+        btn_exit.setVisibility(View.VISIBLE);
         txt_irod.setText("");
-        txt_sqty.setText("");
         txt_scanned_irod.setText("");
-        UIFuncs.disableInput(con, txt_scanned_irod);
+        txt_ean.setText("");
+        txt_article.setText("");
+        txt_description.setText("");
+        txt_sqty.setText("");
+        txt_tqty.setText("");
+        UIFuncs.disableInput(con, txt_ean);
         UIFuncs.enableInput(con, txt_irod);
     }
 
@@ -232,23 +274,39 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     }
 
     private void validateIrod() {
-        String scannedirod = UIFuncs.toUpperTrim(txt_irod);
-        for (BinTag data:irods) {
-            if(scannedirod.equals(data.getIrod())){
-                showError("Already Scanned", "IROD "+scannedirod+" is already scanned");
-                txt_irod.setText("");
-                txt_irod.requestFocus();
-                return;
-            }
-        }
+        String irod = UIFuncs.toUpperTrim(txt_irod);
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_IROD_DTAG_VALIDATE);
+            args.put("bapiname", Vars.ZWM_STORE_IROD_VALIDATE);
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
-            args.put("IM_LGNUM","SDC");
-            args.put("IM_IROD", scannedirod);
-            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_DTAG_VALIDATE, REQUEST_VALIDATE_IROD, args);
+            args.put("IM_LGNUM", "SDC");
+            args.put("IM_LGPLA", "");
+            args.put("IM_IROD", irod);
+            args.put("IM_ERROR_IF_TAGGED", "");
+            args.put("IM_ERROR_IF_NOT_TAGGED", "X");
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_VALIDATE, REQUEST_VALIDATE_IROD, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+
+    private void validateArticle() {
+        String eanmatnr = UIFuncs.toUpperTrim(txt_ean);
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_STORE_IROD_ARTICLE_FIND);
+            args.put("IM_WERKS", WERKS);
+            args.put("IM_USER", USER);
+            args.put("IM_MATNR", eanmatnr);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_ARTICLE_FIND, REQUEST_VALIDATE_EAN, args);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -262,60 +320,19 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
         }
     }
 
-    private void setData() {
+    private void setData(JSONObject rsponse) {
         try {
-            String irod = UIFuncs.toUpperTrim(txt_irod);
-            irods.add(new BinTag(WERKS, "SDC", "", irod, ""));
-            scannedQty += 1;
-            txt_sqty.setText(scannedQty+"");
-            txt_scanned_irod.setText(irod);
+            JSONObject exData = rsponse.getJSONObject("EX_DATA");
+            txt_irod.setText(exData.getString("LGPLA"));
         } catch (Exception exce) {
             box.getErrBox(exce);
         }
+        txt_ean.setText("");
+        UIFuncs.enableInput(con, txt_ean);
     }
+
     private void saveData() {
-        JSONArray itdata = getScanDataToSubmit();
-        if(itdata != null){
-            JSONObject args = new JSONObject();
-            try {
-                args.put("bapiname", Vars.ZWM_STORE_IROD_DTAG);
-                args.put("IM_WERKS", WERKS);
-                args.put("IM_USER", USER);
-                args.put("IM_LGNUM","SDC");
-                args.put("IT_DATA", itdata);
-                showProcessingAndSubmit(Vars.ZWM_STORE_IROD_DTAG, REQUEST_SAVE, args);
 
-            } catch (JSONException e) {
-                e.printStackTrace();
-                UIFuncs.errorSound(con);
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
-            }
-        }
-    }
-
-    private JSONArray getScanDataToSubmit(){
-        try {
-            JSONArray arrScanData = new JSONArray();
-            for (BinTag data:irods) {
-                String scanDataJsonString = new Gson().toJson(data);
-                JSONObject itDataJson = new JSONObject(scanDataJsonString);
-                arrScanData.put(itDataJson);
-            }
-            if (arrScanData.length() == 0) {
-                showError("Empty Request", "Noting to submit, please scan some IROD");
-            }else{
-                return arrScanData;
-            }
-        }catch (Exception exce){
-            box.getErrBox(exce);
-        }
-        txt_irod.requestFocus();
-        return null;
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -384,20 +401,19 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
                                         if (request == REQUEST_VALIDATE_IROD) {
-                                            txt_irod.setText("");
-                                            txt_irod.requestFocus();
+                                            step2();
+                                        }
+                                        if (request == REQUEST_VALIDATE_EAN) {
+                                            txt_ean.setText("");
+                                            txt_ean.requestFocus();
+                                            return;
                                         }
                                     } else {
                                         if (request == REQUEST_VALIDATE_IROD) {
-                                            setData();
-                                            txt_irod.setText("");
-                                            txt_irod.requestFocus();
-                                            return;
-                                        }
-                                        if (request == REQUEST_SAVE) {
-                                            AlertBox box = new AlertBox(getContext());
-                                            box.getBox("Success", returnobj.getString("MESSAGE"));
                                             step2();
+                                        }
+                                        if (request == REQUEST_VALIDATE_EAN) {
+                                            setData(responsebody);
                                             return;
                                         }
                                     }
