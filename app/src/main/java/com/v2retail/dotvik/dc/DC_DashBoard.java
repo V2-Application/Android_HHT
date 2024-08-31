@@ -16,6 +16,9 @@ import com.v2retail.dotvik.dc.grt.GRTCratePickingProcess;
 import com.v2retail.dotvik.dc.grt.GRTProcessMenu;
 import com.v2retail.dotvik.dc.ptl.PTLProcessFragment;
 import com.v2retail.util.AlertBox;
+import com.v2retail.util.TSPLPrinter;
+
+import org.json.JSONObject;
 
 
 /**
@@ -32,7 +35,8 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         Stock_Take_Process_Fragment.OnFragmentInteractionListener,
         GRTCratePickingProcess.OnFragmentInteractionListener,
         PTLProcessFragment.OnFragmentInteractionListener,
-        GRTProcessMenu.OnFragmentInteractionListener
+        GRTProcessMenu.OnFragmentInteractionListener,
+        MenuFragmentInwardTVSPaperLess.OnFragmentInteractionListener
 {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -113,7 +117,6 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
 
         return view;
     }
-
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {

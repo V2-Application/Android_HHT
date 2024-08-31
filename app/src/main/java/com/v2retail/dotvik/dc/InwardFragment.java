@@ -12,7 +12,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.store.PaperLessDate;
 import com.v2retail.util.AlertBox;
 
 
@@ -24,7 +26,8 @@ import com.v2retail.util.AlertBox;
  * Use the {@link InwardFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class InwardFragment extends Fragment implements View.OnClickListener {
+public class InwardFragment extends Fragment implements View.OnClickListener,
+        MenuFragmentInwardTVSPaperLess.OnFragmentInteractionListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -33,7 +36,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
     Button create_scan;
     Button grc_putway;
     Button putway;
-    Button bin_consolidation,ecom_putway,stored_stock,grt_scanning03,grt_scanning01;
+    Button bin_consolidation,ecom_putway,stored_stock,grt_scanning03,grt_scanning01, tvs_paperless_picking;
     FragmentManager fm;
     Context con;
 
@@ -91,6 +94,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         stored_stock = (Button) view.findViewById(R.id.stored_stock);
         grt_scanning03 = (Button) view.findViewById(R.id.grt_putway03);
         grt_scanning01 = (Button) view.findViewById(R.id.grt_scanning01);
+        tvs_paperless_picking= view.findViewById(R.id.tvs_paperless_picking);
 
         create_scan.setOnClickListener(this);
         grc_putway.setOnClickListener(this);
@@ -99,6 +103,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         stored_stock.setOnClickListener(this);
         grt_scanning03.setOnClickListener(this);
         grt_scanning01.setOnClickListener(this);
+        tvs_paperless_picking.setOnClickListener(this);
        // bin_consolidation.setOnClickListener(this);
 
         Log.d(TAG, TAG + "Inward created");
@@ -172,12 +177,9 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
             case R.id.grt_putway03:
                 fragment = new GRTPutway03Fragment();
                 break;
-
-
-         /*   case R.id.bin_consolidation:
-
-                box.getBox("Alert", "Implementation In Process");
-                break;*/
+            case R.id.tvs_paperless_picking:
+                fragment = MenuFragmentInwardTVSPaperLess.newInstance();
+                break;
         }
 
         if (fragment != null) {
@@ -203,5 +205,8 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         void onFragmentInteraction(Uri uri);
     }
 
+    @Override
+    public void onFragmentInteraction(Uri uri) {
 
+    }
 }

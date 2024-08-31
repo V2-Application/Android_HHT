@@ -47,6 +47,8 @@ public class ETDataStorePutway {
     private String wgbez;
     @SerializedName("VERME1")
     private String verme1;
+    @SerializedName("IROD")
+    private String irod;
 
     public static ETDataStorePutway newInstance(JSONObject objETData,String sloc,String plant,String binno) {
         ETDataStorePutway etData = new Gson().fromJson(objETData.toString(), ETDataStorePutway.class);
@@ -178,5 +180,13 @@ public class ETDataStorePutway {
 
     public void setVerme1(String verme1) {
         this.verme1 = verme1;
+    }
+
+    public String getIrod() {
+        return irod;
+    }
+
+    public void setIrod(String irod) {
+        this.irod = irod;
     }
 }

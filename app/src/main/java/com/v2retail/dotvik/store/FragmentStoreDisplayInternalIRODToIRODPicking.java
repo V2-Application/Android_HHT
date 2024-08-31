@@ -34,17 +34,22 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.modal.putaway.ETDataStorePutway;
+import com.v2retail.dotvik.modal.putaway.ETEanDataStorePutway;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Narayanan
@@ -66,11 +71,12 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
     String WERKS;
     String USER;
     private static String parent;
-    Button btn_back, btn_reset, btn_next, btn_exit;
-    EditText txt_store, txt_sloc, txt_irod, txt_scanned_irod, txt_ean, txt_article, txt_description, txt_sqty, txt_tqty;
+    Button btn_back, btn_reset, btn_next, btn_save;
+    EditText txt_store, txt_sloc, txt_irod, txt_ean, txt_article, txt_description, txt_sqty, txt_tqty;
     LinearLayout ll_screen2;
     String title;
-
+    Map<String, ETDataStorePutway> etData = new HashMap<>();
+    int totalScannedQty;
     public FragmentStoreDisplayInternalIRODToIRODPicking() {
         // Required empty public constructor
     }
@@ -111,7 +117,6 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
         txt_store = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_store);
         txt_sloc = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_sloc);
         txt_irod = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_irod);
-        txt_scanned_irod = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_scanned_irod);
         txt_ean = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_ean);
         txt_article = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_articleno);
         txt_description = view.findViewById(R.id.txt_disp_internal_irod_to_irod_picking_description);
@@ -121,14 +126,14 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
         btn_back = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_back);
         btn_reset = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_reset);
         btn_next = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_next);
-        btn_exit = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_exit);
+        btn_save = view.findViewById(R.id.btn_disp_internal_irod_to_irod_picking_save);
 
         ll_screen2 = view.findViewById(R.id.ll_disp_internal_irod_to_irod_picking_screen2);
 
         btn_back.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
         btn_next.setOnClickListener(this);
-        btn_exit.setOnClickListener(this);
+        btn_save.setOnClickListener(this);
 
         txt_store.setText(WERKS);
         txt_sloc.setText("0001");
@@ -156,7 +161,7 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
             case R.id.btn_disp_internal_irod_to_irod_picking_next:
                 step2();
                 break;
-            case R.id.btn_disp_internal_irod_to_irod_picking_exit:
+            case R.id.btn_disp_internal_irod_to_irod_picking_save:
                 saveData();
                 break;
         }
@@ -248,16 +253,17 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
         ll_screen2.setVisibility(View.GONE);
         btn_reset.setVisibility(View.INVISIBLE);
         btn_next.setVisibility(View.VISIBLE);
-        btn_exit.setVisibility(View.GONE);
+        btn_save.setVisibility(View.GONE);
     }
 
     private void step2() {
+        etData = new HashMap<>();
+        totalScannedQty = 0;
         ll_screen2.setVisibility(View.VISIBLE);
         btn_reset.setVisibility(View.VISIBLE);
         btn_next.setVisibility(View.GONE);
-        btn_exit.setVisibility(View.VISIBLE);
+        btn_save.setVisibility(View.VISIBLE);
         txt_irod.setText("");
-        txt_scanned_irod.setText("");
         txt_ean.setText("");
         txt_article.setText("");
         txt_description.setText("");
@@ -295,14 +301,12 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
     }
 
     private void validateArticle() {
-        String eanmatnr = UIFuncs.toUpperTrim(txt_ean);
+        String ean = UIFuncs.toUpperTrim(txt_ean);
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_IROD_ARTICLE_FIND);
-            args.put("IM_WERKS", WERKS);
-            args.put("IM_USER", USER);
-            args.put("IM_MATNR", eanmatnr);
-            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_ARTICLE_FIND, REQUEST_VALIDATE_EAN, args);
+            args.put("bapiname", Vars.ZWM_STORE_IROD_EAN_VALIDATE);
+            args.put("IM_EAN", ean);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_EAN_VALIDATE, REQUEST_VALIDATE_EAN, args);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -318,8 +322,38 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
 
     private void setData(JSONObject rsponse) {
         try {
-            JSONObject exData = rsponse.getJSONObject("EX_DATA");
-            txt_irod.setText(exData.getString("LGPLA"));
+            JSONArray arrEtEanData = rsponse.getJSONArray("ET_EAN_DATA");
+            int arrlength = arrEtEanData.length();
+            if(arrlength > 0){
+                JSONObject ET_EAN_RECORD  = arrEtEanData.getJSONObject(1);
+                ETEanDataStorePutway eanRecord = ETEanDataStorePutway.newInstance(ET_EAN_RECORD);
+                String matnr = eanRecord.getMatnr();
+                ETDataStorePutway etRecord = new ETDataStorePutway();
+
+                if(etData.containsKey(matnr)){
+                    etRecord = etData.get(matnr);
+                }else{
+                    etRecord.setVerme("0");
+                    etRecord.setLgnum("SDC");
+                    etRecord.setMatnr(matnr);
+                    etRecord.setIrod(UIFuncs.toUpperTrim(txt_irod));
+                }
+
+                int matnrSqty = (int) Double.parseDouble(etRecord.getVerme());
+                int lotQty = (int) Double.parseDouble(eanRecord.getUmrez());
+
+                matnrSqty = matnrSqty + lotQty;
+                totalScannedQty += lotQty;
+
+                txt_article.setText(matnr);
+                txt_sqty.setText(matnrSqty + "");
+
+                etRecord.setVerme(matnrSqty + "");
+
+                etData.put(matnr, etRecord);
+            }
+            txt_description.setText(rsponse.getString("EX_MAKTX"));
+            txt_tqty.setText(totalScannedQty + "");
         } catch (Exception exce) {
             box.getErrBox(exce);
         }
@@ -328,7 +362,53 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
     }
 
     private void saveData() {
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_STORE_IROD_PICK);
+            args.put("IM_WERKS", WERKS);
+            args.put("IM_LGNUM", "SDC");
+            args.put("IM_USER", USER);
+            JSONArray etScanData = getScanDataToSubmit();
+            if(etScanData == null){
+                return;
+            }
+            args.put("IT_DATA", etScanData);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_PICK, REQUEST_SAVE, args);
 
+        } catch (JSONException e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            if(dialog!=null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+
+    private JSONArray getScanDataToSubmit(){
+        try {
+            JSONArray arrScanData = new JSONArray();
+            for (Map.Entry<String, ETDataStorePutway> etRecords : etData.entrySet()) {
+                ETDataStorePutway etRecord = etRecords.getValue();
+                int matnrScannedQty = (int) Double.parseDouble(etRecord.getVerme());
+                if(matnrScannedQty > 0){
+                    String scanDataJsonString = new Gson().toJson(etRecord);
+                    JSONObject itDataJson = new JSONObject(scanDataJsonString);
+                    arrScanData.put(itDataJson);
+                }
+            }
+            if (arrScanData.length() == 0) {
+                showError("Empty Request", "Noting to submit, please scan some articles");
+            }else{
+                return arrScanData;
+            }
+        }catch (Exception exce){
+            box.getErrBox(exce);
+        }
+        txt_ean.requestFocus();
+        return null;
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -397,7 +477,8 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
                                         if (request == REQUEST_VALIDATE_IROD) {
-                                            step2();
+                                            txt_irod.setText("");
+                                            txt_irod.requestFocus();
                                         }
                                         if (request == REQUEST_VALIDATE_EAN) {
                                             txt_ean.setText("");
@@ -406,12 +487,18 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
                                         }
                                     } else {
                                         if (request == REQUEST_VALIDATE_IROD) {
-                                            txt_scanned_irod.setText(UIFuncs.toUpperTrim(txt_irod));
-                                            txt_irod.setText("");
+                                            UIFuncs.disableInput(con, txt_irod);
+                                            txt_ean.setText("");
                                             UIFuncs.enableInput(con, txt_ean);
                                         }
                                         if (request == REQUEST_VALIDATE_EAN) {
                                             setData(responsebody);
+                                            return;
+                                        }
+                                        if (request == REQUEST_SAVE) {
+                                            AlertBox box = new AlertBox(getContext());
+                                            box.getBox("Success", returnobj.getString("MESSAGE"));
+                                            step2();
                                             return;
                                         }
                                     }

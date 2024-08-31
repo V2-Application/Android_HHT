@@ -42,7 +42,8 @@ public class Process_Selection_Activity extends AppCompatActivity
         Scan_Stock_take_Fragment.OnFragmentInteractionListener,
         PTLProcessFragment.OnFragmentInteractionListener,
         GRTProcessFragment.OnFragmentInteractionListener,
-        OutwardHUWeightFragment.OnFragmentInteractionListener
+        OutwardHUWeightFragment.OnFragmentInteractionListener,
+        MenuFragmentInwardTVSPaperLess.OnFragmentInteractionListener
 {
 
     String URL="";

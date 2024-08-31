@@ -36,6 +36,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
@@ -44,6 +45,7 @@ import com.v2retail.util.AppConstants;
 import com.v2retail.util.Barcode2D;
 import com.v2retail.util.IBarcodeResult;
 import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.util.TSPLPrinter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -99,6 +101,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
     String requestUrl = "";
     String loginUser = "";
+    String mode = Vars.PAPER_LESS;
 
     ProgressDialog dialog = null;
 
@@ -107,6 +110,14 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
     private EditText chainwayContextEditText = null;
 
     public PapperLessScan() {
+    }
+
+    public static PapperLessScan newInstance(String mode) {
+        PapperLessScan fragment = new PapperLessScan();
+        if(mode != null){
+            fragment.mode = mode;
+        }
+        return fragment;
     }
 
     @Override
@@ -137,8 +148,6 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         } catch(Exception e) {
 
         }
-
-
     }
 
     @Override
@@ -1318,14 +1327,14 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
         final RequestQueue mRequestQueue;
 
-        String rfc = "ZWM_CREATE_HU_AND_ASSIGN";
+        String rfc = this.mode.equals(Vars.TVS_PAPER_LESS) ? "ZWM_CREATE_HU_AND_ASSIGN_TVS" : "ZWM_CREATE_HU_AND_ASSIGN";
         String url = this.requestUrl.substring(0, this.requestUrl.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
 
         final JSONObject params = new JSONObject();
         try {
-            params.put("bapiname","ZWM_CREATE_HU_AND_ASSIGN");
+            params.put("bapiname",rfc);
             params.put("IM_VBELN", mDeliveryNumber);
             params.put("IM_USER",  loginUser);
             params.put("IM_EXIDV", mExternalHu);
@@ -1386,7 +1395,6 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                     dialog = null;
                 }
 
-                Log.d(TAG, "ZWM_CREATE_HU_AND_ASSIGN(): " + responsebody.toString());
                 try {
                     if (responsebody == null) {
                         AlertBox box = new AlertBox(getContext());
@@ -1405,20 +1413,26 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                     if (type.equals("E")) {
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
-
-
                                         return;
                                     } else {
-                                        // success
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                clear();
-                                                 fm.popBackStack();
-
-                                            }
-                                        });
+                                        if(mode.equalsIgnoreCase(Vars.PAPER_LESS)){
+                                            box.getBox("", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    clear();
+                                                    fm.popBackStack();
+                                                }
+                                            });
+                                        }else{
+                                            JSONObject huObj = responsebody.getJSONObject("EX_HUDATA");
+                                            box.getBox("Success", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    printHu(huObj);
+                                                }
+                                            });
+                                        }
                                     }
                             }
                         }
@@ -1475,11 +1489,14 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         }
     }
 
+    private void printHu(JSONObject huObj) {
+        TSPLPrinter printer = new TSPLPrinter(getContext());
+        printer.sendPrintCommandToBluetoothPrinter("4B-2033PA-BFA4", huObj);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
-        // openBarcodeReader();
-
     }
 
     @Override

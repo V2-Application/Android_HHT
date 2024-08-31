@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.store.PaperLessDate;
 import com.v2retail.util.AlertBox;
@@ -105,8 +106,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener
         grt_hu_move = (Button) view.findViewById(R.id.grt_hu_move);
         hu_weight = view.findViewById(R.id.outward_hu_weight);
 
-
-
         picking.setOnClickListener(this);
         hu_scan.setOnClickListener(this);
         paperless_picking.setOnClickListener(this);
@@ -114,9 +113,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener
         empty_bin.setOnClickListener(this);
         grt_hu_move.setOnClickListener(this);
         hu_weight.setOnClickListener(this);
-       // dc_grt.setOnClickListener(this);
-       // hu_cla.setOnClickListener(this);
-       // sample_stock_movement.setOnClickListener(this);
         return view;
     }
 
@@ -159,7 +155,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener
                 fragment = new HU_Detail_Fragment();
                 break;
             case R.id.paperless_picking:
-                fragment = new PaperLessDate();
+                fragment = PaperLessDate.newInstance(Vars.PAPER_LESS);
                 break;
 
             case R.id.grt_hu_move:

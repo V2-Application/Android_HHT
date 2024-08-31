@@ -21,6 +21,15 @@
             android:background="#e71821"
             android:text="Crate Scan" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/tvs_paperless_picking"
+            android:background="#e71821"
+            android:text="TVS Paperless Picking" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

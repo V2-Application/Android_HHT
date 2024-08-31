@@ -32,6 +32,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.modal.ETDATum;
@@ -50,20 +51,19 @@ import java.util.Locale;
 
 public class PaperLessDate extends Fragment {
 
+    String mode = Vars.PAPER_LESS;
+
     public PaperLessDate() {
     }
 
     private String TAG = PaperLessDate.class.getName();
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
     private Bin_To_Bin_Transfer_Fragment.OnFragmentInteractionListener mListener;
 
-    public static PaperLessDate newInstance(String ARG_PARAM1, String ARG_PARAM2) {
+    public static PaperLessDate newInstance(String mode) {
         PaperLessDate fragment = new PaperLessDate();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, ARG_PARAM1);
-        args.putString(ARG_PARAM2, ARG_PARAM2);
-        fragment.setArguments(args);
+        if(mode != null){
+            fragment.mode = mode;
+        }
         return fragment;
     }
 
@@ -225,7 +225,7 @@ public class PaperLessDate extends Fragment {
     public void onResume() {
         super.onResume();
         ((Process_Selection_Activity) getActivity())
-                .setActionBarTitle("Paperless Picking");
+                .setActionBarTitle(Vars.PAPER_LESS.equals(mode) ? "Paperless Picking" : "TVS Paperless Picking");
     }
 
     private void onSubmit() {
@@ -280,7 +280,7 @@ public class PaperLessDate extends Fragment {
                     JSONArray jsonArray = responsebody.getJSONArray("ET_DATA");
 
                     if (jsonArray != null && jsonArray.length()>1) {
-                        PapperLessPicking papperLessPicking = new PapperLessPicking();
+                        PapperLessPicking papperLessPicking = PapperLessPicking.newInstance(mode);
                         Bundle bundle = new Bundle();
                         bundle.putString("data", jsonArray.toString());
 

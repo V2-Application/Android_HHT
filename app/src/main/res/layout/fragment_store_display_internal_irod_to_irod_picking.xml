@@ -130,42 +130,6 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="4"
                     android:padding="7dp"
-                    android:text="IROD"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="8">
-
-                    <EditText
-                        android:id="@+id/txt_disp_internal_irod_to_irod_picking_scanned_irod"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border_disabled_input"
-                        android:enabled="false"
-                        android:padding="7dp"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
-                </RelativeLayout>
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="4"
-                    android:padding="7dp"
                     android:text="EAN/ART No."
                     android:textColor="@color/black"
                     android:textSize="16sp"
@@ -379,13 +343,13 @@
                 android:textSize="15sp" />
 
             <Button
-                android:id="@+id/btn_disp_internal_irod_to_irod_picking_exit"
+                android:id="@+id/btn_disp_internal_irod_to_irod_picking_save"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
                 android:background="@color/colorPrimary"
-                android:text="Exit"
+                android:text="Save"
                 android:visibility="gone"
                 android:textColor="@color/white"
                 android:textSize="15sp" />

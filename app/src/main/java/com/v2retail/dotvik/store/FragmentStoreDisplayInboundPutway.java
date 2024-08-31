@@ -277,11 +277,11 @@ public class FragmentStoreDisplayInboundPutway extends Fragment implements View.
         }
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_BIN_001_VALIDATION);
+            args.put("bapiname", Vars.ZWM_STORE_IROD_PUTWAY_VALIDATE);
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
-            args.put("IM_LGPLA", binno);
-            showProcessingAndSubmit(Vars.ZWM_STORE_BIN_001_VALIDATION, REQUEST_VALIDATE_BIN, args);
+            args.put("IM_IROD", binno);
+            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_PUTWAY_VALIDATE, REQUEST_VALIDATE_BIN, args);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -353,7 +353,7 @@ public class FragmentStoreDisplayInboundPutway extends Fragment implements View.
                     totalScannedQty = totalScannedQty + lotQty;
                     etRecord.setVerme((matnrSqty + lotQty)+"");
                     txt_sqty.setText(totalScannedQty+"");
-                    txt_article.setText(etRecord.getMatnr());
+                    txt_article.setText(UIFuncs.removeLeadingZeros(etRecord.getMatnr()));
                     txt_description.setText(etRecord.getMaktx());
                 }
             }else{

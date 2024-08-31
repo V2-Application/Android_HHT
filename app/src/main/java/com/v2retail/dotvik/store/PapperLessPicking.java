@@ -46,6 +46,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
 
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
@@ -70,10 +71,8 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
 
     public PapperLessPicking() { }
     private String TAG=PapperLessPicking.class.getName();
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
     private Bin_To_Bin_Transfer_Fragment.OnFragmentInteractionListener mListener;
-//    private int position=1;
+
     final ArrayList<String> pickStringList=new ArrayList<>();
 
     Button backV2, nextV2;
@@ -106,7 +105,7 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
 
 
     ProgressDialog dialog = null;
-    String mode = null;
+    String mode = Vars.PAPER_LESS;
 
 
     // ChainwayBarCode
@@ -115,6 +114,7 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
 
     public static PapperLessPicking newInstance(String mode) {
         PapperLessPicking fragment = new PapperLessPicking();
+        fragment.mode = mode;
         return fragment;
     }
 
@@ -162,13 +162,9 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             Gson gson=new Gson();
             JSONArray jsonObject=new JSONArray(resposne);
 
-            // xmw middlware send first object as meta data;
             for(int i=1;i<jsonObject.length();i++){
                 Log.d("scan", jsonObject.getString(i));
                 JSONObject etDataNode = jsonObject.getJSONObject(i);
-                // ETDATum mETDATA = gson.fromJson(jsonObject1.toString(), ETDATum.class);
-                // Log.d("second", mETDATA.getDELNO());
-                // deliveryList.add(mETDATA.getDELNO());
                 deliveryList.add(etDataNode.getString("VBELN"));
             }
 
@@ -190,11 +186,7 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
                 box.getBox("Alert", "Do you want to go back.", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        // fm.popBackStack();
-                        //  ApplicationController.getInstance().refreshObservable().notifyObservers();
-
                         fm.popBackStack();
-
                     }
                 }, new DialogInterface.OnClickListener() {
                     @Override
@@ -206,9 +198,6 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             }
         });
 
-
-//        final  String[] items = new String[] {"Select One", "Two", "Three"};
-
         adapter = new ArrayAdapter<String>(getContext(),
                 android.R.layout.simple_spinner_item,pickStringList);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -218,8 +207,6 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
         selectPac.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long id) {
-//                Toast.makeText(getContext(),"onItemSelected",Toast.LENGTH_SHORT).show();
-                // packingNo.setText(""+ pickStringList.get(position));
                 if(position>0) {
                     mPackingNumber = pickStringList.get(position);
                 } else {
@@ -228,8 +215,6 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             }
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
-//                Toast.makeText(getContext(),"onNothingSelected",Toast.LENGTH_SHORT).show();
-
             }
             
         });
@@ -244,7 +229,6 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long id) {
 
                  Log.d(TAG, "Selected Deliver = " + deliveryList.get(position));
-                 // 0 is for Please Select
                  if(position>0) {
                      mDeliveryNumber = deliveryList.get(position);
                      validateDelivery(mDeliveryNumber);
@@ -306,35 +290,12 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             }
         });
 
-
-        // Commenting this, as we are able to work using key listener as well
-        // (else it will be two times call)
         inputExternalHu.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if(hasFocus) {
-
-                    // start listening scanning event on this
                     Activity activity = getActivity();
-                    /*
-                    if(activity instanceof ScannerActivity) {
-                        ((ScannerActivity) activity).startScan(new ScannerActivity.ScanningFieldResultListener() {
-                            @Override
-                            public void onScannedResult(View view, String scannedValue) {
-                                inputExternalHu.setText(scannedValue);
-                                validationData();
-                            }
-                        });
-                    }
-                     */
                 } else {
-                    /*
-                    Activity activity = getActivity();
-                    if(activity instanceof ScannerActivity) {
-                        ((ScannerActivity) activity).stopScan(null);
-                    }
-
-                     */
                 }
             }
         });
@@ -343,7 +304,9 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
         ((Process_Selection_Activity) getActivity())
                 .setActionBarTitle("Paperless - Validate HU");
 
-        // inputExternalHu.setFocusedByDefault(true);
+        if(!Vars.PAPER_LESS.equalsIgnoreCase(mode)){
+            ll_external_hu.setVisibility(View.GONE);
+        }
 
         return view;
     }
@@ -351,9 +314,8 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
     public void onResume() {
         super.onResume();
         ((Process_Selection_Activity) getActivity())
-                .setActionBarTitle("Paperless - Validate HU");
+                .setActionBarTitle(Vars.PAPER_LESS.equals(mode) ? "Paperless-Validate HU" : "TVS Paperless");
         inputExternalHu.setText("");
-
         try {
             optionDeliverySelection.setSelection(0);
         } catch(Exception e) {
@@ -384,42 +346,55 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             return;
         }
 
-        if (TextUtils.isEmpty(mInputExternalHu)){
-            inputExternalHu.setError("Enter the Delivery selection");
-            Toast.makeText(this.getContext(), "Please Enter External HU", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        if(mInputExternalHu!=null && mInputExternalHu.trim().length()>0) {
-
-            if(dialog==null) {
-                dialog = new ProgressDialog(getContext());
-                dialog.setMessage("Please wait...");
-                dialog.setCancelable(false);
-                dialog.show();
+        if(Vars.PAPER_LESS.equalsIgnoreCase(mode)){
+            if (TextUtils.isEmpty(mInputExternalHu)){
+                inputExternalHu.setError("Enter the Delivery selection");
+                Toast.makeText(this.getContext(), "Please Enter External HU", Toast.LENGTH_LONG).show();
+                return;
             }
 
+            if(mInputExternalHu!=null && mInputExternalHu.trim().length()>0) {
 
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        validateExternalHu(mPackingNumber, mDeliveryNumber, mInputExternalHu);
-                    } catch (Exception e) {
-                        if(dialog!=null) {
-                            dialog.dismiss();
-                            dialog = null;
-                        }
-                        AlertBox box = new AlertBox(getContext());
-                        box.getErrBox(e);
-                    }
+                if(dialog==null) {
+                    dialog = new ProgressDialog(getContext());
+                    dialog.setMessage("Please wait...");
+                    dialog.setCancelable(false);
+                    dialog.show();
                 }
-            }, 1000);
-        } else {
-            Toast.makeText(getContext(), "Please Enter External HU", Toast.LENGTH_LONG).show();
-        }
 
+
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            validateExternalHu(mPackingNumber, mDeliveryNumber, mInputExternalHu);
+                        } catch (Exception e) {
+                            if(dialog!=null) {
+                                dialog.dismiss();
+                                dialog = null;
+                            }
+                            AlertBox box = new AlertBox(getContext());
+                            box.getErrBox(e);
+                        }
+                    }
+                }, 1000);
+            } else {
+                Toast.makeText(getContext(), "Please Enter External HU", Toast.LENGTH_LONG).show();
+            }
+        }else{
+            Bundle bundle = new Bundle();
+            bundle.putString("packing_no", mPackingNumber);// mPackingNo);
+            bundle.putString("delivery_number", mDeliveryNumber);
+            bundle.putString("external_hu", "");
+
+            PapperLessScan papperLessScan = PapperLessScan.newInstance(Vars.TVS_PAPER_LESS);
+            papperLessScan.setArguments(bundle);
+            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+            ft.add(R.id.home, papperLessScan);
+            ft.addToBackStack("PapperLessPicking");
+            ft.commit();
+        }
     }
 
     private void fetchPackingMaterial() {
@@ -623,26 +598,12 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
                                                 bundle.putString("delivery_number", mDeliveryNumber);
                                                 bundle.putString("external_hu", mInputExternalHu);
 
-                                                /*
-                                                Pradeep: 2022-01-21, we will fetch delivery details in the next screen
-
-                                                bundle.putString("ex_likp", m_likp_JSON.toString());
-                                                bundle.putString("et_lips", m_lips_array.toString());
-                                                bundle.putString("et_bin_mc", m_bin_mc_array.toString());
-                                                bundle.putString("et_ean_data", m_ean_array.toString());
-
-                                                 */
-
-                                                // we may have to save the data in the local storage file
-                                                PapperLessScan papperLessScan = new PapperLessScan();
+                                                PapperLessScan papperLessScan = PapperLessScan.newInstance(Vars.PAPER_LESS);
                                                 papperLessScan.setArguments(bundle);
                                                 FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
                                                 ft.add(R.id.home, papperLessScan);
                                                 ft.addToBackStack("PapperLessPicking");
                                                 ft.commit();
-                                               // ft.replace(R.id.home, papperLessScan, "PapperLessScan");
-                                               // ft.commit();
-
                                             }
                                         });
                                     }
