@@ -40,6 +40,7 @@ import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.modal.irod.BinTag;
+import com.v2retail.dotvik.modal.irod.IRODDeTag;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
@@ -73,7 +74,7 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     EditText txt_store, txt_sloc, txt_sqty, txt_irod, txt_scanned_irod;
     LinearLayout ll_screen2;
     String title;
-    List<BinTag> irods;
+    List<Object> irods;
     int scannedQty;
 
     public FragmentStoreDisplayInternalDeTagIROD() {
@@ -89,8 +90,9 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     @Override
     public void onResume() {
         super.onResume();
+        String subtitle = Vars.BREADCRUMB_DISPLAY_INTERNAL.equals(title) ? " > DE-TAG IROD WITH GANDOLA" : " > IROD Empty";
         ((Home_Activity) getActivity())
-                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + " > DE-TAG IROD WITH GANDOLA"));
+                .getSupportActionBar().setTitle(UIFuncs.getSmallTitle(title + subtitle));
     }
 
     @Override
@@ -233,8 +235,8 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
 
     private void validateIrod() {
         String scannedirod = UIFuncs.toUpperTrim(txt_irod);
-        for (BinTag data:irods) {
-            if(scannedirod.equals(data.getIrod())){
+        for (Object irodObj:irods) {
+            if(scannedirod.equals(Vars.BREADCRUMB_DISPLAY_INTERNAL.equals(title) ? ((BinTag) irodObj).getIrod() : ((IRODDeTag) irodObj).getIrod())){
                 showError("Already Scanned", "IROD "+scannedirod+" is already scanned");
                 txt_irod.setText("");
                 txt_irod.requestFocus();
@@ -242,13 +244,17 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
             }
         }
         JSONObject args = new JSONObject();
+        String rfc = Vars.ZWM_STORE_IROD_PUTWAY_VALIDATE;
         try {
-            args.put("bapiname", Vars.ZWM_STORE_IROD_DTAG_VALIDATE);
+            if(Vars.BREADCRUMB_DISPLAY_INTERNAL.equals(title)){
+                rfc = Vars.ZWM_STORE_IROD_DTAG_VALIDATE;
+                args.put("IM_LGNUM","SDC");
+            }
+            args.put("bapiname", rfc);
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
-            args.put("IM_LGNUM","SDC");
             args.put("IM_IROD", scannedirod);
-            showProcessingAndSubmit(Vars.ZWM_STORE_IROD_DTAG_VALIDATE, REQUEST_VALIDATE_IROD, args);
+            showProcessingAndSubmit(rfc, REQUEST_VALIDATE_IROD, args);
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -265,7 +271,11 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     private void setData() {
         try {
             String irod = UIFuncs.toUpperTrim(txt_irod);
-            irods.add(new BinTag(WERKS, "SDC", "", irod, ""));
+            if(Vars.BREADCRUMB_DISPLAY_INTERNAL.equals(title)){
+                irods.add(new BinTag(WERKS, "SDC", "", irod, ""));
+            }else{
+                irods.add(new IRODDeTag(WERKS, irod));
+            }
             scannedQty += 1;
             txt_sqty.setText(scannedQty+"");
             txt_scanned_irod.setText(irod);
@@ -277,13 +287,14 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
         JSONArray itdata = getScanDataToSubmit();
         if(itdata != null){
             JSONObject args = new JSONObject();
+            String rfc = Vars.BREADCRUMB_DISPLAY_INTERNAL.equals(title) ? Vars.ZWM_STORE_IROD_DTAG : Vars.ZWM_STORE_IROD_EMPTY;
             try {
-                args.put("bapiname", Vars.ZWM_STORE_IROD_DTAG);
+                args.put("bapiname", rfc);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
                 args.put("IM_LGNUM","SDC");
                 args.put("IT_DATA", itdata);
-                showProcessingAndSubmit(Vars.ZWM_STORE_IROD_DTAG, REQUEST_SAVE, args);
+                showProcessingAndSubmit(rfc, REQUEST_SAVE, args);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -301,7 +312,7 @@ public class FragmentStoreDisplayInternalDeTagIROD extends Fragment implements V
     private JSONArray getScanDataToSubmit(){
         try {
             JSONArray arrScanData = new JSONArray();
-            for (BinTag data:irods) {
+            for (Object data:irods) {
                 String scanDataJsonString = new Gson().toJson(data);
                 JSONObject itDataJson = new JSONObject(scanDataJsonString);
                 arrScanData.put(itDataJson);

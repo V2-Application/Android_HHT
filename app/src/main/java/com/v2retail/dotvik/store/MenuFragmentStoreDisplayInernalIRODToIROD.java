@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
 
@@ -27,7 +28,7 @@ public class MenuFragmentStoreDisplayInernalIRODToIROD extends Fragment implemen
     FragmentManager fm;
     AlertBox box;
     private OnFragmentInteractionListener mListener;
-    Button picking, putway;
+    Button picking, putway, empty;
 
     public MenuFragmentStoreDisplayInernalIRODToIROD() {
         // Required empty public constructor
@@ -54,9 +55,11 @@ public class MenuFragmentStoreDisplayInernalIRODToIROD extends Fragment implemen
 
         picking = view.findViewById(R.id.store_display_internal_irod_to_irod_picking);
         putway = view.findViewById(R.id.store_display_internal_irod_to_irod_putway);
+        empty = view.findViewById(R.id.store_display_internal_irod_to_irod_empty);
 
         picking.setOnClickListener(this);
         putway.setOnClickListener(this);
+        empty.setOnClickListener(this);
 
         return view;
     }
@@ -69,12 +72,14 @@ public class MenuFragmentStoreDisplayInernalIRODToIROD extends Fragment implemen
     public void setFragment(int fragmentID) {
         Fragment fragment = null;
         switch (fragmentID) {
-
             case R.id.store_display_internal_irod_to_irod_picking:
-                fragment = FragmentStoreDisplayInternalIRODToIRODPicking.newInstance("IROD To IROD");
+                fragment = FragmentStoreDisplayInternalIRODToIRODPicking.newInstance(Vars.BREADCRUMB_IROD_TO_IROD);
                 break;
             case R.id.store_display_internal_irod_to_irod_putway:
-                fragment = FragmentStoreDisplayInternalIRODToIRODPutway.newInstance("IROD To IROD");
+                fragment = FragmentStoreDisplayInternalIRODToIRODPutway.newInstance(Vars.BREADCRUMB_IROD_TO_IROD);
+                break;
+            case R.id.store_display_internal_irod_to_irod_empty:
+                fragment = FragmentStoreDisplayInternalDeTagIROD.newInstance(Vars.BREADCRUMB_IROD_TO_IROD);
                 break;
         }
 

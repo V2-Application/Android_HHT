@@ -29,6 +29,10 @@ public class Vars {
     public static final String PAPER_LESS = "paperless";
     public static final String TVS_PAPER_LESS = "tvs_paperless";
 
+    public static final String BREADCRUMB_DISPLAY_INTERNAL = "Display > Internal";
+    public static final String BREADCRUMB_IROD_TO_IROD = "IROD To IROD";
+
+
     public static final Collection<String> PRODUCT_CODE_TYPES = list(CODE_128, CODE_39, EAN_8, EAN_13, CODE_93, QR_CODE);
 
     private static List<String> list(String... values) {
@@ -131,4 +135,5 @@ public class Vars {
     public static String ZWM_STORE_IROD_PUT = "ZWM_STORE_IROD_PUT";
     public static String ZWM_STORE_IROD_EAN_VALIDATE = "ZWM_STORE_IROD_EAN_VALIDATE";
     public static String ZWM_STORE_IROD_PICK = "ZWM_STORE_IROD_PICK";
+    public static String ZWM_STORE_IROD_EMPTY = "ZWM_STORE_IROD_EMPTY";
 }

@@ -33,6 +33,14 @@
                 android:id="@+id/store_display_internal_irod_to_irod_putway"
                 android:background="@color/buttonColor"
                 android:text="Putway" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:textColor="@color/white"
+                android:id="@+id/store_display_internal_irod_to_irod_empty"
+                android:background="@color/buttonColor"
+                android:text="IROD Empty" />
         </LinearLayout>
     </ScrollView>
 </FrameLayout>

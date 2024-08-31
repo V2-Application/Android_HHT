@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
 
@@ -77,16 +78,16 @@ public class MenuFragmentStoreDisplayInernal extends Fragment implements View.On
         switch (fragmentID) {
 
             case R.id.store_display_internal_art_irod:
-                fragment = FragmentStoreDisplayInternalArtIrod.newInstance("Display > Internal");
+                fragment = FragmentStoreDisplayInternalArtIrod.newInstance(Vars.BREADCRUMB_DISPLAY_INTERNAL);
                 break;
             case R.id.store_display_internal_tagging_irod:
-                fragment = FragmentStoreDisplayInternalTaggingIROD.newInstance("Display > Internal");
+                fragment = FragmentStoreDisplayInternalTaggingIROD.newInstance(Vars.BREADCRUMB_DISPLAY_INTERNAL);
                 break;
             case R.id.store_display_internal_detagging_irod:
-                fragment = FragmentStoreDisplayInternalDeTagIROD.newInstance("Display > Internal");
+                fragment = FragmentStoreDisplayInternalDeTagIROD.newInstance(Vars.BREADCRUMB_DISPLAY_INTERNAL);
                 break;
             case R.id.store_display_internal_irod_nature:
-                fragment = FragmentStoreDisplayInternalIRODNature.newInstance("Display > Internal");
+                fragment = FragmentStoreDisplayInternalIRODNature.newInstance(Vars.BREADCRUMB_DISPLAY_INTERNAL);
                 break;
             case R.id.store_display_internal_irod_to_irod:
                 fragment = MenuFragmentStoreDisplayInernalIRODToIROD.newInstance();
