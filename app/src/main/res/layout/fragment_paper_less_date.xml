@@ -134,8 +134,10 @@
                     android:padding="10dp"
                     android:background="@color/white"
                     android:hint=""
+                    android:imeOptions="actionDone"
                     android:textSize="14sp"
                     android:maxLines="1"
+                    android:singleLine="true"
                     android:id="@+id/input_printer"
                     />
 
