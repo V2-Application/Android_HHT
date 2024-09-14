@@ -20,6 +20,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkError;
@@ -124,9 +125,10 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
         String defaultrPrinter = data.read(Vars.TVS_PRINTER);
         if(defaultrPrinter != null && defaultrPrinter.length() > 0){
             if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
-                txt_printer.setText(data.read(Vars.TVS_PRINTER));
-                txt_hu.setText("");
-                UIFuncs.enableInput(con, txt_hu);
+                String printerName = data.read(Vars.TVS_PRINTER);
+                this.tvsprinter = printerName;
+                txt_printer.setText(printerName);
+                validatePrinter(printerName);
             }
         }
 
@@ -242,6 +244,10 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
         TSPLPrinter printerHelper = new TSPLPrinter(con);
         if(!printerHelper.findBluetoothPrinter(printerName, false)){
             box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
+            this.tvsprinter = "xxxxxxxx";
+            txt_printer.setText("");
+            txt_printer.requestFocus();
+            UIFuncs.disableInput(con, txt_hu);
             return;
         }
         data.write(Vars.TVS_PRINTER, printerName);
@@ -272,8 +278,6 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
     private void printHu(JSONObject huObj) {
         TSPLPrinter printer = new TSPLPrinter(getContext());
         printer.sendPrintCommandToBluetoothPrinter(this.tvsprinter, huObj);
-        txt_hu.setText("");
-        txt_hu.requestFocus();
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -347,6 +351,9 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
                                         }
                                     } else {
                                         if (request == REQUEST_SAVE) {
+                                            txt_hu.setText("");
+                                            txt_hu.requestFocus();
+                                            Toast.makeText(con, "Details sent to printer "+tvsprinter, Toast.LENGTH_SHORT).show();
                                             printHu(responsebody.getJSONObject("EX_HUDATA"));
                                         }
                                     }

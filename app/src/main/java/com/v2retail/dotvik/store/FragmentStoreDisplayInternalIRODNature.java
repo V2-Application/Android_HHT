@@ -216,11 +216,11 @@ public class FragmentStoreDisplayInternalIRODNature extends Fragment implements 
         try
         {
             JSONArray arrExData = responsebody.getJSONArray("EX_DATA");
-            int totalExRecords = arrExData.length() - 1;
+            int totalExRecords = arrExData.length();
             natures.clear();
             natures.add("Select");
             if(totalExRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalExRecords; recordIndex++){
+                for(int recordIndex = 1; recordIndex < totalExRecords; recordIndex++){
                     JSONObject EX_RECORD  = arrExData.getJSONObject(recordIndex);
                     natures.add(EX_RECORD.getString("TYPE") + "");
                 }

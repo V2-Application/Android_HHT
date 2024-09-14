@@ -165,7 +165,10 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             for(int i=1;i<jsonObject.length();i++){
                 Log.d("scan", jsonObject.getString(i));
                 JSONObject etDataNode = jsonObject.getJSONObject(i);
-                deliveryList.add(etDataNode.getString("VBELN"));
+                deliveryList.add(etDataNode.getString("VBELN") + "-" +
+                        etDataNode.getString("WERKS") + "-" +
+                        etDataNode.getString("PRIORITY") + "-" +
+                        etDataNode.getString("FLOOR"));
             }
 
         }catch (JSONException e){
