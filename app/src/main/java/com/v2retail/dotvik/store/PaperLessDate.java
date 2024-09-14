@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -82,6 +83,7 @@ public class PaperLessDate extends Fragment {
     ImageView selectDate;
     EditText inputFromDate;
     EditText inputUser, inputPrinter;
+    LinearLayout ll_printer;
 
     FragmentManager fm;
 
@@ -108,6 +110,7 @@ public class PaperLessDate extends Fragment {
         inputFromDate = view.findViewById(R.id.input_date);
         inputUser = view.findViewById(R.id.input_user);
         inputPrinter = view.findViewById(R.id.input_printer);
+        ll_printer = view.findViewById(R.id.ll_printer);
 
 
         nextV2 = view.findViewById(R.id.next_v2);
@@ -121,11 +124,14 @@ public class PaperLessDate extends Fragment {
             inputUser.setText(loginUser);
         }
 
-        TSPLPrinter printerHelper = new TSPLPrinter(con);
-        String defaultrPrinter = data.read(Vars.TVS_PRINTER);
-        if(defaultrPrinter != null && defaultrPrinter.length() > 0){
-            if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
-                inputPrinter.setText(data.read(Vars.TVS_PRINTER));
+        if(Vars.TVS_PAPER_LESS.equalsIgnoreCase(this.mode)){
+            ll_printer.setVisibility(View.VISIBLE);
+            TSPLPrinter printerHelper = new TSPLPrinter(con);
+            String defaultrPrinter = data.read(Vars.TVS_PRINTER);
+            if(defaultrPrinter != null && defaultrPrinter.length() > 0){
+                if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
+                    inputPrinter.setText(data.read(Vars.TVS_PRINTER));
+                }
             }
         }
 

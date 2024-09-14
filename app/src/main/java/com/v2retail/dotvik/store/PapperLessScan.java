@@ -68,7 +68,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
     private TextView pickingNo;
 
-    private TextView tqEditTextFiled, sqEditTextField, rqEditTextFiled;
+    private TextView tqEditTextFiled, sqEditTextField, rqEditTextFiled, tvPrinter;
 
     private EditText currentScanBin, currentScanArticle, currentScanQuantity, currentScanOpenQuantity;
 
@@ -130,7 +130,10 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         SharedPreferencesData data = new SharedPreferencesData(getContext());
         this.requestUrl = data.read("URL");
         this.loginUser = data.read("USER");
-        this.tvsprinter = data.read(Vars.TVS_PRINTER);
+
+        if(Vars.TVS_PAPER_LESS.equalsIgnoreCase(mode)) {
+            this.tvsprinter = data.read(Vars.TVS_PRINTER);
+        }
        //  initializeChainway();
 
     }
@@ -177,7 +180,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         currentScanArticle = view.findViewById(R.id.current_scan_article);
         currentScanQuantity = view.findViewById(R.id.current_scan_quantity);
         currentScanOpenQuantity = view.findViewById(R.id.current_scan_open_quantity);
-        ((TextView)view.findViewById(R.id.tv_printer_name)).setText(this.tvsprinter);
+        tvPrinter = view.findViewById(R.id.tv_printer_name);
 
 //        Edit Type filed
 
@@ -292,6 +295,9 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         scanMap = new HashMap<String, Integer>();
         scannedDataForSubmit = new JSONArray();
         emptyBinMap = new HashMap<String, String>();
+        if(Vars.TVS_PAPER_LESS.equalsIgnoreCase(mode)) {
+            tvPrinter.setText(this.tvsprinter);
+        }
         return view;
     }
 

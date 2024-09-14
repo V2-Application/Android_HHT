@@ -125,6 +125,8 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
         if(defaultrPrinter != null && defaultrPrinter.length() > 0){
             if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
                 txt_printer.setText(data.read(Vars.TVS_PRINTER));
+                txt_hu.setText("");
+                UIFuncs.enableInput(con, txt_hu);
             }
         }
 

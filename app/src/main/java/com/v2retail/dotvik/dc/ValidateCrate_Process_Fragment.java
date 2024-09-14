@@ -1194,7 +1194,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 //                                        gr.requestFocus();
                                         return;
                                     } else {
-                                        jsonArray = responsebody.getJSONArray("ET_PO_DATA");
+                                        JSONArray jsonArray = responsebody.getJSONArray("ET_PO_DATA");
                                         Log.v(TAG,"ET_PO_DATA--->"+jsonArray.toString());
                                         if (jsonArray.length()>1) {
                                             for (int i = 1; i < jsonArray.length(); i++) {
