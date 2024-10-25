@@ -152,7 +152,7 @@ public class TSPLPrinter {
                 generateRTLTextCommand(tvstext, labelWidthInDots, 12, 160, 30) +
                 "BARCODE 110, 210, \"128\", 100, 0, 0, 4, 8, \"" + huno + "\"\n" +
                 "TEXT 210, 320, \"3\", 0, 1, 1, \"" + huno + "\"\n" +
-                "PRINT 1, 1\n";
+                "PRINT 1, 2\n";
     }
 
     public void requestBluetoothPermission(Context con) {

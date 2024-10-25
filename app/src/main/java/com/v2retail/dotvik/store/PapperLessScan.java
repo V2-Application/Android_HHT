@@ -1469,7 +1469,6 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     printHu(huObj);
-                                                    resetFields();
                                                 }
                                             });
                                         }
