@@ -1,358 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:clickable="true">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Picklist No"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_picklist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint="Scan Picklist No"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"/>
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:clickable="true" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Picklist No" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_picklist" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan Picklist No" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:weightSum="4"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Crate"/>
-
-        <EditText
-            android:id="@+id/text_crate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.5"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:background="@color/white"
-            android:textSize="18sp"
-            android:hint="Scan"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:imeOptions="actionDone"/>
-
-        <Button
-            android:id="@+id/button_scan_new_crate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:background="@color/colorPrimary"
-            android:text="NEXT"
-            android:textColor="@color/white"
-            android:textSize="12sp" />
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="4" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Crate" />
+        <EditText android:id="@+id/text_crate" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1.5" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
+        <Button android:id="@+id/button_scan_new_crate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:background="@drawable/bg_btn_primary" android:text="NEXT" android:textColor="@color/white" android:textSize="12sp" />
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="5dp"
-        android:layout_gravity="end">
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:layout_gravity="end">
 
 
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Article"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_article"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint="Scan Article"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"/>
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Article" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_article" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan Article" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="4"
-        android:gravity="center_vertical"
-        android:padding="5dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="SQ / TQ:"/>
-
-        <EditText
-            android:id="@+id/text_tq_sq"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:background="@color/white"
-            android:textSize="18sp"
-            android:hint=""
-            android:maxLines="1"
-            android:singleLine="true"
-            android:enabled="false"
-            />
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="RQ:"/>
-
-        <EditText
-            android:id="@+id/text_remaining_qty"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:background="@color/white"
-            android:textSize="18sp"
-            android:hint=""
-            android:maxLines="1"
-            android:singleLine="true"
-            android:enabled="false"
-            />
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="4" android:gravity="center_vertical" android:padding="5dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="SQ / TQ:" />
+        <EditText android:id="@+id/text_tq_sq" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="" android:maxLines="1" android:singleLine="true" android:enabled="false" android:textColorHint="@color/textHint" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="RQ:" />
+        <EditText android:id="@+id/text_remaining_qty" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="" android:maxLines="1" android:singleLine="true" android:enabled="false" android:textColorHint="@color/textHint" />
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="5dp"
-        android:background="#EFEDED"
-        android:orientation="horizontal"
-        android:weightSum="10"
-        android:padding="1dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:gravity="center_vertical"
-            android:padding="5dp"
-            android:text="Bin, CRATE, Type"
-            android:textColor="@color/black"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:gravity="center_vertical"
-            android:padding="5dp"
-            android:text="Material, SQ/RQ"
-            android:textColor="@color/black"
-            android:textSize="13sp"
-            />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:gravity="center_vertical"
-            android:padding="5dp"
-            android:text="Image"
-            android:textColor="@color/black"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:padding="5dp"
-            android:text="Not Fo..d"
-            android:textColor="@color/black"
-            android:textSize="13sp" />
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_marginEnd="5dp" android:background="#EFEDED" android:orientation="horizontal" android:weightSum="10" android:padding="1dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:gravity="center_vertical" android:padding="5dp" android:text="Bin, CRATE, Type" android:textColor="@color/black" android:textSize="13sp" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3" android:gravity="center_vertical" android:padding="5dp" android:text="Material, SQ/RQ" android:textColor="@color/black" android:textSize="13sp" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2" android:gravity="center_vertical" android:padding="5dp" android:text="Image" android:textColor="@color/black" android:textSize="13sp" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:padding="5dp" android:text="Not Fo..d" android:textColor="@color/black" android:textSize="13sp" />
     </LinearLayout>
-
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="5dp"
-        android:layout_marginTop="7dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
-
+    <androidx.core.widget.NestedScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginStart="5dp" android:layout_marginEnd="5dp" android:layout_marginTop="7dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view" android:layout_width="match_parent" android:layout_height="wrap_content" />
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
-
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="horizontal"
-        android:weightSum="10"
-        android:layout_alignParentBottom="true">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/back"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Back"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal" android:weightSum="10" android:layout_alignParentBottom="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/back" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Back" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/prev_button"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Prev"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/prev_button" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Prev" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/next_button"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Next"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/next_button" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Next" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/button_save_picklist"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Save"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/button_save_picklist" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Save" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
-
 </LinearLayout>
