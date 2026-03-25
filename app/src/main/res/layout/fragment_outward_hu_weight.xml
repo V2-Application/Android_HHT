@@ -1,252 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:clickable="true">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:weightSum="8"
-        android:layout_margin="5dp"
-        android:layout_marginTop="15dp"
-        android:padding="2dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="7dp"
-            android:text="Scan HU"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="5">
-
-            <EditText
-                android:id="@+id/text_outward_hu_weight_scan_hu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/white"
-                android:hint=""
-                android:inputType="number"
-                android:imeOptions="actionDone"
-                android:maxLines="1"
-                android:padding="7dp"
-                android:singleLine="true"
-                android:textColor="@color/black"
-                android:textSize="18sp" />
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:clickable="true" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:weightSum="8" android:layout_margin="5dp" android:layout_marginTop="15dp" android:padding="2dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3" android:padding="7dp" android:text="Scan HU" android:textColor="@color/black" android:textSize="18sp" android:textStyle="bold" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5">
+            <EditText android:id="@+id/text_outward_hu_weight_scan_hu" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:hint="" android:inputType="number" android:imeOptions="actionDone" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="18sp" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/ll_outward_hu_weight"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="visible"
-        android:layout_margin="5dp"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="15dp"
-            android:weightSum="8"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="3"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:text="Scanned HU"/>
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5">
-
-                <EditText
-                    android:id="@+id/text_outward_hu_weight_scanned_hu"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/viewBg"
-                    android:hint=""
-                    android:enabled="false"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-
+    <LinearLayout android:id="@+id/ll_outward_hu_weight" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="visible" android:layout_margin="5dp" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="15dp" android:weightSum="8" android:padding="2dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Scanned HU" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5">
+                <EditText android:id="@+id/text_outward_hu_weight_scanned_hu" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:hint="" android:enabled="false" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="18sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
-
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:weightSum="6"
-            android:layout_marginTop="15dp"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:text="Budget Weight(KG)"/>
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2">
-
-                <EditText
-                    android:id="@+id/text_outward_hu_weight_budget_weight"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/viewBg"
-                    android:enabled="false"
-                    android:hint=""
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:weightSum="6" android:layout_marginTop="15dp" android:padding="2dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Budget Weight(KG)" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2">
+                <EditText android:id="@+id/text_outward_hu_weight_budget_weight" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:enabled="false" android:hint="" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="18sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
-
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="15dp"
-            android:weightSum="6"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:text="Actual Weight(KG)"/>
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2">
-
-                <EditText
-                    android:id="@+id/text_outward_hu_weight_actual_weight"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/white"
-                    android:hint=""
-                    android:inputType="numberDecimal"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="15dp" android:weightSum="6" android:padding="2dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:textStyle="bold" android:text="Actual Weight(KG)" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2">
+                <EditText android:id="@+id/text_outward_hu_weight_actual_weight" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:hint="" android:inputType="numberDecimal" android:imeOptions="actionDone" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="18sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
-
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="15dp"
-            android:weightSum="8"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="3"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:text="% Variance"/>
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5">
-
-                <EditText
-                    android:id="@+id/text_outward_hu_weight_variance"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/viewBg"
-                    android:enabled="false"
-                    android:hint=""
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="15dp" android:weightSum="8" android:padding="2dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="% Variance" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5">
+                <EditText android:id="@+id/text_outward_hu_weight_variance" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:enabled="false" android:hint="" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="18sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
-
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="25dp"
-            android:padding="5dp">
-            <Button
-                android:id="@+id/button_outward_hu_weight_save"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Save"
-                android:layout_margin="5dp"
-                android:textColor="@color/white"
-                android:background="@color/colorPrimary" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="25dp" android:padding="5dp">
+            <Button android:id="@+id/button_outward_hu_weight_save" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="15dp"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:text="Note: Gross Weight in KG. Please put in."
-                android:textAlignment="center"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="15dp" android:padding="2dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="7dp" android:text="Note: Gross Weight in KG. Please put in." android:textAlignment="center" android:textColor="@color/black" android:textSize="14sp" android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
-
 </LinearLayout>
