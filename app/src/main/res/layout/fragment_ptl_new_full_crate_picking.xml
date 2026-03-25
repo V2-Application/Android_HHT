@@ -346,7 +346,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@android:color/white"
+        android:background="@color/bgCard"
         android:elevation="4dp"
         android:orientation="horizontal"
         android:padding="5dp"
