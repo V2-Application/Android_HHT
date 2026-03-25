@@ -27,4 +27,209 @@
     <style name="myDialog" parent="Theme.AppCompat.Dialog">
         <item name="android:windowNoTitle">true</item>
     </style>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- WMS Component Styles                        -->
+    <!-- ═══════════════════════════════════════════ -->
+
+    <!-- Page title -->
+    <style name="WMS.Text.PageTitle">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <!-- Section title -->
+    <style name="WMS.Text.SectionTitle">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+
+    <!-- Card title -->
+    <style name="WMS.Text.CardTitle">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+
+    <!-- Body text -->
+    <style name="WMS.Text.Body">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+
+    <!-- Uppercase section label -->
+    <style name="WMS.Text.Label">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textLabel</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- Caption / hint -->
+    <style name="WMS.Text.Caption">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">@color/textHint</item>
+    </style>
+
+    <!-- Stat number -->
+    <style name="WMS.Text.StatNumber">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:letterSpacing">-0.04</item>
+    </style>
+
+    <!-- Primary button (black) -->
+    <style name="WMS.Button.Primary">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_btn_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <!-- Success button (green) -->
+    <style name="WMS.Button.Success">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_btn_success</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Secondary button (light) -->
+    <style name="WMS.Button.Secondary">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_btn_secondary</item>
+        <item name="android:textColor">@color/textSecondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Scan field EditText -->
+    <style name="WMS.Input.Scan">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/bg_scan_field</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textColorHint">@color/textHint</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+    </style>
+
+    <!-- Regular input -->
+    <style name="WMS.Input.Regular">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@color/bgInput</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textColorHint">@color/textHint</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+    </style>
+
+    <!-- White card -->
+    <style name="WMS.Card">
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="android:padding">14dp</item>
+    </style>
+
+    <!-- Context card (green border) -->
+    <style name="WMS.ContextCard">
+        <item name="android:background">@drawable/bg_context_card</item>
+        <item name="android:padding">12dp</item>
+    </style>
+
+    <!-- Stat cards -->
+    <style name="WMS.StatCard.Green">
+        <item name="android:background">@drawable/bg_stat_green</item>
+        <item name="android:padding">12dp</item>
+    </style>
+    <style name="WMS.StatCard.Orange">
+        <item name="android:background">@drawable/bg_stat_orange</item>
+        <item name="android:padding">12dp</item>
+    </style>
+    <style name="WMS.StatCard.Red">
+        <item name="android:background">@drawable/bg_stat_red</item>
+        <item name="android:padding">12dp</item>
+    </style>
+    <style name="WMS.StatCard.Teal">
+        <item name="android:background">@drawable/bg_stat_teal</item>
+        <item name="android:padding">12dp</item>
+    </style>
+    <style name="WMS.StatCard.Blue">
+        <item name="android:background">@drawable/bg_stat_blue</item>
+        <item name="android:padding">12dp</item>
+    </style>
+
+    <!-- Badges -->
+    <style name="WMS.Badge.Success">
+        <item name="android:background">@drawable/bg_badge_success</item>
+        <item name="android:textColor">@color/colorSuccess</item>
+        <item name="android:textSize">9sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+    </style>
+    <style name="WMS.Badge.Warning">
+        <item name="android:background">@drawable/bg_badge_warning</item>
+        <item name="android:textColor">@color/colorWarning</item>
+        <item name="android:textSize">9sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+    </style>
+    <style name="WMS.Badge.Error">
+        <item name="android:background">@drawable/bg_badge_error</item>
+        <item name="android:textColor">@color/colorError</item>
+        <item name="android:textSize">9sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+    </style>
+
+    <!-- List item -->
+    <style name="WMS.ListItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/bgCard</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <!-- Screen header bar -->
+    <style name="WMS.ScreenHeader">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/bgCard</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+    </style>
+
+    <!-- Result/response text -->
+    <style name="WMS.Text.Result">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/colorError</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
 </resources>
