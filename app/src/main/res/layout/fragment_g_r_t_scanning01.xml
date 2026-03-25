@@ -1,256 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".dc.GRTScanning01Fragment">
-
-    <!-- TODO: Update blank fragment layout -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="5dp">
-
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_margin="2dp"
-                android:padding="5dp">
-                <CheckBox
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Unscan"
-                    android:id="@+id/unScan"
-                    />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="DC Site"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/dc_site"
-                        android:imeOptions="actionNext"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:text="DH24"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="DC Site" />
-
-
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" tools:context=".dc.GRTScanning01Fragment" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <ScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="5dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:padding="5dp">
+                <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Unscan" android:id="@+id/unScan" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="DC Site" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/dc_site" android:imeOptions="actionNext" android:singleLine="true" android:inputType="text" android:text="DH24" android:layout_width="0dp" android:layout_height="48dp" android:hint="DC Site" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Location"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/location"
-                        android:layout_width="0dp"
-                        android:enabled="true"
-                        android:inputType="text"
-                        android:text="0044"
-                        android:imeOptions="actionSearch"
-                        android:layout_height="wrap_content"
-                        android:hint="Location" />
-
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Location" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/location" android:layout_width="0dp" android:enabled="true" android:inputType="text" android:text="0044" android:imeOptions="actionSearch" android:layout_height="48dp" android:hint="Location" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Crate"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/crate"
-                        android:layout_width="0dp"
-                        android:imeOptions="actionSearch"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_height="wrap_content"
-                        android:hint="Crate" />
-
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Crate" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/crate" android:layout_width="0dp" android:imeOptions="actionSearch" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_height="48dp" android:hint="Crate" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Barcode"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:enabled="true"
-                        android:id="@+id/barcode"
-                        android:inputType="text"
-                        android:imeOptions="actionSearch"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="Barcode" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Barcode" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:enabled="true" android:id="@+id/barcode" android:inputType="text" android:imeOptions="actionSearch" android:layout_width="0dp" android:layout_height="48dp" android:hint="Barcode" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="SQ"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:enabled="false"
-                        android:id="@+id/sq"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="SQ" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="SQ" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:enabled="false" android:id="@+id/sq" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_width="0dp" android:layout_height="48dp" android:hint="SQ" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="TSQ"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:enabled="false"
-                        android:id="@+id/tsq"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="TSQ" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="TSQ" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:enabled="false" android:id="@+id/tsq" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_width="0dp" android:layout_height="48dp" android:hint="TSQ" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-
             </LinearLayout>
-
         </ScrollView>
-
-        <TextView
-            android:id="@+id/response"
-
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="2dp"
-            android:padding="5dp"
-            android:text="status:"
-            android:layout_weight="0"
-            android:visibility="gone"
-            android:textColor="@color/colorPrimary" />
-
-        <LinearLayout
-            android:layout_weight="0"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:id="@+id/back"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Reset"
-                android:id="@+id/reset"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-
-
-            <Button
-                android:layout_weight="1.5"
-                android:textSize="15sp"
-                android:text="Submit"
-                android:id="@+id/submit"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="" />
+        <TextView android:id="@+id/response" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="2dp" android:padding="5dp" android:text="status:" android:layout_weight="0" android:visibility="gone" android:textColor="@color/colorPrimary" />
+        <LinearLayout android:layout_weight="0" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Back" android:id="@+id/back" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Reset" android:id="@+id/reset" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:textSize="15sp" android:text="Submit" android:id="@+id/submit" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:layout_width="0dp" android:layout_height="wrap_content" android:hint="" android:textColor="@color/white" />
         </LinearLayout>
-
     </LinearLayout>
-
-
 </FrameLayout>
