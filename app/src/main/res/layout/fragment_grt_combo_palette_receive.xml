@@ -40,7 +40,7 @@
                     android:id="@+id/text_grt_combo_palette_receive_palette"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/white"
+                    android:background="@color/bgCard"
                     android:imeOptions="actionDone"
                     android:hint=""
                     android:maxLines="1"
