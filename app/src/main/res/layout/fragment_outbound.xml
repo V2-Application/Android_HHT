@@ -1,112 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:background="#000"
-            android:padding="5dp">
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/direct_picking"
-                android:background="#e71821"
-                android:text="Direct Picking" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Picking Against Picklist"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/Picking_Against_Picklist"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Bin To Bin Transfer"
-                android:id="@+id/Bin_To_Bin_Transfer"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sloc To SLoc Without WM"
-                android:textColor="#fff"
-                android:id="@+id/Sloc_To_SLoc_Without_WM"
-                android:layout_margin="5dp"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=" Process To Display"
-                android:textColor="#fff"
-                android:id="@+id/processTodisplay"
-                android:layout_margin="5dp"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Base Stock "
-                android:id="@+id/base_stock"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="GRT from MSA"
-                android:id="@+id/grt_from_msa"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="GRT from Display"
-                android:id="@+id/grt_from_Display"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Picking With Consolidation"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/button_picking_with_consolidation"
-                android:background="#e71821" />
-
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="V01 HU Picking"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/v01HuPicking"
-                android:background="#e71821" />
-
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bgPage">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:background="#000" android:padding="5dp">
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/direct_picking" android:background="@drawable/bg_btn_primary" android:text="Direct Picking" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Picking Against Picklist" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/Picking_Against_Picklist" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bin To Bin Transfer" android:id="@+id/Bin_To_Bin_Transfer" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sloc To SLoc Without WM" android:textColor="@color/white" android:id="@+id/Sloc_To_SLoc_Without_WM" android:layout_margin="5dp" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text=" Process To Display" android:textColor="@color/white" android:id="@+id/processTodisplay" android:layout_margin="5dp" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Base Stock " android:id="@+id/base_stock" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="GRT from MSA" android:id="@+id/grt_from_msa" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="GRT from Display" android:id="@+id/grt_from_Display" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Picking With Consolidation" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/button_picking_with_consolidation" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="V01 HU Picking" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/v01HuPicking" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
         </LinearLayout>
     </ScrollView>
-    <!-- TODO: Update blank fragment layout -->
-
-
 </FrameLayout>
