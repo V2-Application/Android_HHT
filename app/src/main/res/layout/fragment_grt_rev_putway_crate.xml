@@ -34,7 +34,7 @@
                 android:id="@+id/text_grt_rev_putaway_scan_crate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white"
+                android:background="@color/bgCard"
                 android:hint=""
                 android:imeOptions="actionDone"
                 android:maxLines="1"
