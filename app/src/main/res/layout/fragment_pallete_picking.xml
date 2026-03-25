@@ -1,119 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".dc.PalletePickingFragment">
-
-    <!-- TODO: Update blank fragment layout -->
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:padding="5dp">
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".6"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Pallete"
-                    android:layout_gravity="center"
-                    android:textSize="15sp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_weight="1">
-                    <EditText
-                        android:textSize="15sp"
-                        android:id="@+id/pallete"
-                        android:imeOptions="actionSearch"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_weight=".6"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="Pallete" />
-
-
-
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" tools:context=".dc.PalletePickingFragment" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:padding="5dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".6" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Pallete" android:layout_gravity="center" android:textSize="15sp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_weight="1">
+                    <EditText android:textSize="15sp" android:id="@+id/pallete" android:imeOptions="actionSearch" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_weight=".6" android:layout_width="0dp" android:layout_height="48dp" android:hint="Pallete" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
             </LinearLayout>
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".9"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="CLA Bin"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/cla_bin"
-                    android:layout_width="0dp"
-                    android:inputType="text"
-                    android:enabled="true"
-                    android:layout_height="wrap_content"
-                    android:hint="CLA Bin" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="CLA Bin" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/cla_bin" android:layout_width="0dp" android:inputType="text" android:enabled="true" android:layout_height="48dp" android:hint="CLA Bin" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-
-
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:id="@+id/back"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Submit"
-                android:id="@+id/submit"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Back" android:id="@+id/back" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Submit" android:id="@+id/submit" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
         </LinearLayout>
-
     </LinearLayout>
-
-
-
 </FrameLayout>
