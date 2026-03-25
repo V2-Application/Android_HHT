@@ -1,261 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingStart="5dp"
-    android:paddingEnd="5dp">
-
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        android:orientation="vertical">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="20">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Store"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6">
-
-                <EditText
-                    android:id="@+id/txt_disp_internal_tag_irod_store"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:enabled="false"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingStart="5dp" android:paddingEnd="5dp" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:clickable="true" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal" android:padding="2dp" android:weightSum="20">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:padding="7dp" android:text="Store" android:textColor="@color/black" android:textSize="16sp" android:textStyle="bold" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6">
+                <EditText android:id="@+id/txt_disp_internal_tag_irod_store" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:maxLines="1" android:padding="7dp" android:enabled="false" android:textColor="@color/black" android:textSize="16sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="S.Loc"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6">
-
-                <EditText
-                    android:id="@+id/txt_disp_internal_tag_irod_sloc"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:enabled="false"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:padding="7dp" android:text="S.Loc" android:textColor="@color/black" android:textSize="16sp" android:textStyle="bold" />
+            <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6">
+                <EditText android:id="@+id/txt_disp_internal_tag_irod_sloc" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:maxLines="1" android:padding="7dp" android:enabled="false" android:textColor="@color/black" android:textSize="16sp" android:textColorHint="@color/textHint" />
             </RelativeLayout>
         </LinearLayout>
-        <LinearLayout
-            android:id="@+id/ll_disp_art_irod_screen2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="visible">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="Scan Gandola/Bin"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7">
-
-                    <EditText
-                        android:id="@+id/txt_disp_internal_tag_irod_scan_bin"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border"
-                        android:imeOptions="actionDone"
-                        android:maxLines="1"
-                        android:padding="7dp"
-                        android:singleLine="true"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
-                </RelativeLayout>
-
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="Scan IROD"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7">
-
-                    <EditText
-                        android:id="@+id/txt_disp_internal_tag_irod_scan_irod"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border"
-                        android:imeOptions="actionDone"
-                        android:maxLines="1"
-                        android:padding="7dp"
-                        android:singleLine="true"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
+        <LinearLayout android:id="@+id/ll_disp_art_irod_screen2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="visible">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal" android:padding="2dp" android:weightSum="12">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5" android:padding="7dp" android:text="Scan Gandola/Bin" android:textColor="@color/black" android:textSize="16sp" android:textStyle="bold" />
+                <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="7">
+                    <EditText android:id="@+id/txt_disp_internal_tag_irod_scan_bin" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:imeOptions="actionDone" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="16sp" android:textColorHint="@color/textHint" />
                 </RelativeLayout>
             </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="Scanned IROD"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7">
-
-                    <EditText
-                        android:id="@+id/txt_disp_internal_tag_irod_scanned_irod"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border_disabled_input"
-                        android:imeOptions="actionDone"
-                        android:maxLines="1"
-                        android:enabled="false"
-                        android:padding="7dp"
-                        android:singleLine="true"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal" android:padding="2dp" android:weightSum="12">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5" android:padding="7dp" android:text="Scan IROD" android:textColor="@color/black" android:textSize="16sp" android:textStyle="bold" />
+                <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="7">
+                    <EditText android:id="@+id/txt_disp_internal_tag_irod_scan_irod" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:imeOptions="actionDone" android:maxLines="1" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="16sp" android:textColorHint="@color/textHint" />
+                </RelativeLayout>
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal" android:padding="2dp" android:weightSum="12">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="5" android:padding="7dp" android:text="Scanned IROD" android:textColor="@color/black" android:textSize="16sp" android:textStyle="bold" />
+                <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="7">
+                    <EditText android:id="@+id/txt_disp_internal_tag_irod_scanned_irod" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:imeOptions="actionDone" android:maxLines="1" android:enabled="false" android:padding="7dp" android:singleLine="true" android:textColor="@color/black" android:textSize="16sp" android:textColorHint="@color/textHint" />
                 </RelativeLayout>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
-        android:padding="5dp"
-        android:weightSum="4">
-
-        <Button
-            android:id="@+id/txt_disp_internal_tag_irod_back"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="2dp"
-            android:layout_weight="1"
-            android:background="@color/colorPrimary"
-            android:text="Back"
-            android:textColor="@color/white"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/txt_disp_internal_tag_irod_reset"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="2dp"
-            android:layout_weight="2"
-            android:background="@color/colorPrimary"
-            android:text="Reset"
-            android:visibility="invisible"
-            android:textColor="@color/white"
-            android:textSize="15sp" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_weight="1">
-
-            <Button
-                android:id="@+id/txt_disp_internal_tag_irod_next"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="@color/colorPrimary"
-                android:text="Next"
-                android:textColor="@color/white"
-                android:textSize="15sp" />
-
-            <Button
-                android:id="@+id/txt_disp_internal_tag_irod_save"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="@color/colorPrimary"
-                android:text="Save"
-                android:visibility="gone"
-                android:textColor="@color/white"
-                android:textSize="15sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:orientation="horizontal" android:padding="5dp" android:weightSum="4">
+        <Button android:id="@+id/txt_disp_internal_tag_irod_back" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Back" android:textColor="@color/white" android:textSize="15sp" />
+        <Button android:id="@+id/txt_disp_internal_tag_irod_reset" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="2" android:background="@drawable/bg_btn_primary" android:text="Reset" android:visibility="invisible" android:textColor="@color/white" android:textSize="15sp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:layout_weight="1">
+            <Button android:id="@+id/txt_disp_internal_tag_irod_next" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Next" android:textColor="@color/white" android:textSize="15sp" />
+            <Button android:id="@+id/txt_disp_internal_tag_irod_save" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Save" android:visibility="gone" android:textColor="@color/white" android:textSize="15sp" />
         </LinearLayout>
-
-
     </LinearLayout>
 </RelativeLayout>
