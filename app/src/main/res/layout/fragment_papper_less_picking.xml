@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/bgCard"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:clickable="true"
@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="20dp"
             android:scaleType="centerCrop"
-            android:background="@color/white"
+            android:background="@color/bgCard"
             />
         <androidx.cardview.widget.CardView
             android:layout_width="40dp"
