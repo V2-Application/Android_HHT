@@ -1,180 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:clickable="true"
-    tools:context=".store.PaperLessDate">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginStart="30dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginTop="50dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight=".6"
-                android:text="@string/date"
-                android:gravity="center_vertical"
-                android:textColor="#000"
-                android:textSize="18sp" />
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_gravity="center"
-                android:background="@color/colorAccent"
-                android:layout_weight="1.4">
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Select Date "
-                        android:textSize="14sp"
-                        android:id="@+id/input_date"
-                        android:maxLines="1"
-                        android:backgroundTint="@color/colorAccent"
-                        />
-
-
-                    <ImageView
-                        android:id="@+id/select_date"
-                        android:layout_width="40dp"
-                        android:layout_height="50dp"
-                        app:srcCompat="@drawable/date_range_24"
-                        android:layout_alignParentEnd="true"
-
-                        />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:clickable="true" tools:context=".store.PaperLessDate" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="30dp" android:layout_marginEnd="30dp" android:layout_marginTop="50dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight=".6" android:text="@string/date" android:gravity="center_vertical" android:textColor="#000" android:textSize="18sp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_gravity="center" android:background="@color/colorAccent" android:layout_weight="1.4">
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <EditText android:layout_width="match_parent" android:layout_height="48dp" android:hint="Select Date " android:textSize="14sp" android:id="@+id/input_date" android:maxLines="1" android:backgroundTint="@color/colorAccent" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                    <ImageView android:id="@+id/select_date" android:layout_width="40dp" android:layout_height="50dp" app:srcCompat="@drawable/date_range_24" android:layout_alignParentEnd="true" />
                 </RelativeLayout>
-
             </LinearLayout>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight=".6"
-                android:text="User"
-                android:gravity="center_vertical"
-                android:textColor="#000"
-                android:textSize="18sp" />
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_gravity="center"
-                android:background="@color/colorAccent"
-                android:layout_weight="1.4">
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint=""
-                        android:textSize="14sp"
-                        android:maxLines="1"
-                        android:id="@+id/input_user"
-                        android:backgroundTint="@color/colorAccent"
-                        android:enabled="false"
-                        />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight=".6" android:text="User" android:gravity="center_vertical" android:textColor="#000" android:textSize="18sp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_gravity="center" android:background="@color/colorAccent" android:layout_weight="1.4">
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <EditText android:layout_width="match_parent" android:layout_height="48dp" android:hint="" android:textSize="14sp" android:maxLines="1" android:id="@+id/input_user" android:backgroundTint="@color/colorAccent" android:enabled="false" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </RelativeLayout>
-
             </LinearLayout>
-    </LinearLayout>
-    <LinearLayout
-        android:id="@+id/ll_printer"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="5dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight=".6"
-            android:text="Printer"
-            android:gravity="center_vertical"
-            android:textColor="#000"
-            android:textSize="18sp" />
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center"
-            android:background="@color/colorAccent"
-            android:layout_weight="1.4">
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="10dp"
-                    android:background="@color/white"
-                    android:hint=""
-                    android:imeOptions="actionDone"
-                    android:textSize="14sp"
-                    android:maxLines="1"
-                    android:singleLine="true"
-                    android:id="@+id/input_printer"
-                    />
-
-            </RelativeLayout>
-
+        </LinearLayout>
+        <LinearLayout android:id="@+id/ll_printer" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight=".6" android:text="Printer" android:gravity="center_vertical" android:textColor="#000" android:textSize="18sp" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_gravity="center" android:background="@color/colorAccent" android:layout_weight="1.4">
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <EditText android:layout_width="match_parent" android:layout_height="48dp" android:padding="10dp" android:background="@color/bgInput" android:hint="" android:imeOptions="actionDone" android:textSize="14sp" android:maxLines="1" android:singleLine="true" android:id="@+id/input_printer" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" />
+                </RelativeLayout>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="100dp" android:orientation="horizontal">
+            <Button android:id="@+id/back_v2" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Back" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
+            <Button android:id="@+id/next_v2" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Next" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="100dp"
-            android:orientation="horizontal"
-            >
-                <Button
-                    android:id="@+id/back_v2"
-                    style="?android:textAppearanceSmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="2dp"
-                    android:layout_weight="1"
-                    android:background="#e71821"
-                    android:text="Back"
-                    android:textColor="#fff"
-                    android:textStyle="bold" />
-            <Button
-                android:id="@+id/next_v2"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Next"
-                android:textColor="#fff"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </LinearLayout>
-
 </LinearLayout>
