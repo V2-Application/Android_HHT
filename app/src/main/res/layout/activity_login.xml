@@ -1,196 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage"
-    android:fillViewport="true"
-    tools:context="com.v2retail.dotvik.LoginActivity">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center_horizontal">
-
-        <ProgressBar
-            android:id="@+id/login_progress"
-            style="?android:attr/progressBarStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone" />
-
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bgPage" android:fillViewport="true" tools:context="com.v2retail.dotvik.LoginActivity">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp" android:gravity="center_horizontal">
+        <ProgressBar android:id="@+id/login_progress" style="?android:attr/progressBarStyle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:layout_marginBottom="16dp" android:visibility="gone" />
         <Space android:layout_width="match_parent" android:layout_height="32dp" />
-
-        <!-- App Icon block -->
-        <FrameLayout
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:background="@color/textPrimary">
-
-            <View android:layout_width="13dp" android:layout_height="13dp"
-                android:layout_gravity="top|left" android:layout_margin="11dp"
-                android:background="@color/white" />
-            <View android:layout_width="13dp" android:layout_height="13dp"
-                android:layout_gravity="top|right" android:layout_margin="11dp"
-                android:background="@color/white" />
-            <View android:layout_width="13dp" android:layout_height="13dp"
-                android:layout_gravity="bottom|left" android:layout_margin="11dp"
-                android:background="@color/white" />
-            <View android:layout_width="13dp" android:layout_height="13dp"
-                android:layout_gravity="bottom|right" android:layout_margin="11dp"
-                android:background="#777777" />
+        <FrameLayout android:layout_width="60dp" android:layout_height="60dp" android:background="@color/textPrimary">
+            <View android:layout_width="13dp" android:layout_height="13dp" android:layout_gravity="top|left" android:layout_margin="11dp" android:background="@color/bgCard" />
+            <View android:layout_width="13dp" android:layout_height="13dp" android:layout_gravity="top|right" android:layout_margin="11dp" android:background="@color/bgCard" />
+            <View android:layout_width="13dp" android:layout_height="13dp" android:layout_gravity="bottom|left" android:layout_margin="11dp" android:background="@color/bgCard" />
+            <View android:layout_width="13dp" android:layout_height="13dp" android:layout_gravity="bottom|right" android:layout_margin="11dp" android:background="#777777" />
         </FrameLayout>
-
         <Space android:layout_width="match_parent" android:layout_height="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="V2 WMS"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/textPrimary" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Warehouse Management System"
-            android:textSize="12sp"
-            android:textColor="@color/textLabel"
-            android:layout_marginBottom="28dp" />
-
-        <!-- User ID -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="USER ID"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/textLabel"
-            android:letterSpacing="0.08"
-            android:layout_marginBottom="4dp" />
-
-        <EditText
-            android:id="@+id/username"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/bgInput"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:hint="Enter user ID"
-            android:inputType="text"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Password -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="PASSWORD"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/textLabel"
-            android:letterSpacing="0.08"
-            android:layout_marginBottom="4dp" />
-
-        <EditText
-            android:id="@+id/password"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/bgInput"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:hint="Enter password"
-            android:imeActionId="6"
-            android:imeOptions="actionDone"
-            android:inputType="textPassword"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:layout_marginBottom="6dp" />
-
-        <TextView
-            android:id="@+id/response"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:textColor="@color/colorError"
-            android:textSize="12sp"
-            android:visibility="gone"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Sign In Button -->
-        <Button
-            android:id="@+id/email_sign_in_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/textPrimary"
-            android:text="Sign in"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Scan Badge -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/bgInput"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Scan badge to login"
-                android:textColor="@color/textPrimary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="|||"
-                android:textColor="@color/textSecondary"
-                android:textSize="16sp"
-                android:letterSpacing="0.1" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="V2 WMS" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Warehouse Management System" android:textSize="12sp" android:textColor="@color/textLabel" android:layout_marginBottom="28dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="USER ID" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginBottom="4dp" />
+        <EditText android:id="@+id/username" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:textSize="14sp" android:textStyle="bold" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Enter user ID" android:inputType="text" android:maxLines="1" android:singleLine="true" android:layout_marginBottom="16dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="PASSWORD" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginBottom="4dp" />
+        <EditText android:id="@+id/password" android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:textSize="14sp" android:textStyle="bold" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Enter password" android:imeActionId="6" android:imeOptions="actionDone" android:inputType="textPassword" android:maxLines="1" android:singleLine="true" android:layout_marginBottom="6dp" />
+        <TextView android:id="@+id/response" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="10dp" android:textColor="@color/colorError" android:textSize="12sp" android:visibility="gone" android:layout_marginBottom="4dp" />
+        <Button android:id="@+id/email_sign_in_button" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_btn_primary" android:text="Sign in" android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="6dp" android:layout_marginBottom="10dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:background="@color/bgInput" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="14dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Scan badge to login" android:textColor="@color/textPrimary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="|||" android:textColor="@color/textSecondary" android:textSize="16sp" android:letterSpacing="0.1" />
         </LinearLayout>
-
-        <!-- Hidden clear button for code compatibility -->
-        <Button
-            android:id="@+id/clear"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/bgInput"
-            android:onClick="onClear"
-            android:text="Clear"
-            android:textColor="@color/textSecondary"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/ver"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:textColor="@color/textLabel"
-            android:textSize="10sp"
-            android:layout_marginTop="16dp" />
-
+        <Button android:id="@+id/clear" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_btn_primary" android:onClick="onClear" android:text="Clear" android:textColor="@color/textSecondary" android:visibility="gone" android:textSize="13sp" />
+        <TextView android:id="@+id/ver" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:textColor="@color/textLabel" android:textSize="10sp" android:layout_marginTop="16dp" />
     </LinearLayout>
 </ScrollView>
