@@ -1,295 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:padding="5dp">
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text=" "
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/excess_hu1"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint=" " />
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:padding="5dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text=" " android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/excess_hu1" android:layout_width="0dp" android:layout_height="48dp" android:hint=" " android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Scan This"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/excess_hu3"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="Scan" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Scan This" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/excess_hu3" android:layout_width="0dp" android:layout_height="48dp" android:hint="Scan" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="M Barcode"
-                    android:layout_gravity="center"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/bin"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="M Barcode" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="M Barcode" android:layout_gravity="center" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/bin" android:layout_width="0dp" android:layout_height="48dp" android:hint="M Barcode" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="M Code"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/excess_hu"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="M Code" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="M Code" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/excess_hu" android:layout_width="0dp" android:layout_height="48dp" android:hint="M Code" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Descript"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/barcode"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="Descript" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Descript" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/barcode" android:layout_width="0dp" android:layout_height="48dp" android:hint="Descript" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text=" To/Pick"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/sq"
-                    android:enabled="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="To" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/rq"
-                    android:enabled="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="Pick" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text=" To/Pick" android:textSize="15sp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/sq" android:enabled="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="To" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/rq" android:enabled="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="Pick" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Cust"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/tsq"
-                    android:enabled="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="cust" />
-
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Cust" android:textSize="15sp" />
+                <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/tsq" android:enabled="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="cust" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <Button
-                    android:layout_weight="1.5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="F"
-                    android:id="@+id/f"
-                    android:background="@drawable/shadow"
-                    android:layout_margin="2dp"
-                    android:textSize="15sp" />
-
-                <Button
-                    android:layout_weight="1.5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="&lt;"
-                    android:id="@+id/small_then"
-                    android:background="@drawable/shadow"
-                    android:layout_margin="2dp"
-                    android:textSize="15sp" />
-
-                <Button
-                    android:layout_weight="1.5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="&gt;"
-                    android:id="@+id/greater"
-                    android:background="@drawable/shadow"
-                    android:layout_margin="2dp"
-                    android:textSize="15sp" />
-
-                <Button
-                    android:layout_weight="1.5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="L"
-                    android:id="@+id/l"
-                    android:background="@drawable/shadow"
-                    android:layout_margin="2dp"
-                    android:textSize="15sp" />
-
-                <Button
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:text="N"
-                    android:id="@+id/n"
-                    android:background="@drawable/shadow"
-                    android:layout_margin="2dp"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="F" android:id="@+id/f" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+                <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="&lt;" android:id="@+id/small_then" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+                <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="&gt;" android:id="@+id/greater" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+                <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="L" android:id="@+id/l" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+                <Button android:layout_weight="1.5" android:textSize="15sp" android:text="N" android:id="@+id/n" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:layout_width="0dp" android:layout_height="wrap_content" android:hint="" android:textColor="@color/white" />
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/response"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_margin="2dp"
-                android:padding="5dp"
-                android:text="status:"
-
-                android:visibility="gone"
-                android:textColor="@color/colorPrimary" />
+            <TextView android:id="@+id/response" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="2dp" android:padding="5dp" android:text="status:" android:visibility="gone" android:textColor="@color/colorPrimary" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:id="@+id/back"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Home"
-                android:id="@+id/home"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-            <Button
-                android:layout_weight="1.5"
-                android:textSize="15sp"
-                android:text="Ok"
-                android:id="@+id/ok"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Back" android:id="@+id/back" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Home" android:id="@+id/home" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:textSize="15sp" android:text="Ok" android:id="@+id/ok" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:layout_width="0dp" android:layout_height="wrap_content" android:hint="" android:textColor="@color/white" />
         </LinearLayout>
-
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
