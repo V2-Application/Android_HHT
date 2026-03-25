@@ -1,237 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".dc.GrtHuMoveFragment">
-
-    <!-- TODO: Update blank fragment layout -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="5dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_margin="2dp"
-                android:padding="5dp">
-
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Site"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/site"
-                        android:layout_width="0dp"
-                        android:imeOptions="actionSearch"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_height="wrap_content"
-                        android:hint="Site" />
-
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" tools:context=".dc.GrtHuMoveFragment" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <ScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="5dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:padding="5dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Site" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/site" android:layout_width="0dp" android:imeOptions="actionSearch" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_height="48dp" android:hint="Site" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="S Loc"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:enabled="true"
-                        android:focusable="false"
-                        android:id="@+id/s_loc"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="S Loc" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="S Loc" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:enabled="true" android:focusable="false" android:id="@+id/s_loc" android:layout_width="0dp" android:layout_height="48dp" android:hint="S Loc" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="D Loc"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1"
-                        android:textSize="15sp"
-                        android:enabled="true"
-                        android:id="@+id/d_loc"
-                        android:singleLine="true"
-                        android:inputType="text"
-                        android:lines="1"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="D Loc" />
-
-                    <Button
-                        android:layout_weight="0.5"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Scan"
-                        android:id="@+id/scan"
-                        android:layout_margin="2dp"
-                        android:padding="2dp"
-                        android:background="@drawable/shadow" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="D Loc" android:textSize="15sp" />
+                    <EditText android:layout_weight="1" android:textSize="15sp" android:enabled="true" android:id="@+id/d_loc" android:singleLine="true" android:inputType="text" android:lines="1" android:layout_width="0dp" android:layout_height="48dp" android:hint="D Loc" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                    <Button android:layout_weight="0.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Scan" android:id="@+id/scan" android:layout_margin="2dp" android:padding="2dp" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Bin"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/bin"
-                        android:enabled="true"
-                        android:focusable="false"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:hint="Bin" />
-
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Bin" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/bin" android:enabled="true" android:focusable="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="Bin" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="HU"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/hu"
-                        android:layout_width="0dp"
-                        android:enabled="true"
-                        android:layout_height="wrap_content"
-                        android:hint="HU" />
-
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="HU" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/hu" android:layout_width="0dp" android:enabled="true" android:layout_height="48dp" android:hint="HU" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="5dp">
-
-                    <TextView
-                        android:layout_weight=".9"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:text="Total HU"
-                        android:textSize="15sp" />
-
-                    <EditText
-                        android:layout_weight="1.5"
-                        android:textSize="15sp"
-                        android:id="@+id/total_hu"
-                        android:layout_width="0dp"
-                        android:enabled="true"
-                        android:layout_height="wrap_content"
-                        android:hint="Total HU" />
-
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                    <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Total HU" android:textSize="15sp" />
+                    <EditText android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/total_hu" android:layout_width="0dp" android:enabled="true" android:layout_height="48dp" android:hint="Total HU" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
                 </LinearLayout>
             </LinearLayout>
-
         </ScrollView>
-
-        <TextView
-            android:id="@+id/response"
-
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="2dp"
-            android:padding="5dp"
-            android:text="status:"
-            android:layout_weight="0"
-            android:visibility="gone"
-            android:textColor="@color/colorPrimary" />
-
-        <LinearLayout
-            android:layout_weight="0"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:id="@+id/back"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-
-
-            <Button
-                android:layout_weight="1.5"
-                android:textSize="15sp"
-                android:text="Save"
-                android:id="@+id/save"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="" />
+        <TextView android:id="@+id/response" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="2dp" android:padding="5dp" android:text="status:" android:layout_weight="0" android:visibility="gone" android:textColor="@color/colorPrimary" />
+        <LinearLayout android:layout_weight="0" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Back" android:id="@+id/back" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:textSize="15sp" android:text="Save" android:id="@+id/save" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:layout_width="0dp" android:layout_height="wrap_content" android:hint="" android:textColor="@color/white" />
         </LinearLayout>
-
     </LinearLayout>
-
 </FrameLayout>
