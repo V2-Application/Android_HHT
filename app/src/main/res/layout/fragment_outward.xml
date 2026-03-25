@@ -1,133 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <!-- TODO: Update blank fragment layout -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_margin="2dp"
-        android:background="#000"
-        android:padding="5dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:layout_weight="1"
-                android:id="@+id/picking"
-                android:background="#e71821"
-                android:text="Picking" />
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="HU Scan"
-                android:layout_weight="1"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/Hu_Scan"
-                android:background="#e71821" />
-
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:background="#000" android:padding="5dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <Button android:layout_width="0dp" android:layout_height="wrap_content" android:layout_margin="5dp" android:textColor="@color/white" android:layout_weight="1" android:id="@+id/picking" android:background="@drawable/bg_btn_primary" android:text="Picking" android:textSize="13sp" />
+            <Button android:layout_width="0dp" android:layout_height="wrap_content" android:text="HU Scan" android:layout_weight="1" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/Hu_Scan" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
         </LinearLayout>
-
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Paperless Picking "
-            android:id="@+id/paperless_picking"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:id="@+id/tvs_paperless_picking"
-            android:background="#e71821"
-            android:text="TVS Paperless Picking" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Empty Bin "
-                android:id="@+id/empty_bin"
-                android:layout_margin="5dp"
-                android:layout_weight="1"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="GRT Hu Move "
-                android:layout_weight="1"
-                android:id="@+id/grt_hu_move"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Paperless Picking " android:id="@+id/paperless_picking" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="5dp" android:textColor="@color/white" android:id="@+id/tvs_paperless_picking" android:background="@drawable/bg_btn_primary" android:text="TVS Paperless Picking" android:textSize="13sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <Button android:layout_width="0dp" android:layout_height="wrap_content" android:text="Empty Bin " android:id="@+id/empty_bin" android:layout_margin="5dp" android:layout_weight="1" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+            <Button android:layout_width="0dp" android:layout_height="wrap_content" android:text="GRT Hu Move " android:layout_weight="1" android:id="@+id/grt_hu_move" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
         </LinearLayout>
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Shade Stock Movement"
-            android:id="@+id/shade_stock_movement"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="HU Weight"
-            android:textColor="#fff"
-            android:id="@+id/outward_hu_weight"
-            android:layout_margin="5dp"
-            android:background="#e71821" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="DC GRT"
-            android:id="@+id/dc_grt"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="@color/colorAccent" />
-
-
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="HU Move To CLA"
-            android:textColor="#fff"
-            android:id="@+id/hu_move_cla"
-            android:layout_margin="5dp"
-            android:background="@color/colorAccent" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sample Stock Movement"
-            android:textColor="#fff"
-            android:id="@+id/stock_movement"
-            android:layout_margin="5dp"
-            android:background="@color/colorAccent" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Shade Stock Movement" android:id="@+id/shade_stock_movement" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="HU Weight" android:textColor="@color/white" android:id="@+id/outward_hu_weight" android:layout_margin="5dp" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="DC GRT" android:id="@+id/dc_grt" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="HU Move To CLA" android:textColor="@color/white" android:id="@+id/hu_move_cla" android:layout_margin="5dp" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
+        <Button android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sample Stock Movement" android:textColor="@color/white" android:id="@+id/stock_movement" android:layout_margin="5dp" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
     </LinearLayout>
-
 </FrameLayout>
