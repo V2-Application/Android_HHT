@@ -35,12 +35,14 @@
     <string name="date">Date.</string>
 
     <array name="ipAddress">
-        <item>https://app.v2axasync-prd.v2rtl.com:8443/xmwgw (Prod)</item>
-        <item>http://192.168.144.200:9080/xmwgw (HanaProd)</item>
-        <item>http://192.168.151.40:16080/xmwgw (HanaDev)</item>
-        <item>http://103.29.220.152:1080/hanadev (hanaDev)</item>
-        <item>http://192.168.151.40:17080/xmwgw (HanaQA)</item>
-        <item>http://103.29.220.152:1080/hanaqa (hanaQA)</item>
+        <!-- Azure Cloud (PRIMARY — use this for all devices) -->
+        <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Prod)</item>
+        <!-- Legacy on-prem (fallback only — DO NOT use for rollout) -->
+        <item>http://192.168.144.200:9080/xmwgw (HanaProd Legacy)</item>
+        <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
+        <item>http://103.29.220.152:1080/hanadev (hanaDev Legacy)</item>
+        <item>http://192.168.151.40:17080/xmwgw (HanaQA Legacy)</item>
+        <item>http://103.29.220.152:1080/hanaqa (hanaQA Legacy)</item>
     </array>
     <array name="choose_store">
         <item>DC</item>
