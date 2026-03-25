@@ -1,738 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:clickable="true"
-    tools:context=".store.PapperLessScan"
-    >
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginStart="0dp"
-        android:layout_marginEnd="0dp"
-        android:background="@color/white"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_weight="5"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginTop="8dp"
-                    android:padding="4dp"
-                    android:textStyle="bold"
-                    android:text="Picklist NO:"
-                    android:textColor="@color/black" />
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="fill_parent" android:layout_height="fill_parent" android:clickable="true" tools:context=".store.PapperLessScan" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:layout_marginStart="0dp" android:layout_marginEnd="0dp" android:background="@color/bgCard" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="10">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="start" android:layout_weight="5" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_marginTop="8dp" android:padding="4dp" android:textStyle="bold" android:text="Picklist NO:" android:textColor="@color/black" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:gravity="end"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/picking_no"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="4dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="12dp"
-                    android:letterSpacing="0.2"
-                    android:textStyle="bold"
-                    android:text="21562 NO:"
-                    android:textColor="@color/black" />
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:gravity="start|center_vertical"
-                    android:text="TQ/SQ/RQ "
-                    android:textColor="@color/black"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tq_editTextFiled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="2"
-                    android:background="@drawable/input_bg"
-                    android:hint=""
-                    android:padding="4dp" />
-
-                <TextView
-                    android:id="@+id/sq_editTextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="2"
-                    android:background="@drawable/input_bg"
-                    android:hint="0"
-                    android:padding="4dp" />
-
-                <TextView
-                    android:id="@+id/rq_editTextFiled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp"
-                    android:layout_weight="2"
-                    android:background="@drawable/input_bg"
-                    android:hint=""
-                    android:padding="4dp" />
-
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="5" android:gravity="end" android:orientation="vertical">
+                <TextView android:id="@+id/picking_no" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="4dp" android:layout_marginTop="8dp" android:layout_marginEnd="12dp" android:letterSpacing="0.2" android:textStyle="bold" android:text="21562 NO:" android:textColor="@color/black" />
             </LinearLayout>
         </LinearLayout>
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="12dp"
-        android:orientation="horizontal"
-        android:weightSum="10">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.5"
-            android:text="Store"
-            android:padding="4dp"
-            android:textStyle="bold"
-            android:textAlignment="textEnd"
-            android:textColor="@color/black" />
-        <EditText
-            android:id="@+id/paperless_scan_store"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="8.5"
-            android:background="@drawable/input_bg"
-            android:enabled="false"
-            android:padding="4dp"
-            android:backgroundTint="@color/lightGrey"
-            android:textAppearance="@style/MyEditTextStyle"
-            android:textColor="@drawable/edit_text_selector" />
-        />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:orientation="horizontal" android:weightSum="10">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="4" android:orientation="vertical">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:gravity="start|center_vertical" android:text="TQ/SQ/RQ " android:textColor="@color/black" android:textStyle="bold" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6" android:orientation="horizontal">
+                <TextView android:id="@+id/tq_editTextFiled" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginEnd="4dp" android:layout_weight="2" android:background="@drawable/input_bg" android:hint="" android:padding="4dp" />
+                <TextView android:id="@+id/sq_editTextField" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginEnd="4dp" android:layout_weight="2" android:background="@drawable/input_bg" android:hint="0" android:padding="4dp" />
+                <TextView android:id="@+id/rq_editTextFiled" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginEnd="12dp" android:layout_weight="2" android:background="@drawable/input_bg" android:hint="" android:padding="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:layout_marginEnd="12dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.5" android:text="Store" android:padding="4dp" android:textStyle="bold" android:textAlignment="textEnd" android:textColor="@color/black" />
+            <EditText android:id="@+id/paperless_scan_store" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="8.5" android:background="@color/bgInput" android:enabled="false" android:padding="4dp" android:backgroundTint="@color/lightGrey" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+        /&gt;
     </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="12dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:layout_marginEnd="12dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5">
 
             </TextView>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6"
-                android:padding="4dp"
-                android:text="Current/Previous Scan :"
-                android:textColor="@color/black" />
-            <TextView
-                android:id="@+id/tv_printer_name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="3.5"
-                android:padding="4dp"
-                android:visibility="gone"
-                android:background="@color/dc"
-                android:textAlignment="textEnd"
-                android:textSize="10dp"
-                android:text=""
-                android:textColor="@color/black" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6" android:padding="4dp" android:text="Current/Previous Scan :" android:textColor="@color/black" />
+            <TextView android:id="@+id/tv_printer_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3.5" android:padding="4dp" android:visibility="gone" android:background="@color/dc" android:textAlignment="textEnd" android:textSize="10dp" android:text="" android:textColor="@color/black" />
         </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="12dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:text="1" android:textColor="@color/black" android:textStyle="bold" />
+            <EditText android:id="@+id/current_scan_bin" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginEnd="5dp" android:layout_weight="2.5" android:background="@color/bgInput" android:enabled="false" android:hint="" android:padding="4dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="12dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
+            <EditText android:id="@+id/current_scan_article" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginEnd="5dp" android:layout_weight="4" android:background="@color/bgInput" android:enabled="false" android:hint="" android:padding="4dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:text="1"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
+            <EditText android:id="@+id/current_scan_quantity" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1.5" android:background="@color/bgInput" android:enabled="false" android:hint="" android:padding="4dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-            <EditText
-                android:id="@+id/current_scan_bin"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="2.5"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:padding="4dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/current_scan_article"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="4"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:padding="4dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/current_scan_quantity"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1.5"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:padding="4dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/current_scan_open_quantity"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1.5"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:padding="4dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
+            <EditText android:id="@+id/current_scan_open_quantity" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1.5" android:background="@color/bgInput" android:enabled="false" android:hint="" android:padding="4dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginEnd="12dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="2.5"
-                android:padding="4dp"
-                android:text="Bin"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="2.5"
-                android:padding="4dp"
-                android:text="Crate"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="3.5"
-                android:padding="4dp"
-                android:text="Art. NO."
-                android:textColor="@color/black"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="1.5"
-                android:padding="4dp"
-                android:text="SQty"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:layout_marginEnd="12dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:textColor="@color/black" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="5dp" android:layout_weight="2.5" android:padding="4dp" android:text="Bin" android:textColor="@color/black" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="5dp" android:layout_weight="2.5" android:padding="4dp" android:text="Crate" android:textColor="@color/black" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="5dp" android:layout_weight="3.5" android:padding="4dp" android:text="Art. NO." android:textColor="@color/black" android:textStyle="bold" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="5dp" android:layout_weight="1.5" android:padding="4dp" android:text="SQty" android:textColor="@color/black" android:textStyle="bold" />
         </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:lines="1" android:text="" android:textColor="@color/black" android:textStyle="bold" />
+            <EditText android:id="@+id/bin_editText" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginEnd="2dp" android:layout_weight="2.5" android:background="@color/bgInput" android:hint="" android:imeActionId="5" android:imeActionLabel="Scan" android:imeOptions="actionNext" android:inputType="text" android:lines="1" android:maxLines="1" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
+            <EditText android:id="@+id/crate_editText" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginEnd="2dp" android:layout_weight="2.5" android:background="@color/bgInput" android:enabled="false" android:hint="" android:imeActionId="5" android:imeActionLabel="Scan" android:imeOptions="actionNext" android:inputType="text" android:lines="1" android:maxLines="1" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:lines="1"
-                android:text=""
-                android:textColor="@color/black"
-                android:textStyle="bold" />
+            <EditText android:id="@+id/artno_editText" android:layout_width="0dp" android:layout_height="48dp" android:layout_marginEnd="2dp" android:layout_weight="3.5" android:background="@color/bgInput" android:hint="" android:imeActionId="5" android:imeActionLabel="Scan" android:imeOptions="actionNext" android:inputType="text" android:lines="1" android:maxLines="1" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
 
-            <EditText
-                android:id="@+id/bin_editText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="2.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:imeActionId="5"
-                android:imeActionLabel="Scan"
-                android:imeOptions="actionNext"
-                android:inputType="text"
-                android:lines="1"
-                android:maxLines="1"
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/crate_editText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="2.5"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:imeActionId="5"
-                android:imeActionLabel="Scan"
-                android:imeOptions="actionNext"
-                android:inputType="text"
-                android:lines="1"
-                android:maxLines="1"
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/artno_editText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="3.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:imeActionId="5"
-                android:imeActionLabel="Scan"
-                android:imeOptions="actionNext"
-                android:inputType="text"
-                android:lines="1"
-                android:maxLines="1"
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
-
-            <EditText
-                android:id="@+id/sqty_editText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/input_bg"
-                android:enabled="false"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/edit_text_selector" />
-            />
+            <EditText android:id="@+id/sqty_editText" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:background="@color/bgInput" android:enabled="false" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/edit_text_selector" android:textColorHint="@color/textHint" android:textSize="13sp" />
+            /&gt;
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="12dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="20dp"
-                android:layout_marginRight="10dp"
-                android:text="Is Bin Empty:"
-                android:textColor="@color/black" />
-
-            <CheckBox
-                android:id="@+id/checkbox_empty_bin"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:checked="false" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="12dp" android:orientation="horizontal">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20dp" android:layout_marginRight="10dp" android:text="Is Bin Empty:" android:textColor="@color/black" />
+            <CheckBox android:id="@+id/checkbox_empty_bin" android:layout_width="30dp" android:layout_height="30dp" android:checked="false" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="12dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_weight="4"
-                android:text="Next1 Scan:"
-                android:textColor="@color/black">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:layout_marginEnd="12dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:layout_weight="4" android:text="Next1 Scan:" android:textColor="@color/black">
 
             </TextView>
-
-            <TextView
-                android:id="@+id/second_scanItemNo"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6"
-                android:text=""
-                android:textColor="@color/black" />
+            <TextView android:id="@+id/second_scanItemNo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6" android:text="" android:textColor="@color/black" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:text="2"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/second_item_bin"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="3"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
-            <TextView
-                android:id="@+id/second_item_matnr"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="4.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
-            <TextView
-                android:id="@+id/second_item_rqty"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:background="@drawable/input_bg"
-                android:hint="5"
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:text="2" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" android:textStyle="bold" />
+            <TextView android:id="@+id/second_item_bin" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="3" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/second_item_matnr" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="4.5" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/second_item_rqty" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2" android:background="@drawable/input_bg" android:hint="5" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:text=""
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/second_item_crate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="3"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-            <TextView
-                android:id="@+id/second_item_ean"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="4.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:text="" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" android:textStyle="bold" />
+            <TextView android:id="@+id/second_item_crate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="3" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/second_item_ean" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="4.5" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_weight="4"
-                android:text="Next2 Scan:"
-                android:textColor="@color/black">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="20dp" android:layout_weight="4" android:text="Next2 Scan:" android:textColor="@color/black">
 
             </TextView>
-
-            <TextView
-                android:id="@+id/third_scanItemNo"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="6"
-                android:text=""
-                android:textColor="@color/black" />
+            <TextView android:id="@+id/third_scanItemNo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="6" android:text="" android:textColor="@color/black" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:gravity="center"
-                android:text="3"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/third_item_bin"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="2.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
-            <TextView
-                android:id="@+id/third_item_crate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="2.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
-            <TextView
-                android:id="@+id/third_item_matnr"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="2dp"
-                android:layout_weight="3.5"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
-
-            <TextView
-                android:id="@+id/third_item_rqty"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/input_bg"
-                android:hint=""
-                android:padding="2dp"
-                android:textAppearance="@style/MyEditTextStyle"
-                android:textColor="@drawable/text_view_selector" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:layout_marginEnd="5dp" android:orientation="horizontal" android:weightSum="10">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.5" android:gravity="center" android:text="3" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" android:textStyle="bold" />
+            <TextView android:id="@+id/third_item_bin" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="2.5" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/third_item_crate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="2.5" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/third_item_matnr" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="2dp" android:layout_weight="3.5" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
+            <TextView android:id="@+id/third_item_rqty" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/input_bg" android:hint="" android:padding="2dp" android:textAppearance="@style/MyEditTextStyle" android:textColor="@drawable/text_view_selector" />
         </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="horizontal"
-        android:weightSum="10"
-        android:layout_alignParentBottom="true">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/back"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Back"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal" android:weightSum="10" android:layout_alignParentBottom="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/back" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Back" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/prev_button"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Prev"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/prev_button" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Prev" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/next_button"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Next"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/next_button" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Next" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/save"
-                style="?android:textAppearanceSmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:layout_weight="1"
-                android:background="#e71821"
-                android:text="Save"
-                android:textColor="#fff"
-                android:textStyle="bold" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="2.5" android:orientation="vertical">
+            <Button android:id="@+id/save" style="?android:textAppearanceSmall" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="2dp" android:layout_weight="1" android:background="@drawable/bg_btn_primary" android:text="Save" android:textColor="@color/white" android:textStyle="bold" android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
-
-
-
-
-
