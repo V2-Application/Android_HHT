@@ -1,54 +1,394 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bgPage">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="12dp" android:paddingBottom="12dp" android:background="@color/bgCard">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Floor staging" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Crate tag to pallet" android:textSize="11sp" android:textColor="@color/textLabel" />
-        </LinearLayout>
-        <TextView android:id="@+id/tv_error_badge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Error" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorError" android:background="@color/colorErrorBg" android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:visibility="gone" />
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <!--text_grt_sort_scan_crate-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:clickable="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="15dp"
+        android:padding="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="7dp"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="Empty Crate"/>
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <EditText
+                android:id="@+id/text_grt_combo_sort_scan_crate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/bgCard"
+                android:hint=""
+                android:imeOptions="actionDone"
+                android:maxLines="1"
+                android:padding="7dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+        </RelativeLayout>
+
     </LinearLayout>
-    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-            <LinearLayout android:id="@+id/layout_error_banner" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:background="@color/colorErrorBg" android:padding="12dp" android:layout_marginBottom="12dp" android:gravity="center_vertical" android:visibility="gone">
-                <TextView android:id="@+id/tv_error_message" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="@color/colorError" />
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginBottom="10dp">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="STEP 1 — SCAN PALLET" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginBottom="10dp" />
-                <EditText android:id="@+id/text_grt_combo_sort_scan_pallet" android:layout_width="match_parent" android:layout_height="52dp" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:textSize="15sp" android:textStyle="bold" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Scan pallet barcode..." android:imeOptions="actionDone" android:maxLines="1" android:singleLine="true" android:inputType="text" />
-                <LinearLayout android:id="@+id/layout_pallet_success" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/colorSuccessBg" android:padding="10dp" android:layout_marginTop="8dp" android:gravity="center_vertical" android:visibility="gone">
-                    <TextView android:id="@+id/tv_pallet_success" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:text="Pallet validated" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginBottom="10dp">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="STEP 2 — SCAN CRATE" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginBottom="10dp" />
-                <EditText android:id="@+id/text_grt_combo_sort_scan_crate" android:layout_width="match_parent" android:layout_height="52dp" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:textSize="15sp" android:textStyle="bold" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Scan crate barcode..." android:imeOptions="actionDone" android:maxLines="1" android:singleLine="true" android:inputType="text" />
-                <LinearLayout android:id="@+id/layout_crate_success" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/colorSuccessBg" android:padding="10dp" android:layout_marginTop="8dp" android:gravity="center_vertical" android:visibility="gone">
-                    <TextView android:id="@+id/tv_crate_success" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:text="Crate tagged to pallet" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="10dp">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statGreenBg" android:padding="14dp" android:layout_marginEnd="4dp">
-                    <TextView android:id="@+id/tv_crate_scanned_count" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="0" android:textSize="30sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:letterSpacing="-0.04" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CRATES SCANNED" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginTop="4dp" />
-                </LinearLayout>
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statBlueBg" android:padding="14dp" android:layout_marginStart="4dp">
-                    <TextView android:id="@+id/tv_pallet_id_display" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="—" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/colorInfo" android:letterSpacing="-0.02" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CURRENT PALLET" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.08" android:layout_marginTop="4dp" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="10dp">
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Scan log" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-                    <TextView android:id="@+id/tv_scan_log_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0 TOTAL" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.05" />
-                </LinearLayout>
-                <ScrollView android:layout_width="match_parent" android:layout_height="180dp">
-                    <TableLayout android:id="@+id/table_grt_combo_sort_scanned_items" android:layout_width="match_parent" android:layout_height="wrap_content" android:stretchColumns="1,2" />
-                </ScrollView>
-            </LinearLayout>
-        </LinearLayout>
-    </ScrollView>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="14dp" android:background="@color/bgCard">
-        <Button android:id="@+id/btn_grt_combo_sort_back" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Back" android:textColor="@color/textPrimary" android:textSize="13sp" android:textStyle="bold" android:background="@drawable/bg_btn_primary" />
-        <Button android:id="@+id/btn_grt_combo_sort_submit" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="2" android:layout_marginStart="6dp" android:text="Scan next crate" android:textColor="@color/white" android:textSize="13sp" android:textStyle="bold" android:background="@drawable/bg_btn_primary" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="5dp"
+        android:padding="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="7dp"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:text="MSA Crate"/>
+
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <EditText
+                android:id="@+id/text_grt_combo_sort_msa_crate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/bgCard"
+                android:hint=""
+                android:imeOptions="actionDone"
+                android:maxLines="1"
+                android:padding="7dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+        </RelativeLayout>
+
     </LinearLayout>
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/ll_grt_combo_crate_sort_form"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:gravity="center_vertical"
+            android:layout_marginTop="15dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="Remaining Quantity"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_crate_remaining_qty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgCard"
+                    android:enabled="false"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="Scanned Quantity"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_crate_scanned_qty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgPage"
+                    android:enabled="false"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:text="Scan Article Barcode"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_scan_article_bcode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgCard"
+                    android:hint=""
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="Article No"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_scan_article_no"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgPage"
+                    android:enabled="false"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="PROPOSED HU"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_proposed_hu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgPage"
+                    android:enabled="false"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="Scan HU"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_scan_hu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgCard"
+                    android:enabled="true"
+                    android:imeOptions="actionDone"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="5dp"
+            android:padding="2dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="7dp"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:text="Store/Bin"/>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <EditText
+                    android:id="@+id/text_grt_combo_sort_sugg_store_bin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/bgPage"
+                    android:enabled="false"
+                    android:hint=""
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="18sp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:padding="5dp">
+        <Button
+            android:id="@+id/button_empty_grt_combo_sort_form"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            android:layout_weight="1"
+            android:text="Empty Picked Crate"
+            android:layout_margin="5dp"
+            android:textColor="@color/bgCard"
+            android:background="@color/colorPrimary" />
+        <Button
+            android:id="@+id/button_back_grt_combo_sort_form"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Next"
+            android:layout_margin="5dp"
+            android:textColor="@color/bgCard"
+            android:background="@color/colorPrimary" />
+    </LinearLayout>
+</RelativeLayout>
