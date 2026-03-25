@@ -1,74 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/dashboard" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bgPage">
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp" android:tag="home_tag">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Warehouse" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:letterSpacing="-0.02" android:layout_marginBottom="2dp" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Inventory &amp; stock management" android:textSize="12sp" android:textColor="@color/textLabel" android:layout_marginBottom="20dp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statGreenBg" android:padding="14dp" android:layout_marginEnd="4dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
-                        <FrameLayout android:layout_width="32dp" android:layout_height="32dp" android:background="@color/statGreenIcon">
-                        </FrameLayout>
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="↑ +8.2%" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:gravity="end" />
-                    </LinearLayout>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="247" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:letterSpacing="-0.04" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pallets today" android:textSize="10sp" android:textColor="@color/textSecondary" android:layout_marginTop="2dp" />
-                </LinearLayout>
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statGreenBg" android:padding="14dp" android:layout_marginStart="4dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
-                        <FrameLayout android:layout_width="32dp" android:layout_height="32dp" android:background="@color/statGreenIcon">
-                        </FrameLayout>
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="↑ +12%" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:gravity="end" />
-                    </LinearLayout>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="1,834" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:letterSpacing="-0.04" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Crates total" android:textSize="10sp" android:textColor="@color/textSecondary" android:layout_marginTop="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="24dp">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statOrangeBg" android:padding="14dp" android:layout_marginEnd="4dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
-                        <FrameLayout android:layout_width="32dp" android:layout_height="32dp" android:background="@color/statOrangeIcon">
-                        </FrameLayout>
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="↓ -5%" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorWarning" android:gravity="end" />
-                    </LinearLayout>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="2,891" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:letterSpacing="-0.04" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Outbound" android:textSize="10sp" android:textColor="@color/textSecondary" android:layout_marginTop="2dp" />
-                </LinearLayout>
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="@color/statRedBg" android:padding="14dp" android:layout_marginStart="4dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="8dp">
-                        <FrameLayout android:layout_width="32dp" android:layout_height="32dp" android:background="@color/statRedIcon">
-                        </FrameLayout>
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="↑ +3" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorError" android:gravity="end" />
-                    </LinearLayout>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="15" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:letterSpacing="-0.04" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Alerts" android:textSize="10sp" android:textColor="@color/textSecondary" android:layout_marginTop="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="MODULES" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/textLabel" android:letterSpacing="0.1" android:layout_marginBottom="12dp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
-                <LinearLayout android:id="@+id/inbound" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true">
-                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Inbound" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Active" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorSuccess" android:background="@color/colorSuccessBg" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2dp" android:paddingBottom="2dp" />
-                </LinearLayout>
-                <LinearLayout android:id="@+id/outbound" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginStart="4dp" android:clickable="true" android:focusable="true">
-                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Outbound" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ready" android:textSize="10sp" android:textStyle="bold" android:textColor="#1565C0" android:background="@color/colorInfoBg" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2dp" android:paddingBottom="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
-                <LinearLayout android:id="@+id/stock_take" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true">
-                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Stock Take" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8 open" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/colorWarning" android:background="@color/statOrangeBg" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2dp" android:paddingBottom="2dp" />
-                </LinearLayout>
-                <LinearLayout android:id="@+id/retailApp" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:orientation="vertical" android:background="@color/bgCard" android:padding="14dp" android:layout_marginStart="4dp" android:clickable="true" android:focusable="true">
-                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Retail App" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/textPrimary" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="New" android:textSize="10sp" android:textStyle="bold" android:textColor="#5B21B6" android:background="#F3E5F5" android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="2dp" android:paddingBottom="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-            <Button android:id="@+id/stock_take2" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:text="Stock Take New" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
-            <Button android:id="@+id/store_ecomm" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:text="Ecomm" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
-            <Button android:id="@+id/Rf_idScanner" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:text="RF Scanner" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
-            <Button android:id="@+id/picklist_save" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:text="Save Picklist" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bgCard"
+    android:id="@+id/dashboard">
+
+    <!-- TODO: Update blank fragment layout -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_margin="2dp"
+            android:background="#000"
+            android:padding="5dp"
+            android:tag="home_tag">
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:id="@+id/inbound"
+                android:background="#e71821"
+                android:text="InBound" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="OutBound"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:id="@+id/outbound"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stock Take (Old)"
+                android:id="@+id/stock_take"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stock Take (New)"
+                android:id="@+id/stock_take2"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821"/>
+            <!--   android:textColor="#000"
+               android:background="@color/colorAccent" -->
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Retail App"
+                android:id="@+id/retailApp"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ecomm"
+                android:id="@+id/store_ecomm"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="RF id Scanner"
+                android:id="@+id/Rf_idScanner"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Save Picklist"
+                android:id="@+id/picklist_save"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
         </LinearLayout>
+
     </ScrollView>
+
 </FrameLayout>
