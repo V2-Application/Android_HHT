@@ -1,58 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_margin="2dp"
-    android:layout_weight="0"
-    android:orientation="vertical"
-    android:padding="5dp"
-    tools:layout_editor_absoluteX="8dp"
-    tools:layout_editor_absoluteY="16dp"
-    xmlns:android="http://schemas.android.com/apk/res/android">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:orientation="horizontal"
-            android:padding="2dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginRight="7dp"
-                android:text="Barcode No"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/ean_et"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:enabled="true"
-                android:padding="8dp"
-                android:focusable="false"
-                android:hint="Barcode No."
-                android:textSize="15sp" />
-
-        </LinearLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="8"
-            android:clipToPadding="false"
-            android:scrollbars="vertical" />
-        <Button
-            android:id="@+id/close"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/shadow"
-            android:padding="5dp"
-            android:layout_weight="1"
-            android:text="close"
-            android:textSize="15sp" />
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="2dp" android:layout_weight="0" android:orientation="vertical" android:padding="5dp" tools:layout_editor_absoluteX="8dp" tools:layout_editor_absoluteY="16dp" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="45dp" android:orientation="horizontal" android:padding="2dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:layout_marginRight="7dp" android:text="Barcode No" android:textSize="15sp" />
+        <TextView android:id="@+id/ean_et" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:enabled="true" android:padding="8dp" android:focusable="false" android:hint="Barcode No." android:textSize="15sp" />
     </LinearLayout>
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_weight="8" android:clipToPadding="false" android:scrollbars="vertical" />
+    <Button android:id="@+id/close" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_btn_primary" android:padding="5dp" android:layout_weight="1" android:text="close" android:textSize="15sp" android:textColor="@color/white" />
+</LinearLayout>
