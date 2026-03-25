@@ -1,23 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand -->
+    <!-- ============================================ -->
+    <!-- NEW V2 WMS DESIGN SYSTEM                    -->
+    <!-- ============================================ -->
+
+    <!-- Brand / Primary -->
     <color name="colorPrimary">#111111</color>
     <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#16a34a</color>
 
-    <!-- Backgrounds -->
+    <!-- Page backgrounds -->
     <color name="bgPage">#FAFAF8</color>
     <color name="bgCard">#FFFFFF</color>
     <color name="bgInput">#F5F5F5</color>
     <color name="bgNavBar">#FFFFFF</color>
 
-    <!-- Stat card fills -->
+    <!-- Stat card fills (pastel, matching reference design) -->
     <color name="statGreenBg">#E8F5E9</color>
     <color name="statGreenIcon">#C8E6C9</color>
     <color name="statOrangeBg">#FFF3E0</color>
     <color name="statOrangeIcon">#FFE0B2</color>
     <color name="statRedBg">#FCE4EC</color>
     <color name="statRedIcon">#F8BBD9</color>
+    <color name="statBlueBg">#E3F2FD</color>
+    <color name="statBlueIcon">#BBDEFB</color>
 
     <!-- Text -->
     <color name="textPrimary">#111111</color>
@@ -25,7 +31,7 @@
     <color name="textHint">#AAAAAA</color>
     <color name="textLabel">#AAAAAA</color>
 
-    <!-- Status -->
+    <!-- Status / Semantic -->
     <color name="colorSuccess">#16a34a</color>
     <color name="colorSuccessBg">#E8F5E9</color>
     <color name="colorSuccessLight">#66BB6A</color>
@@ -34,8 +40,10 @@
     <color name="colorErrorLight">#F87171</color>
     <color name="colorWarning">#E65100</color>
     <color name="colorWarningBg">#FFF3E0</color>
+    <color name="colorInfo">#1565C0</color>
+    <color name="colorInfoBg">#E3F2FD</color>
 
-    <!-- Zone selected -->
+    <!-- Zone selection -->
     <color name="zoneSelectedBg">#F0FDF4</color>
     <color name="zoneSelectedBorder">#86EFAC</color>
     <color name="zoneSelectedText">#16a34a</color>
@@ -44,11 +52,25 @@
     <color name="borderLight">#F0F0F0</color>
     <color name="borderMedium">#E0E0E0</color>
 
-    <!-- Legacy kept for compatibility -->
+    <!-- ============================================ -->
+    <!-- LEGACY COLORS — DO NOT REMOVE               -->
+    <!-- Required by existing layouts and drawables  -->
+    <!-- ============================================ -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#111111</color>
-    <color name="lightGrey">#F5F5F5</color>
+    <color name="black">#CB000000</color>
+    <color name="lightGrey">#DCDCDC</color>
+    <color name="redAccent">#fffaea</color>
+    <color name="buttonColor">#111111</color>
+    <color name="buttonColortext">#FFFFFF</color>
     <color name="viewBg">#FAFAF8</color>
+    <color name="album_title">#4c4c4c</color>
+    <color name="sales">#d5abea</color>
+    <color name="stock">#ec4169</color>
+    <color name="sales_gen">#f1c97b</color>
+    <color name="ageing">#FFC107</color>
+    <color name="stock_gen">#f18054</color>
+    <color name="merchandise">#f77edf</color>
+    <color name="dc">#FFEB3B</color>
     <color name="enabled_color">#111111</color>
     <color name="disabled_color">#AAAAAA</color>
     <color name="toggle_false">#DDDDDD</color>
