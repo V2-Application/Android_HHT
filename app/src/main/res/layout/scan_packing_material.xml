@@ -1,185 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:padding="5dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".9"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Pack Mat"
-                    android:textSize="15sp" />
-
-                <Spinner
-                    android:layout_weight="1.5"
-                    android:textSize="15sp"
-                    android:id="@+id/pack_mat"
-                    android:layout_width="0dp"
-                    android:entries="@array/choose_store"
-                    android:layout_height="40dip" />
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_margin="2dp" android:padding="5dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Pack Mat" android:textSize="15sp" />
+                <Spinner android:layout_weight="1.5" android:textSize="15sp" android:id="@+id/pack_mat" android:layout_width="0dp" android:entries="@array/choose_store" android:layout_height="40dip" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".9"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Mat."
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight="1"
-                    android:textSize="15sp"
-                    android:id="@+id/material_no"
-                    android:layout_width="0dp"
-                    android:imeOptions="actionSearch"
-                    android:singleLine="true"
-                    android:inputType="number"
-                    android:lines="1"
-                    android:layout_height="wrap_content"
-                    android:hint="Material No." />
-
-                <Button
-                    android:layout_weight="0.5"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Scan"
-                    android:id="@+id/mat_scan"
-                    android:layout_margin="2dp"
-                    android:padding="2dp"
-                    android:background="@drawable/shadow" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Mat." android:textSize="15sp" />
+                <EditText android:layout_weight="1" android:textSize="15sp" android:id="@+id/material_no" android:layout_width="0dp" android:imeOptions="actionSearch" android:singleLine="true" android:inputType="number" android:lines="1" android:layout_height="48dp" android:hint="Material No." android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                <Button android:layout_weight="0.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Scan" android:id="@+id/mat_scan" android:layout_margin="2dp" android:padding="2dp" android:background="@drawable/bg_btn_primary" android:textColor="@color/white" android:textSize="13sp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".9"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text=" S.Q/R.Q"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/sq"
-                    android:enabled="true"
-                    android:focusable="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="S.Q" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/rq"
-                    android:enabled="true"
-                    android:focusable="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="R.Q" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text=" S.Q/R.Q" android:textSize="15sp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/sq" android:enabled="true" android:focusable="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="S.Q" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/rq" android:enabled="true" android:focusable="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="R.Q" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="5dp">
-
-                <TextView
-                    android:layout_weight=".9"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="T.S.Q/T.O.Q"
-                    android:textSize="15sp" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/tsq"
-                    android:enabled="true"
-                    android:focusable="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="T.S.Q" />
-
-                <EditText
-                    android:layout_weight=".75"
-                    android:textSize="15sp"
-                    android:id="@+id/toq"
-                    android:enabled="true"
-                    android:focusable="false"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:hint="T.O.Q" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+                <TextView android:layout_weight=".9" android:layout_width="0dp" android:layout_height="wrap_content" android:text="T.S.Q/T.O.Q" android:textSize="15sp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/tsq" android:enabled="true" android:focusable="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="T.S.Q" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
+                <EditText android:layout_weight=".75" android:textSize="15sp" android:id="@+id/toq" android:enabled="true" android:focusable="false" android:layout_width="0dp" android:layout_height="48dp" android:hint="T.O.Q" android:background="@color/bgInput" android:textColor="@color/textPrimary" android:textColorHint="@color/textHint" android:paddingStart="14dp" android:paddingEnd="14dp" />
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/response"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_margin="2dp"
-                android:padding="5dp"
-                android:text="status:"
-
-                android:visibility="gone"
-                android:textColor="@color/colorPrimary" />
+            <TextView android:id="@+id/response" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="2dp" android:padding="5dp" android:text="status:" android:visibility="gone" android:textColor="@color/colorPrimary" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="5dp">
-
-            <Button
-                android:layout_weight="1.5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:id="@+id/back"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:textSize="15sp" />
-
-            <Button
-                android:layout_weight="1.5"
-                android:textSize="15sp"
-                android:text="Save"
-                android:id="@+id/save"
-                android:background="@drawable/shadow"
-                android:layout_margin="2dp"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="5dp">
+            <Button android:layout_weight="1.5" android:layout_width="0dp" android:layout_height="wrap_content" android:text="Back" android:id="@+id/back" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:textSize="15sp" android:textColor="@color/white" />
+            <Button android:layout_weight="1.5" android:textSize="15sp" android:text="Save" android:id="@+id/save" android:background="@drawable/bg_btn_primary" android:layout_margin="2dp" android:layout_width="0dp" android:layout_height="wrap_content" android:hint="" android:textColor="@color/white" />
         </LinearLayout>
-
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
