@@ -1,227 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:clickable="true">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp"
-        android:id="@+id/control_row_manifest_crate">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Manifesto Crate"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_manifest_crate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint="Scan Crate"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"/>
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:clickable="true" android:background="@color/bgPage">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:id="@+id/control_row_manifest_crate">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Manifesto Crate" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_manifest_crate" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan Crate" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp"
-        android:id="@+id/control_row_courier_partner">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Courier Partner"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_courier_partner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint=""
-                android:maxLines="1"
-                android:singleLine="true"
-                android:enabled="false"
-                android:imeOptions="actionDone"/>
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:id="@+id/control_row_courier_partner">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Courier Partner" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_courier_partner" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="" android:maxLines="1" android:singleLine="true" android:enabled="false" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp"
-        android:id="@+id/control_row_rejected_crate">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="Rejected Crate"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_rejected_crate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint="Scan Crate"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:enabled="false"
-                android:imeOptions="actionDone"/>
-
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:id="@+id/control_row_rejected_crate">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="Rejected Crate" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_rejected_crate" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan Crate" android:maxLines="1" android:singleLine="true" android:enabled="false" android:imeOptions="actionDone" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp"
-        android:id="@+id/control_row_awb_no">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="AWB No."/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_awb_number"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint="Scan AWB"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"
-                android:enabled="false"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:id="@+id/control_row_awb_no">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="AWB No." />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_awb_number" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="Scan AWB" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:enabled="false" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="5dp"
-        android:id="@+id/control_row_awb_scan_count">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="7dp"
-            android:textColor="@color/black"
-            android:textSize="18sp"
-            android:text="AWB Scan Count"/>
-
-        <RelativeLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <EditText
-                android:id="@+id/text_awb_scan_count"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="7dp"
-                android:textColor="@color/black"
-                android:background="@color/white"
-                android:textSize="18sp"
-                android:hint=""
-                android:maxLines="1"
-                android:singleLine="true"
-                android:imeOptions="actionDone"
-                android:enabled="false"
-                />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:id="@+id/control_row_awb_scan_count">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:padding="7dp" android:textColor="@color/black" android:textSize="18sp" android:text="AWB Scan Count" />
+        <RelativeLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
+            <EditText android:id="@+id/text_awb_scan_count" android:layout_width="match_parent" android:layout_height="48dp" android:padding="7dp" android:textColor="@color/black" android:background="@color/bgInput" android:textSize="18sp" android:hint="" android:maxLines="1" android:singleLine="true" android:imeOptions="actionDone" android:enabled="false" android:textColorHint="@color/textHint" />
         </RelativeLayout>
-
     </LinearLayout>
-
-    <CheckBox
-        android:id="@+id/cb_release_all_other_orders"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="20dp"
-        android:text="Release All Other Orders" />
-
-    <Button
-        android:id="@+id/button_save"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Save"
-        android:layout_margin="5dp"
-        android:textColor="@color/white"
-        android:background="@color/colorPrimary" />
-
-
+    <CheckBox android:id="@+id/cb_release_all_other_orders" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:text="Release All Other Orders" />
+    <Button android:id="@+id/button_save" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Save" android:layout_margin="5dp" android:textColor="@color/white" android:background="@drawable/bg_btn_primary" android:textSize="13sp" />
 </LinearLayout>
