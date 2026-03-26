@@ -35,7 +35,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
@@ -58,7 +58,7 @@ import java.io.UnsupportedEncodingException;
 public class LoginActivity extends AppCompatActivity {
 
     private RequestQueue mRequestQueue;
-    private StringRequest mStringRequest;
+    private JsonObjectRequest mJsonObjectRequest;
     private static final int REQUEST_LOGIN = 101;
 
     ProgressDialog dialog;
@@ -337,7 +337,7 @@ public class LoginActivity extends AppCompatActivity {
         final JSONObject params = args;
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {
