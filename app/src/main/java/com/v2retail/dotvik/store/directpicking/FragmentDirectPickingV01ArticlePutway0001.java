@@ -343,15 +343,17 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         FloorBarcode barcodeData = null;
         if(barcodeDataMap.containsKey(barcode)){
             barcodeData = barcodeDataMap.get(barcode);
-            double sqty = Util.convertStringToDouble(barcodeData.getScanQty());
-            double rqty = Util.convertStringToDouble(barcodeData.getVerme());
-            sqty = sqty + 1;
+            double sqty  = Util.convertStringToDouble(barcodeData.getScanQty());
+            double rqty  = Util.convertStringToDouble(barcodeData.getVerme());
+            // UMREZ = pack conversion ratio from ZSDC_DIRECT_ART_VAL_BARCOD_RFC
+            // e.g. UMREZ=4 means 1 barcode scan = 4 units
+            double umrez = Util.convertStringToDouble(barcodeData.getUmrez());
+            if (umrez <= 0) umrez = 1;
+            sqty = sqty + umrez;
             if(sqty > rqty){
                 box.getBox("Invalid", "Already scanned maximum allowed Qty " + rqty);
                 return;
             }
-            txt_article.setText(barcodeData.getMatnr());
-            //Yahan
             txt_article.setText(barcodeData.getMatnr());
             txt_scan_qty.setText(Util.formatDouble(sqty));
             barcodeData.setScanQty(Util.formatDouble(sqty));
