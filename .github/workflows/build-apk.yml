@@ -22,7 +22,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Release APK
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > /tmp/V2Retail_keystore
+          ls -lh /tmp/V2Retail_keystore
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: /tmp/V2Retail_keystore
+          KEYSTORE_PASSWORD: V2Retail@456
+          KEY_ALIAS: v2retail
+          KEY_PASSWORD: V2Retail@456
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
@@ -32,8 +42,8 @@ jobs:
           find app/build/outputs/apk -name '*.apk'
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           echo "APK: $APK"
+          echo "Size: $(du -sh $APK)"
           cp "$APK" V2_HHT_Azure_Release.apk
-          du -sh V2_HHT_Azure_Release.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -41,11 +51,23 @@ jobs:
           name: V2-HHT-Azure-Release
           path: V2_HHT_Azure_Release.apk
 
+      - name: Get version name
+        id: version
+        run: |
+          VER=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Version: $VER"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v12.098-${{ github.run_number }}
-          name: 'V2 HHT v12.098 Build ${{ github.run_number }}'
+          tag_name: v${{ steps.version.outputs.version }}-build${{ github.run_number }}
+          name: 'V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}'
+          body: |
+            Version: ${{ steps.version.outputs.version }}
+            Build: ${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Fix: UMREZ pack ratio used for scan quantity (ZSDC_DIRECT_ART_VAL_BARCOD_RFC)
           files: V2_HHT_Azure_Release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
