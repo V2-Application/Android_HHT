@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
@@ -21,7 +21,7 @@
             android:textColor="#fff"
 
             android:id="@+id/baseTodisplay"
-            android:background="#e71821"
+            android:background="@drawable/btn_secondary"
             android:text="Base Stock To Display" />
 
         <Button
@@ -32,9 +32,10 @@
             android:textColor="#fff"
 
             android:id="@+id/displaytobase"
-            android:background="#e71821" />
+            android:background="@drawable/btn_secondary" />
 
 
     </LinearLayout>
+    </ScrollView>
 
 </FrameLayout>
