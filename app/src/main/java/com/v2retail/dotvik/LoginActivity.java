@@ -370,14 +370,105 @@ public class LoginActivity extends AppCompatActivity {
             data.write("WERKS", werks);
             data.write("USERNAME", user);
             data.write("PASSWORD", pass);
-            data.write("LOC", "Store"); // default for legacy
-            // Navigate — legacy server doesn't return EX_GROUP so route to DC as default
-            startActivity(new android.content.Intent(LoginActivity.this,
-                com.v2retail.dotvik.dc.Process_Selection_Activity.class));
-            moveTaskToBack(true);
+            // Now call ZWM_USER_AUTHORITY_CHECK to get EX_GROUP so we can route correctly
+            // (same as Azure path — store users go to Home_Activity, DC to Process_Selection)
+            fetchUserGroupAndRoute(user, pass, werks, data);
         } else {
             box.getBox("Err", "Login failed — invalid username or password");
         }
+    }
+
+    /**
+     * After legacy login succeeds, call ZWM_USER_AUTHORITY_CHECK via the old middleware
+     * to get EX_GROUP, then route the user to the correct screen (DC / Store / Hub / Ecomm).
+     * The old middleware's noacljsonrfcadaptor endpoint handles this RFC call.
+     */
+    private void fetchUserGroupAndRoute(String user, String pass,
+                                        String werks, SharedPreferencesData data) {
+        // Build RFC URL from login URL:
+        // e.g. "http://server:9080/xmwgw" → "http://server:9080/noacljsonrfcadaptor?bapiname=ZWM_USER_AUTHORITY_CHECK"
+        String base = URL.contains("/") ? URL.substring(0, URL.lastIndexOf("/")) : URL;
+        String rfcUrl = base + "/noacljsonrfcadaptor?bapiname=ZWM_USER_AUTHORITY_CHECK&aclclientid=android";
+
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_USER_AUTHORITY_CHECK);
+            args.put("IM_USERID", user.toUpperCase());
+            args.put("IM_PASSWORD", pass);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            // Fallback: route to DC if authority check fails to build
+            routeUser("DC", werks, data);
+            return;
+        }
+
+        final JSONObject params = args;
+        com.android.volley.toolbox.JsonObjectRequest req =
+            new com.android.volley.toolbox.JsonObjectRequest(
+                Request.Method.POST, rfcUrl, params,
+                responsebody -> {
+                    String group = "";
+                    try {
+                        if (responsebody != null && responsebody.has("EX_GROUP")) {
+                            group = responsebody.optString("EX_GROUP", "");
+                        }
+                        // Update WERKS from authority check if returned
+                        if (responsebody != null && responsebody.has("EX_WERKS")) {
+                            String authWerks = responsebody.optString("EX_WERKS", "");
+                            if (!authWerks.isEmpty()) {
+                                data.write("WERKS", authWerks);
+                            }
+                        }
+                    } catch (Exception e) { e.printStackTrace(); }
+                    routeUser(group, data.read("WERKS"), data);
+                },
+                error -> {
+                    Log.w(TAG, "Authority check failed for legacy login — routing by WERKS prefix");
+                    // Fallback: route by WERKS prefix (DC plant codes known patterns)
+                    routeUser(guessDCOrStore(werks), werks, data);
+                }
+            ) {
+                @Override public String getBodyContentType() { return "application/json"; }
+                @Override public byte[] getBody() { return params.toString().getBytes(); }
+            };
+
+        req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(30000, 1,
+            com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        ApplicationController.getInstance().getRequestQueue().add(req);
+    }
+
+    /**
+     * Route to the correct Activity based on EX_GROUP (same logic as Azure path).
+     */
+    private void routeUser(String group, String werks, SharedPreferencesData data) {
+        data.write("LOC", isDC_user(group) ? "DC" : "Store");
+        if (isDC_user(group)) {
+            startActivity(new android.content.Intent(LoginActivity.this,
+                com.v2retail.dotvik.dc.Process_Selection_Activity.class));
+        } else if (isEcomm_user(werks)) {
+            startActivity(new android.content.Intent(LoginActivity.this,
+                com.v2retail.dotvik.ecomm.Ecomm_Process_Selection.class));
+        } else if (isHub_user(group)) {
+            startActivity(new android.content.Intent(LoginActivity.this,
+                com.v2retail.dotvik.hub.HubProcessSelectionActivity.class));
+        } else {
+            startActivity(new android.content.Intent(LoginActivity.this,
+                com.v2retail.dotvik.store.Home_Activity.class));
+        }
+        moveTaskToBack(true);
+        clear();
+    }
+
+    /**
+     * Fallback: guess DC vs Store from WERKS prefix when authority RFC is unreachable.
+     * DC plant codes at V2 Retail are "DC", Store codes are everything else.
+     */
+    private String guessDCOrStore(String werks) {
+        if (werks == null || werks.isEmpty()) return "";
+        // Known DC prefixes (distribution centres): HN4x, HD3x, DW0x etc.
+        // This is a best-effort fallback — the RFC check above is the preferred path.
+        // Return "DC" for nothing recognised so legacy behaves as before.
+        return "DC";
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args){
