@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
@@ -18,7 +18,7 @@
             android:layout_margin="5dp"
             android:textColor="#fff"
             android:id="@+id/btn_hu_in_bin_direct_bin"
-            android:background="#e71821"
+            android:background="@drawable/btn_secondary"
             android:text="Direct Bin" />
 
         <Button
@@ -28,7 +28,7 @@
             android:layout_margin="5dp"
             android:textColor="#fff"
             android:id="@+id/btn_hu_in_bin_hu_to_pallet"
-            android:background="#e71821" />
+            android:background="@drawable/btn_secondary" />
 
         <Button
             android:layout_width="match_parent"
@@ -37,9 +37,10 @@
             android:layout_margin="5dp"
             android:textColor="#fff"
             android:id="@+id/btn_hu_in_bin_pallet_to_bin"
-            android:background="#e71821" />
+            android:background="@drawable/btn_secondary" />
 
 
     </LinearLayout>
+    </ScrollView>
 
 </FrameLayout>
