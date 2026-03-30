@@ -1,26 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ── V2 Retail Brand ───────────────────── -->
+    <!-- V2 WMS Design System v3.0 -->
+    <color name="colorPrimary">#1A1A1A</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#4CAF50</color>
+    <color name="bgPage">#F7F8F3</color>
+    <color name="bgCard">#FFFFFF</color>
+    <color name="bgInput">#F5F5F3</color>
+    <color name="bgNavBar">#FFFFFF</color>
+    <color name="bgBottomNav">#FFFFFF</color>
+    <color name="bgScanActive">#F0FDF4</color>
+    <color name="statGreenBg">#EEF6EC</color>
+    <color name="statGreenIcon">#C8E6C4</color>
+    <color name="statTealBg">#EAF5F2</color>
+    <color name="statTealIcon">#B8E0D8</color>
+    <color name="statOrangeBg">#FEF3EA</color>
+    <color name="statOrangeIcon">#FADDC0</color>
+    <color name="statRedBg">#FEECEC</color>
+    <color name="statRedIcon">#FAC8C8</color>
+    <color name="statBlueBg">#EAF0FE</color>
+    <color name="statBlueIcon">#BBDEFB</color>
+    <color name="statPurpleBg">#F3EEFE</color>
+    <color name="statPurpleIcon">#E9D5FF</color>
+    <color name="textPrimary">#1A1A1A</color>
+    <color name="textSecondary">#888888</color>
+    <color name="textHint">#BBBBBB</color>
+    <color name="textLabel">#AAAAAA</color>
+    <color name="textOnDark">#FFFFFF</color>
+    <color name="colorSuccess">#4CAF50</color>
+    <color name="colorSuccessBg">#EEF6EC</color>
+    <color name="colorSuccessLight">#66BB6A</color>
+    <color name="colorError">#E53935</color>
+    <color name="colorErrorBg">#FEECEC</color>
+    <color name="colorErrorLight">#EF9A9A</color>
+    <color name="colorWarning">#F57C00</color>
+    <color name="colorWarningBg">#FEF3EA</color>
+    <color name="colorInfo">#2563EB</color>
+    <color name="colorInfoBg">#EAF0FE</color>
+    <color name="colorPurple">#7C3AED</color>
+    <color name="colorPurpleBg">#F3EEFE</color>
+    <color name="colorTeal">#0F9D8E</color>
+    <color name="colorTealBg">#EAF5F2</color>
+    <color name="borderLight">#F0F0EE</color>
+    <color name="borderMedium">#E0E0DC</color>
+    <color name="borderScan">#1A1A1A</color>
+    <color name="borderContext">#C8E6C4</color>
+    <color name="zoneSelectedBg">#EEF6EC</color>
+    <color name="zoneActiveBg">#1A1A1A</color>
+    <color name="zoneErrorBg">#FEECEC</color>
+    <color name="zoneWaitBg">#F7F8F3</color>
+    <!-- LEGACY — DO NOT REMOVE -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#CB000000</color>
+    <color name="lightGrey">#DCDCDC</color>
+    <color name="redAccent">#fffaea</color>
+    <color name="buttonColor">#1A1A1A</color>
+    <color name="buttonColortext">#FFFFFF</color>
+    <color name="viewBg">#F7F8F3</color>
+    <color name="album_title">#4c4c4c</color>
+    <color name="sales">#d5abea</color>
+    <color name="stock">#ec4169</color>
+    <color name="sales_gen">#f1c97b</color>
+    <color name="ageing">#FFC107</color>
+    <color name="stock_gen">#f18054</color>
+    <color name="merchandise">#f77edf</color>
+    <color name="dc">#FFEB3B</color>
+    <color name="enabled_color">#1A1A1A</color>
+    <color name="disabled_color">#AAAAAA</color>
+    <color name="toggle_false">#DDDDDD</color>
+    <color name="tv_enabled_color">#1A1A1A</color>
+    <color name="tv_disabled_color">#AAAAAA</color>
+
+    <!-- ── V2 Retail Brand (new) ──────────────────── -->
     <color name="v2Blue">#1B4F72</color>
     <color name="v2BlueDark">#154060</color>
     <color name="v2BlueLight">#D6E8F5</color>
     <color name="v2Red">#E71821</color>
     <color name="v2RedDark">#C41018</color>
-
-    <!-- ── Surface ────────────────────────────── -->
-    <color name="bgPage">#F4F6F9</color>
-    <color name="bgCard">#FFFFFF</color>
-    <color name="bgInput">#F9FAFB</color>
     <color name="bgChip">#EEF3F9</color>
     <color name="divider">#E5E7EB</color>
-
-    <!-- ── Text ───────────────────────────────── -->
-    <color name="textPrimary">#111827</color>
-    <color name="textSecondary">#6B7280</color>
-    <color name="textHint">#9CA3AF</color>
     <color name="textOnPrimary">#FFFFFF</color>
-
-    <!-- ── Status badges ─────────────────────── -->
     <color name="successBg">#D1FAE5</color>
     <color name="successText">#065F46</color>
     <color name="warningBg">#FEF3C7</color>
@@ -30,27 +89,4 @@
     <color name="infoBg">#DBEAFE</color>
     <color name="infoText">#1E40AF</color>
 
-    <!-- ── Legacy aliases (keep existing code compiling) ── -->
-    <color name="colorPrimary">#1B4F72</color>
-    <color name="colorPrimaryDark">#154060</color>
-    <color name="colorAccent">#1B4F72</color>
-    <color name="bgNavBar">#FFFFFF</color>
-    <color name="bgBottomNav">#FFFFFF</color>
-    <color name="bgScanActive">#EEF3F9</color>
-    <color name="statGreenBg">#D1FAE5</color>
-    <color name="statGreenIcon">#A7F3D0</color>
-    <color name="statTealBg">#EEF3F9</color>
-    <color name="statTealIcon">#BFDBFE</color>
-    <color name="statOrangeBg">#FEF3C7</color>
-    <color name="statOrangeIcon">#FDE68A</color>
-    <color name="statRedBg">#FEE2E2</color>
-    <color name="statRedIcon">#FECACA</color>
-    <color name="textBlack">#111827</color>
-    <color name="textGrey">#6B7280</color>
-    <color name="textWhite">#FFFFFF</color>
-    <color name="btnGreen">#059669</color>
-    <color name="btnBlue">#1B4F72</color>
-    <color name="btnRed">#E71821</color>
-    <color name="btnGrey">#6B7280</color>
-    <color name="scanFieldBorder">#1B4F72</color>
 </resources>
