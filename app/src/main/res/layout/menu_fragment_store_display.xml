@@ -1,54 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgCard"
-    android:id="@+id/displayStoreMenu">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bgPage">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="12dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="DISPLAY AREA" android:textSize="11sp" android:textStyle="bold"
+                android:textColor="@color/textSecondary" android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp" android:layout_marginStart="4dp" />
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:background="@color/black"
-            android:padding="5dp"
-            android:tag="store_display_tag">
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="@color/white"
-                android:id="@+id/store_display_inbound"
-                android:background="@color/buttonColor"
-                android:text="Inbound" />
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="@color/white"
-                android:id="@+id/store_display_outbound"
-                android:background="@color/buttonColor"
-                android:text="Outbound" />
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="@color/white"
-                android:id="@+id/store_display_internal"
-                android:background="@color/buttonColor"
-                android:text="Internal" />
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="@color/white"
-                android:id="@+id/store_display_reports"
-                android:background="@color/buttonColor"
-                android:text="Reports" />
+            <Button android:id="@+id/display_inbound" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary" android:textColor="#fff"
+                android:textSize="14sp" android:textStyle="bold" android:text="Inbound" />
+            <Button android:id="@+id/display_internal" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary" android:textColor="#fff"
+                android:textSize="14sp" android:textStyle="bold" android:text="Internal" />
+            <Button android:id="@+id/display_outbound" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary" android:textColor="#fff"
+                android:textSize="14sp" android:textStyle="bold" android:text="Outbound" />
+            <Button android:id="@+id/display_reports" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_muted" android:textColor="@color/textSecondary"
+                android:textSize="14sp" android:textStyle="bold" android:text="Reports" />
         </LinearLayout>
     </ScrollView>
 </FrameLayout>
