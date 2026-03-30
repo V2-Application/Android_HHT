@@ -217,8 +217,8 @@
                     android:layout_height="wrap_content"
                     android:text="Save"
                     android:layout_margin="5dp"
-                    android:textColor="@color/white"
-                    android:background="@color/colorPrimary" />
+                    android:textColor="@color/textOnPrimary"
+                    android:background="@color/v2Blue" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
@@ -235,7 +235,7 @@
             android:visibility="invisible"
             android:text="Reset"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </RelativeLayout>
