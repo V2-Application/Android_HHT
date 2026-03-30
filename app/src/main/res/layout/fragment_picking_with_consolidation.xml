@@ -372,8 +372,8 @@
             android:text="Refresh"
             android:layout_weight="1"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:id="@+id/button_pickwithcon_save"
             android:layout_width="match_parent"
@@ -382,7 +382,7 @@
             android:text="Save"
             android:layout_weight="1"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </LinearLayout>
