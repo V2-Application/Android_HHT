@@ -88,7 +88,7 @@
             android:layout_height="wrap_content"
             android:text="Back"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </RelativeLayout>
