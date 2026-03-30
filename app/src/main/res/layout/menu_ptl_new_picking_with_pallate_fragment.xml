@@ -1,97 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgCard">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bgPage">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="12dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PTL WITH PALLET" android:textSize="11sp" android:textStyle="bold"
+                android:textColor="@color/textSecondary" android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp" android:layout_marginStart="4dp" />
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_margin="2dp"
-        android:background="#000"
-        android:padding="5dp">
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-
-            android:id="@+id/ptl_new_ptl_picking"
-            android:background="#e71821"
-            android:text="PTL Picking" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Crate Move To FLR Staging"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:id="@+id/ptl_new_flr_staging"
-            android:background="#e71821" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Crate Receive at Floor"
-            android:id="@+id/ptl_new_crate_receive_at_floor"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Ready For Zone Sorting"
-            android:id="@+id/ptl_new_ready_for_zone_sorting"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Receive at Zone"
-            android:id="@+id/ptl_new_receive_at_zone"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="HU-Zone-Store Mapping"
-            android:id="@+id/ptl_new_hu_zone_store_mapping"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="HU Close"
-            android:id="@+id/ptl_new_hu_close"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="HU Print"
-            android:id="@+id/ptl_new_hu_print"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Article Putway Store-Wise"
-            android:id="@+id/ptl_new_article_putway_storewise"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
-
-    </LinearLayout>
+            <Button android:id="@+id/ptl_pallet_crate" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary" android:textColor="#fff"
+                android:textSize="14sp" android:textStyle="bold" android:text="Pallet + Crate" />
+            <Button android:id="@+id/ptl_pallet_only" android:layout_width="match_parent"
+                android:layout_height="48dp" android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary" android:textColor="#fff"
+                android:textSize="14sp" android:textStyle="bold" android:text="Pallet Only" />
+        </LinearLayout>
     </ScrollView>
 </FrameLayout>
