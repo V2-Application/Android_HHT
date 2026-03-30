@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage">
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+    android:layout_height="match_parent">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,10 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/msa_binwise_pikcing_picking"
-            android:background="@drawable/btn_secondary"
+            android:background="@color/v2Blue"
             android:text="Picking" />
 
         <Button
@@ -27,11 +26,10 @@
             android:layout_height="wrap_content"
             android:text="HU Print"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/msa_binwise_pikcing_hu_print"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
