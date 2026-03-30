@@ -52,7 +52,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="ARTICLE "
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
@@ -80,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="MAT DES. "
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
@@ -108,7 +108,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="Ageing"
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
@@ -136,7 +136,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="MC"
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
@@ -163,7 +163,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="INTRANSIT"
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
@@ -527,7 +527,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".3"
                 android:text="Ageing"
-                android:textColor="@color/buttonColortext"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="@dimen/label_text_size" />
 
             <EditText
