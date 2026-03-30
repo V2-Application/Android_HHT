@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage">
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+    android:layout_height="match_parent">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,10 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/direct_picking_v01_0001_huwise_article_v01_v09"
-            android:background="@drawable/btn_secondary"
+            android:background="@color/v2Blue"
             android:text="HU-Wise Article Scanning(V01 To V09)" />
 
         <Button
@@ -27,11 +26,10 @@
             android:layout_height="wrap_content"
             android:text="Article Putway To 0001(V09 To 0001)"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/direct_picking_v01_0001_huwise_article_putway_0001"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
