@@ -5,9 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".store.RetailFragment">
 
-        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
-
-        <LinearLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -20,9 +18,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/getStock"
-            android:background="@drawable/btn_secondary"
+            android:background="@color/v2Blue"
             android:text="Get Stock" />
 
         <Button
@@ -30,10 +28,9 @@
             android:layout_height="wrap_content"
             android:text="Post Data Offline"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/postDataOffline"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
