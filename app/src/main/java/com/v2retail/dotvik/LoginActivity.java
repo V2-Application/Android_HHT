@@ -293,17 +293,88 @@ public class LoginActivity extends AppCompatActivity {
 
         InputMethodManager imm = (InputMethodManager) getApplicationContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(mPasswordView.getWindowToken(), 0);
+
+        String user = mUserName.getText().toString().trim();
+        String pass = mPasswordView.getText().toString().trim();
+
+        // Old middleware (xmwgw) uses hash-delimited plain text format
+        // New middleware (Azure) uses JSON
+        if (URL != null && URL.contains("xmwgw")) {
+            loginLegacy(user, pass);
+            return;
+        }
+
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_USER_AUTHORITY_CHECK);
-            args.put("IM_USERID",mUserName.getText().toString().trim());
-            args.put("IM_PASSWORD",mPasswordView.getText().toString().trim());
+            args.put("IM_USERID", user);
+            args.put("IM_PASSWORD", pass);
             showProcessingAndSubmit(Vars.ZWM_USER_AUTHORITY_CHECK, REQUEST_LOGIN, args);
         }catch (Exception e)
         {   dialog.dismiss();
             box.getErrBox(e);
         }
-        //clear();
+    }
+
+    // Legacy login for old on-prem middleware (xmwgw)
+    // Request: "scnrec#user#pass#<eol>" plain text
+    // Response: "1#WERKS" (success) or "0" (failure)
+    private void loginLegacy(String user, String pass) {
+        dialog = new ProgressDialog(LoginActivity.this);
+        dialog.setMessage("Please wait...");
+        dialog.setCancelable(false);
+        dialog.show();
+
+        String body = "scnrec#" + user + "#" + pass + "#<eol>";
+        Log.d(TAG, "loginLegacy body -> " + body);
+
+        com.android.volley.toolbox.StringRequest req = new com.android.volley.toolbox.StringRequest(
+            com.android.volley.Request.Method.POST, URL,
+            new com.android.volley.Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    if (dialog != null) { dialog.dismiss(); dialog = null; }
+                    Log.d(TAG, "loginLegacy response -> " + response);
+                    handleLegacyLoginResponse(response, user, pass);
+                }
+            },
+            volleyErrorListener()
+        ) {
+            @Override
+            public byte[] getBody() { return body.getBytes(); }
+
+            @Override
+            public String getBodyContentType() { return "text/plain"; }
+        };
+
+        req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(50000, 1,
+            com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        ApplicationController.getInstance().getRequestQueue().add(req);
+    }
+
+    // Parse old middleware response: "1#WERKS" = success, "0" = failure
+    private void handleLegacyLoginResponse(String response, String user, String pass) {
+        if (response == null || response.trim().isEmpty()) {
+            box.getBox("Err", "Empty response from server");
+            return;
+        }
+        String[] parts = response.trim().split("#");
+        if (parts.length >= 1 && parts[0].equals("1")) {
+            // Success — parts[1] is WERKS (plant/store code)
+            String werks = parts.length >= 2 ? parts[1].trim() : "";
+            SharedPreferencesData data = new SharedPreferencesData(getApplicationContext());
+            data.write("USER", user.toUpperCase());
+            data.write("WERKS", werks);
+            data.write("USERNAME", user);
+            data.write("PASSWORD", pass);
+            data.write("LOC", "Store"); // default for legacy
+            // Navigate — legacy server doesn't return EX_GROUP so route to DC as default
+            startActivity(new android.content.Intent(LoginActivity.this,
+                com.v2retail.dotvik.dc.Process_Selection_Activity.class));
+            moveTaskToBack(true);
+        } else {
+            box.getBox("Err", "Login failed — invalid username or password");
+        }
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args){
