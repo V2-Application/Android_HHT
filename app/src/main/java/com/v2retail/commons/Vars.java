@@ -259,4 +259,8 @@ public class Vars {
     public static String ZWM_GET_STOCK_TAKE_ID = "ZWM_GET_STOCK_TAKE_ID";
     public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN";
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
+
+    // HU Swap Print process
+    public static String ZWM_HUSWAP        = "ZWM_HUSWAP";
+    public static String HU_SWAP_PROCESS   = "HU_SWAP_PRINT";
 }
