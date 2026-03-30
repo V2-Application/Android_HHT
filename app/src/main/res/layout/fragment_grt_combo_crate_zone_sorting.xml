@@ -379,8 +379,8 @@
             android:layout_weight="1"
             android:text="Empty Picked Crate"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:id="@+id/button_back_grt_combo_sort_form"
             android:layout_width="match_parent"
@@ -388,7 +388,7 @@
             android:layout_weight="1"
             android:text="Next"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </RelativeLayout>
