@@ -40,7 +40,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
     Button hu_cla;
     Context con;
     AlertBox box;
-    Button sample_stock_movement,shade_stock_movement,empty_bin,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu;
+    Button sample_stock_movement,shade_stock_movement,empty_bin,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu,hu_swap_print;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -108,6 +108,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         hu_weight = view.findViewById(R.id.outward_hu_weight);
         tvs_paperless_picking= view.findViewById(R.id.tvs_paperless_picking);
         tvs_paperless_picking_live_hu= view.findViewById(R.id.tvs_paperless_picking_live_hu);
+        hu_swap_print = view.findViewById(R.id.hu_swap_print);
 
 
         picking.setOnClickListener(this);
@@ -119,6 +120,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         hu_weight.setOnClickListener(this);
         tvs_paperless_picking.setOnClickListener(this);
         tvs_paperless_picking_live_hu.setOnClickListener(this);
+        hu_swap_print.setOnClickListener(this);
 
         return view;
     }
@@ -200,6 +202,9 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
                 break;
             case R.id.tvs_paperless_picking_live_hu:
                 fragment = MenuFragmentInwardTVSPaperLess.newInstance(Vars.TVS_PAPER_LESS_LHU);
+                break;
+            case R.id.hu_swap_print:
+                fragment = FragmentHUSwapPrint.newInstance("Outward");
                 break;
 
         }
