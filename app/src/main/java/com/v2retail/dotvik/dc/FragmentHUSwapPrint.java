@@ -266,6 +266,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
             String newHu   = exData.optString("EXIDV_NEW", "");
             String vemng   = exData.optString("VEMNG_NEW", "");
             String crOn    = exData.optString("HU_CR_ON",  "");
+            String crAt    = exData.optString("HU_CR_AT",  "");
             String source  = exData.optString("SOURCE",    "");
             String newDes  = exData.optString("NEW_DES",   "");
 
@@ -279,7 +280,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
 
             // Print label
             TSPLPrinter printer = new TSPLPrinter(con, Vars.HU_SWAP_PROCESS);
-            printer.sendHuSwapPrintCommand(tvsPrinter, oldHu, newHu, vemng, crOn, source, newDes);
+            printer.sendHuSwapPrintCommand(tvsPrinter, oldHu, newHu, vemng, crOn, crAt, source, newDes);
 
             // Update counter and UI
             scanCount++;
