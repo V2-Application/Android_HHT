@@ -138,6 +138,84 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
         }
     }
 
+
+    /**
+     * Launch the APK installer. If the install is blocked due to a signing
+     * certificate conflict (old app signed with different key), show a dialog
+     * offering to uninstall the old package so the user can re-install cleanly.
+     */
+    private void launchInstaller(Context ctx, java.io.File apkFile) {
+        try {
+            android.content.Intent install = new android.content.Intent(Intent.ACTION_VIEW);
+            Uri apkUri;
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                apkUri = androidx.core.content.FileProvider.getUriForFile(
+                    ctx, ctx.getPackageName() + ".provider", apkFile);
+                install.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_ACTIVITY_NEW_TASK);
+            } else {
+                apkUri = Uri.fromFile(apkFile);
+                install.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            install.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            ctx.startActivity(install);
+        } catch (android.content.ActivityNotFoundException e) {
+            Log.e(TAG, "No installer activity found", e);
+            // Fallback: open package installer directly
+            try {
+                android.content.Intent fallback = new android.content.Intent(
+                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + ctx.getPackageName()));
+                fallback.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx.startActivity(fallback);
+            } catch (Exception ex) {
+                Toast.makeText(ctx, "Please enable 'Install unknown apps' in Settings.",
+                    Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Install launch failed: " + e.getMessage(), e);
+            // Could be a signing conflict — offer to uninstall old package
+            showSigningConflictDialog(ctx, apkFile);
+        }
+    }
+
+    /**
+     * Show a dialog when install fails due to signing certificate mismatch.
+     * Guides the user to uninstall the old version first.
+     */
+    private void showSigningConflictDialog(Context ctx, java.io.File apkFile) {
+        runOnUiThread(() -> {
+            new android.app.AlertDialog.Builder(ctx)
+                .setTitle("Update Required — Action Needed")
+                .setMessage("A newer version is ready to install, but the existing app "
+                    + "needs to be removed first (one-time process due to a security key change).\n\n"
+                    + "Tap UNINSTALL to remove the current app, then re-open this file from "
+                    + "notifications to install the new version.\n\n"
+                    + "You will NOT lose any data.")
+                .setCancelable(false)
+                .setPositiveButton("UNINSTALL OLD APP", (dialog, which) -> {
+                    try {
+                        // Launch system uninstall for this package
+                        android.content.Intent uninstall = new android.content.Intent(
+                            Intent.ACTION_DELETE,
+                            Uri.parse("package:" + ctx.getPackageName()));
+                        uninstall.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        ctx.startActivity(uninstall);
+                    } catch (Exception ex) {
+                        Toast.makeText(ctx,
+                            "Go to Settings > Apps > V2 HHT > Uninstall, then re-install from apk.v2retail.net/download",
+                            Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Manual Install Later", (dialog, which) -> {
+                    Toast.makeText(ctx,
+                        "APK saved. Go to Settings > Apps > V2 HHT > Uninstall, then install from: apk.v2retail.net/download",
+                        Toast.LENGTH_LONG).show();
+                })
+                .show();
+        });
+    }
+
     private void getAppUpdate(String iparr[]){
 
         String version = BuildConfig.VERSION_NAME;
@@ -196,30 +274,7 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                                                     android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                                                 if (id != dlId) return;
                                                 ctx.unregisterReceiver(this);
-                                                try {
-                                                    android.content.Intent install =
-                                                        new android.content.Intent(Intent.ACTION_VIEW);
-                                                    Uri apkUri;
-                                                    if (android.os.Build.VERSION.SDK_INT >= 24) {
-                                                        apkUri = androidx.core.content.FileProvider.getUriForFile(
-                                                            ctx,
-                                                            ctx.getPackageName() + ".provider",
-                                                            apkFile);
-                                                        install.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                            | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                                    } else {
-                                                        apkUri = Uri.fromFile(apkFile);
-                                                        install.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                                    }
-                                                    install.setDataAndType(apkUri,
-                                                        "application/vnd.android.package-archive");
-                                                    ctx.startActivity(install);
-                                                } catch (Exception e) {
-                                                    Log.e(TAG, "Install launch failed", e);
-                                                    Toast.makeText(ctx,
-                                                        "Update downloaded — open notifications to install.",
-                                                        Toast.LENGTH_LONG).show();
-                                                }
+                                                launchInstaller(ctx, apkFile);
                                             }
                                         };
                                         registerReceiver(onDone, new android.content.IntentFilter(
