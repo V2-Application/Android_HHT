@@ -155,48 +155,82 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                         // get response
                         try {
                             if (response.getString("upgrade").equals("available")){
+                                    // Auto-download — no button tap needed
+                                    String downloadUrl = null;
+                                    try {
+                                        downloadUrl = response.getString("downloadLink");
+                                    } catch (JSONException je) {
+                                        downloadUrl = "https://apk.v2retail.net/download";
+                                    }
+                                    final String finalUrl = downloadUrl;
 
-                                    AlertDialog.Builder builder
-                                            = new AlertDialog
-                                            .Builder(IPActivity.this);
-                                    builder.setMessage("New Version apk available");
-                                    builder.setTitle("Alert !");
-                                    builder.setCancelable(false);
-                                    builder.setPositiveButton("Download", new DialogInterface.OnClickListener() {
+                                    Toast.makeText(IPActivity.this,
+                                        "New version available — downloading update...",
+                                        Toast.LENGTH_LONG).show();
 
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
+                                    try {
+                                        // Download to app-private external dir (no WRITE_EXTERNAL_STORAGE needed)
+                                        java.io.File outFile = new java.io.File(
+                                            getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS),
+                                            "V2_HHT_Update.apk");
+                                        if (outFile.exists()) outFile.delete();
 
+                                        android.app.DownloadManager dm =
+                                            (android.app.DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                                        android.app.DownloadManager.Request req =
+                                            new android.app.DownloadManager.Request(Uri.parse(finalUrl));
+                                        req.setTitle("V2 HHT Update");
+                                        req.setDescription("Downloading latest version...");
+                                        req.setNotificationVisibility(
+                                            android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                                        req.setDestinationUri(Uri.fromFile(outFile));
+                                        final long dlId = dm.enqueue(req);
 
-                                            String downloadUrl = null;
-
-
-                                            try {
-                                                downloadUrl = response.getString("downloadLink");
-                                                File fileName = new File(downloadUrl);
-                                                String destination = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName.getName();
-                                                Log.d("ApkDownloadUtil", "URL : " + fileName.getName());
-                                                Log.d("ApkDownloadUtil", "URL : " + downloadUrl);
-
-                                                Uri uri = Uri.parse("file://" + destination);
-
-                                                DownloadManager downloadManager = (DownloadManager) getApplicationContext().getSystemService(Context.DOWNLOAD_SERVICE);
-
-                                                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
-                                                request.setDestinationUri(uri);
-
-                                                long requestId = downloadManager.enqueue(request);
-                                                Toast.makeText(IPActivity.this, "New Apk Downloading", Toast.LENGTH_SHORT).show();
-
-
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
+                                        // BroadcastReceiver fires when download completes → auto-launch installer
+                                        final java.io.File apkFile = outFile;
+                                        android.content.BroadcastReceiver onDone =
+                                            new android.content.BroadcastReceiver() {
+                                            @Override
+                                            public void onReceive(Context ctx, android.content.Intent intent) {
+                                                long id = intent.getLongExtra(
+                                                    android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                                                if (id != dlId) return;
+                                                ctx.unregisterReceiver(this);
+                                                try {
+                                                    android.content.Intent install =
+                                                        new android.content.Intent(Intent.ACTION_VIEW);
+                                                    Uri apkUri;
+                                                    if (android.os.Build.VERSION.SDK_INT >= 24) {
+                                                        apkUri = androidx.core.content.FileProvider.getUriForFile(
+                                                            ctx,
+                                                            ctx.getPackageName() + ".provider",
+                                                            apkFile);
+                                                        install.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                            | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    } else {
+                                                        apkUri = Uri.fromFile(apkFile);
+                                                        install.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    }
+                                                    install.setDataAndType(apkUri,
+                                                        "application/vnd.android.package-archive");
+                                                    ctx.startActivity(install);
+                                                } catch (Exception e) {
+                                                    Log.e(TAG, "Install launch failed", e);
+                                                    Toast.makeText(ctx,
+                                                        "Update downloaded — open notifications to install.",
+                                                        Toast.LENGTH_LONG).show();
+                                                }
                                             }
-                                        }
-                                    });
+                                        };
+                                        registerReceiver(onDone, new android.content.IntentFilter(
+                                            android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
-                                    AlertDialog alertDialog = builder.create();
-                                    alertDialog.show();
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "Auto-download failed", e);
+                                        Toast.makeText(IPActivity.this,
+                                            "Please update manually from apk.v2retail.net",
+                                            Toast.LENGTH_LONG).show();
+                                    }
 
                             }else {
                                 try{
