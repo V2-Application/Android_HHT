@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
         <Button
             android:layout_width="match_parent"
@@ -17,64 +17,64 @@
             android:text="Zone Sorting"
             android:id="@+id/grt_crate_zone_sorting"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Rev. Putway Crate"
             android:id="@+id/grt_rev_putway_crate"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Crate Picking"
             android:id="@+id/grt_crate_picking"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Crate Sorting"
             android:id="@+id/btn_grt_mix_crate_sorting"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Store Putwall"
             android:id="@+id/btn_grt_store_putwall"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="HU Creation"
             android:id="@+id/hu_creation_process"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Return Order Putaway"
             android:id="@+id/grt_return_order_putaway"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Crate To MSA Bin"
             android:id="@+id/grt_crate_to_msa_bin"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 
 </FrameLayout>
