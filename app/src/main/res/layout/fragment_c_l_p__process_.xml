@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
 
 
@@ -22,7 +22,7 @@
                 android:textColor="#fff"
                 android:layout_weight="1"
                 android:id="@+id/hu_scan_in_pallete"
-                android:background="@drawable/btn_secondary"
+                android:background="#e71821"
                 android:text="HU Scan in Pallete" />
 
         <Button
@@ -32,7 +32,7 @@
             android:id="@+id/pallete_putway"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
 
             <Button
@@ -43,7 +43,7 @@
                 android:layout_margin="5dp"
                 android:layout_weight="1"
                 android:textColor="#fff"
-                android:background="@drawable/btn_secondary" />
+                android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -52,7 +52,7 @@
             android:layout_margin="5dp"
             android:layout_weight="1"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,10 +61,9 @@
             android:layout_margin="5dp"
             android:layout_weight="1"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
     </LinearLayout>
-    </ScrollView>
 
 
 </FrameLayout>
