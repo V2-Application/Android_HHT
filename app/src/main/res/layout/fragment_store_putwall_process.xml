@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
 
         <Button
@@ -20,7 +20,7 @@
             android:id="@+id/btn_grt_spwall_external_hu_mapping"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -28,7 +28,7 @@
             android:id="@+id/grt_crate_sorting"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -36,7 +36,6 @@
             android:id="@+id/btn_grt_spwall_external_hu_close"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
     </LinearLayout>
-    </ScrollView>
 </FrameLayout>
