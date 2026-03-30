@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage">
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+    android:layout_height="match_parent">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -16,10 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/ptl_new_picking_with_pallate"
-            android:background="@drawable/btn_secondary"
+            android:background="@color/v2Blue"
             android:text="Picking - With Pallate" />
 
         <Button
@@ -27,29 +26,28 @@
             android:layout_height="wrap_content"
             android:text="Picking - Without Pallate"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/ptl_new_picking_without_pallate"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Full Crate Process 3.0"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/ptl_new_picking_full_crate_3_0"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
         
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="PTL - 4.0 Process"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/ptl_new_picking_4_0"
-            android:background="@drawable/btn_secondary" />
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
