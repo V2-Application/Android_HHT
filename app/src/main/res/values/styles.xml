@@ -6,15 +6,12 @@
         <item name="android:windowContentOverlay">@null</item>
     </style>
 
-    <!-- ── Base app theme ─────────────────────────────── -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/v2Blue</item>
         <item name="colorPrimaryDark">@color/v2BlueDark</item>
         <item name="colorAccent">@color/v2Red</item>
         <item name="android:windowBackground">@color/bgPage</item>
-        <item name="android:editTextStyle">@style/InputField</item>
     </style>
-
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
@@ -28,79 +25,49 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <!-- ── Buttons ────────────────────────────────────── -->
-    <!-- Primary: V2 Blue — main actions -->
-    <style name="Btn.Primary">
-        <item name="android:layout_width">match_parent</item>
+    <!-- ── Base button (explicit parent prevents inheritance error) ── -->
+    <style name="BtnBase" parent="Widget.AppCompat.Button">
         <item name="android:layout_height">48dp</item>
         <item name="android:layout_margin">5dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+    </style>
+
+    <!-- Primary: V2 Blue -->
+    <style name="BtnPrimary" parent="BtnBase">
+        <item name="android:layout_width">match_parent</item>
         <item name="android:background">@drawable/btn_primary</item>
         <item name="android:textColor">@color/textOnPrimary</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:gravity">center</item>
     </style>
 
-    <!-- Secondary: V2 Red — DC operations / existing workflows -->
-    <style name="Btn.Secondary">
+    <!-- Secondary: V2 Red -->
+    <style name="BtnSecondary" parent="BtnBase">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">48dp</item>
-        <item name="android:layout_margin">5dp</item>
         <item name="android:background">@drawable/btn_secondary</item>
         <item name="android:textColor">@color/textOnPrimary</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:gravity">center</item>
     </style>
 
-    <!-- Half width — used in 2-column button rows -->
-    <style name="Btn.Primary.Half">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_weight">1</item>
-    </style>
-
-    <style name="Btn.Secondary.Half">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_weight">1</item>
-    </style>
-
-    <!-- Danger/Back — grey -->
-    <style name="Btn.Ghost">
+    <!-- Ghost: outlined, for Back/Cancel -->
+    <style name="BtnGhost" parent="BtnBase">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">44dp</item>
-        <item name="android:layout_margin">5dp</item>
         <item name="android:background">@drawable/btn_ghost</item>
         <item name="android:textColor">@color/textSecondary</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:gravity">center</item>
     </style>
 
-    <!-- In Progress / disabled -->
-    <style name="Btn.Muted">
+    <!-- Muted: for disabled / in-progress items -->
+    <style name="BtnMuted" parent="BtnBase">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">44dp</item>
-        <item name="android:layout_margin">5dp</item>
         <item name="android:background">@drawable/btn_muted</item>
         <item name="android:textColor">@color/textSecondary</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:gravity">center</item>
     </style>
 
-    <!-- ── Input Fields ───────────────────────────────── -->
-    <style name="InputField" parent="Widget.AppCompat.EditText">
-        <item name="android:background">@drawable/input_bg</item>
-        <item name="android:padding">12dp</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:textColor">@color/textPrimary</item>
-        <item name="android:textColorHint">@color/textHint</item>
-        <item name="android:layout_marginBottom">10dp</item>
-    </style>
-
-    <!-- ── Section labels ─────────────────────────────── -->
+    <!-- ── Section label ───────────────────────────────── -->
     <style name="SectionLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
