@@ -11,17 +11,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/ecomm_qc_picking"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="EComm QC Picking" />
 
         <Button
@@ -29,10 +29,10 @@
             android:layout_height="wrap_content"
             android:text="TAG PACKING STATION WITH PICKED DATA"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/tag_packing_station_with_picked_data"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
 
