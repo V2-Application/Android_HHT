@@ -1,76 +1,70 @@
 package com.v2retail.util;
 
-import android.content.Context;
 import android.util.Log;
 import com.android.volley.Request;
-import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
-import org.json.JSONArray;
+import com.v2retail.commons.Vars;
 import org.json.JSONObject;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
 
 /**
- * Fetches plant/store/hub/DC names from Supabase store_plant_master_aka.
- * Data is loaded once on first use and cached in memory.
+ * Plant / store name lookup for HU Swap label printing.
+ *
+ * Fetches from the HHT middleware /plants endpoint (which pre-caches
+ * the Supabase store_plant_master_aka table on deployment).
+ * Only one network call per app session; subsequent calls use the in-memory cache.
  *
  * Usage:
- *   PlantNames.load();            // call once on app start or first HU Swap Print
- *   PlantNames.label("DW01")      // returns "DW01 KOLKATA-DC" or just "DW01" if not loaded
- *   PlantNames.get("DW01")        // returns "KOLKATA-DC" or "" if not found
+ *   PlantNames.load();           // call once, e.g. in FragmentHUSwapPrint.onResume()
+ *   PlantNames.label("DW01")     // "DW01 KOLKATA-RDC" or just "DW01" if not loaded
+ *   PlantNames.get("DW01")       // "KOLKATA-RDC" or "" if not found
  */
 public class PlantNames {
 
-    private static final String TAG          = "PlantNames";
-    private static final String BASE_URL     = "https://pymdqnnwwxrgeolvgvgv.supabase.co";
-    private static final String ANON_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bWRxbm53d3hyZ2VvbHZndmd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMzU0NzYsImV4cCI6MjA2ODkxMTQ3Nn0.jUrb0jIg6qjj2Rlh9DxYesSnbstoD4uoDCswqOqAkUM";
-    // Fetch STORE-CODE + STORE-NAME (short name, more label-friendly than STORE-FULL-NAME)
-    private static final String ENDPOINT     =
-        BASE_URL + "/rest/v1/store_plant_master_aka?select=STORE-CODE,STORE-NAME&limit=1000";
+    private static final String TAG = "PlantNames";
 
     private static final HashMap<String, String> CACHE = new HashMap<>();
-    private static boolean loaded  = false;
-    private static boolean loading = false;
+    private static volatile boolean loaded  = false;
+    private static volatile boolean loading = false;
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // ── Public API ─────────────────────────────────────────────────────────────
 
-    /**
-     * Returns "CODE Short-Name" e.g. "DW01 KOLKATA-RDC"
-     * Falls back to just "CODE" if names not loaded yet.
-     */
+    /** "CODE Name" e.g. "DW01 KOLKATA-RDC", or just "DW01" if names not loaded. */
     public static String label(String code) {
         if (code == null || code.trim().isEmpty()) return "";
         String name = get(code);
         return name.isEmpty() ? code.trim() : code.trim() + " " + name;
     }
 
-    /**
-     * Returns the short name for a code, e.g. "KOLKATA-RDC", or "" if unknown.
-     */
+    /** Short name e.g. "KOLKATA-RDC", or "" if unknown / not yet loaded. */
     public static String get(String code) {
         if (code == null || code.trim().isEmpty()) return "";
-        String name = CACHE.get(code.trim().toUpperCase());
-        return name != null ? name : "";
+        String v = CACHE.get(code.trim().toUpperCase());
+        return v != null ? v : "";
     }
 
     /**
-     * Trigger a background fetch from Supabase.
-     * Safe to call multiple times — only fetches once.
-     * Call from Application.onCreate() or FragmentHUSwapPrint.onResume().
+     * Trigger a one-time background fetch from the HHT middleware /plants endpoint.
+     * Safe to call multiple times — only fetches once per app session.
      */
     public static void load() {
         if (loaded || loading) return;
         loading = true;
 
-        JsonArrayRequest req = new JsonArrayRequest(
-            Request.Method.GET, ENDPOINT, null,
+        // /plants returns a JSON object: { "DW01": "KOLKATA-RDC", "HD22": "KPSHR", ... }
+        String url = Vars.URL + "/plants";
+
+        JsonObjectRequest req = new JsonObjectRequest(
+            Request.Method.GET, url, null,
             response -> {
                 try {
                     HashMap<String, String> temp = new HashMap<>();
-                    for (int i = 0; i < response.length(); i++) {
-                        JSONObject row = response.getJSONObject(i);
-                        String code = row.optString("STORE-CODE", "").trim().toUpperCase();
-                        String name = row.optString("STORE-NAME", "").trim();
+                    Iterator<String> keys = response.keys();
+                    while (keys.hasNext()) {
+                        String code = keys.next().trim().toUpperCase();
+                        String name = response.optString(code, "").trim();
                         if (!code.isEmpty() && !name.isEmpty()) {
                             temp.put(code, name);
                         }
@@ -79,31 +73,22 @@ public class PlantNames {
                     CACHE.putAll(temp);
                     loaded  = true;
                     loading = false;
-                    Log.d(TAG, "Loaded " + CACHE.size() + " plant names from Supabase");
+                    Log.d(TAG, "Loaded " + CACHE.size() + " plant names from middleware");
                 } catch (Exception e) {
                     loading = false;
-                    Log.e(TAG, "Failed to parse plant names: " + e.getMessage());
+                    Log.e(TAG, "Failed to parse plant names response: " + e.getMessage());
                 }
             },
             error -> {
                 loading = false;
-                Log.w(TAG, "Could not load plant names (will show codes only): " + error.getMessage());
+                Log.w(TAG, "Could not load plant names — codes only on label: " + error.getMessage());
             }
-        ) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("apikey",        ANON_KEY);
-                headers.put("Authorization", "Bearer " + ANON_KEY);
-                return headers;
-            }
-        };
+        );
 
         req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
-            10000, 1, com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+            8000, 1, com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
-    /** True if names have been successfully loaded. */
     public static boolean isLoaded() { return loaded; }
 }
