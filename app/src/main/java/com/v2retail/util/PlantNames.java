@@ -4,7 +4,6 @@ import android.util.Log;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
-import com.v2retail.commons.SharedPreferencesData;
 import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,15 +11,13 @@ import java.util.Map;
 
 /**
  * Plant / Store / Hub / DC name lookup.
- *
- * Data source: Azure middleware GET /api/hht/plantnames
- * The middleware fetches from Supabase store_plant_master_aka once
- * and caches for 24h. Android calls the middleware once per session.
+ * Fetches from Azure middleware GET /api/hht/plantnames once per session.
+ * Middleware caches Supabase data for 24h — Supabase is never hit from Android.
  *
  * Usage:
- *   PlantNames.load(serverUrl);      // call from FragmentHUSwapPrint.onResume()
- *   PlantNames.label("DW01")          // "DW01 KOLKATA-RDC" or "DW01" if not yet loaded
- *   PlantNames.get("DW01")            // "KOLKATA-RDC" or ""
+ *   PlantNames.load("https://hht-api.v2retail.net");  // pass server base URL
+ *   PlantNames.label("DW01")   // "DW01 KOLKATA-RDC" or "DW01" if not yet loaded
+ *   PlantNames.get("DW01")     // "KOLKATA-RDC" or ""
  */
 public class PlantNames {
 
@@ -33,10 +30,7 @@ public class PlantNames {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    /**
-     * "CODE Short-Name" e.g. "DW01 KOLKATA-RDC"
-     * Falls back to just "CODE" while names are loading or if unknown.
-     */
+    /** "CODE Short-Name" or just "CODE" while loading / if unknown. */
     public static String label(String code) {
         if (code == null || code.trim().isEmpty()) return "";
         String name = get(code);
@@ -51,26 +45,26 @@ public class PlantNames {
     }
 
     /**
-     * Fetch plant names from middleware in the background.
-     * Safe to call multiple times — only one fetch per app session.
+     * Fetch plant names from the middleware in the background.
+     * Safe to call multiple times — only fetches once per session.
      *
-     * @param serverUrl  The saved server URL (e.g. "https://hht-api.v2retail.net/api/hht/ValueXMW")
-     *                   We strip the path and append /api/hht/plantnames.
+     * @param serverUrl  Any URL the app has saved for the current server,
+     *                   e.g. "https://hht-api.v2retail.net/api/hht/ValueXMW"
+     *                   We strip the path and call /api/hht/plantnames.
      */
     public static void load(String serverUrl) {
         if (loaded || loading) return;
-        if (serverUrl == null || serverUrl.isEmpty()) return;
+        if (serverUrl == null || serverUrl.trim().isEmpty()) return;
         loading = true;
 
-        // Derive base: "https://hht-api.v2retail.net" from any /api/hht/... URL
-        String base = serverUrl;
+        // Derive base URL: strip everything from /api/ onwards
+        String base = serverUrl.trim();
         int apiIdx = base.indexOf("/api/");
         if (apiIdx > 0) base = base.substring(0, apiIdx);
-        // Strip trailing slash
         while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
 
         String url = base + ENDPOINT;
-        Log.d(TAG, "Fetching plant names from: " + url);
+        Log.d(TAG, "Loading plant names from: " + url);
 
         JsonObjectRequest req = new JsonObjectRequest(
             Request.Method.GET, url, null,
@@ -79,28 +73,27 @@ public class PlantNames {
                     HashMap<String, String> temp = new HashMap<>();
                     Iterator<String> keys = response.keys();
                     while (keys.hasNext()) {
-                        String code = keys.next().trim().toUpperCase();
+                        String code = keys.next();
                         String name = response.optString(code, "").trim();
                         if (!code.isEmpty() && !name.isEmpty()) {
-                            temp.put(code, name);
+                            temp.put(code.trim().toUpperCase(), name);
                         }
                     }
                     CACHE.clear();
                     CACHE.putAll(temp);
                     loaded  = true;
                     loading = false;
-                    Log.d(TAG, "Loaded " + CACHE.size() + " plant names from middleware");
+                    Log.d(TAG, "Loaded " + CACHE.size() + " plant names");
                 } catch (Exception e) {
                     loading = false;
-                    Log.e(TAG, "Failed to parse plant names: " + e.getMessage());
+                    Log.e(TAG, "Parse error: " + e.getMessage());
                 }
             },
             error -> {
                 loading = false;
-                Log.w(TAG, "Could not load plant names (will show codes only): " + error);
+                Log.w(TAG, "Plant names unavailable (codes only): " + error);
             }
         );
-
         req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
             15000, 1, com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         ApplicationController.getInstance().getRequestQueue().add(req);
