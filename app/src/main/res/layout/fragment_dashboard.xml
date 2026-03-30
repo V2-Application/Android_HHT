@@ -1,97 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dashboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgCard"
-    android:id="@+id/dashboard">
+    android:background="@color/bgPage">
 
-    <!-- TODO: Update blank fragment layout -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_margin="2dp"
-            android:background="#000"
-            android:padding="5dp"
+            android:padding="12dp"
             android:tag="home_tag">
 
-            <Button
+            <!-- Section: DC Operations -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DC OPERATIONS"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp"
+                android:layout_marginStart="4dp" />
+
+            <!-- Row 1 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/inbound"
-                android:background="#e71821"
-                android:text="InBound" />
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/inbound"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="INWARD"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+
+                <Button
+                    android:id="@+id/outbound"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="OUTWARD"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+            </LinearLayout>
+
+            <!-- Row 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/stock_take"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="STOCK TAKE"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+
+                <Button
+                    android:id="@+id/stock_take2"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="STOCK TAKE V2"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginVertical="10dp" />
+
+            <!-- Section: Store Apps -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STORE"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp"
+                android:layout_marginStart="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/retailApp"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="RETAIL APP"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+
+                <Button
+                    android:id="@+id/store_ecomm"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="E-COMM"
+                    android:textColor="@color/textOnPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="@color/v2Blue" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginVertical="10dp" />
+
+            <!-- Section: Utilities -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UTILITIES"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp"
+                android:layout_marginStart="4dp" />
 
             <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="OutBound"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/outbound"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Stock Take (Old)"
-                android:id="@+id/stock_take"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Stock Take (New)"
-                android:id="@+id/stock_take2"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821"/>
-            <!--   android:textColor="#000"
-               android:background="@color/colorAccent" -->
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Retail App"
-                android:id="@+id/retailApp"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Ecomm"
-                android:id="@+id/store_ecomm"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="RF id Scanner"
                 android:id="@+id/Rf_idScanner"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="RFID Scanner"
+                android:textColor="@color/textOnPrimary"
+                android:textSize="13sp"
+                android:background="@color/v2Blue"
+                android:layout_marginBottom="8dp" />
 
             <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Save Picklist"
                 android:id="@+id/picklist_save"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Save Picklist"
+                android:textColor="@color/textOnPrimary"
+                android:textSize="13sp"
+                android:background="@color/v2Blue"
+                android:visibility="gone" />
 
         </LinearLayout>
-
     </ScrollView>
-
 </FrameLayout>
