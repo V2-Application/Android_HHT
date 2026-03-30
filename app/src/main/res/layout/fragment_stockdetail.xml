@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
 
         <Button
@@ -18,7 +18,7 @@
             android:layout_margin="5dp"
             android:textColor="#fff"
             android:id="@+id/single"
-            android:background="@drawable/btn_secondary"
+            android:background="#e71821"
             android:text="SINGLE VARIANT" />
 
         <Button
@@ -28,10 +28,9 @@
             android:layout_margin="5dp"
             android:textColor="#fff"
             android:id="@+id/generic"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
 
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
