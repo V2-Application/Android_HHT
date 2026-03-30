@@ -22,7 +22,7 @@ import java.util.Map;
 public class PlantNames {
 
     private static final String TAG      = "PlantNames";
-    private static final String ENDPOINT = "/api/hht/plantnames";
+    private static final String ENDPOINT = "/api/hht/plants";
 
     private static final HashMap<String, String> CACHE = new HashMap<>();
     private static volatile boolean loaded  = false;
