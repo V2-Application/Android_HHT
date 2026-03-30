@@ -33,8 +33,8 @@
             android:text="ADD NEW ARTICLE"
             android:padding="5dp"
             android:textSize="11dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:id="@+id/button_scan_new_article"
@@ -44,8 +44,8 @@
             android:padding="5dp"
             android:layout_marginStart="10dp"
             android:textSize="11dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
 
