@@ -22,9 +22,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:id="@+id/store_ecomm_picking"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Ecomm Picking" />
 
             <Button
@@ -33,8 +33,8 @@
                 android:text="Delivery Update"
                 android:id="@+id/store_ecomm_delivery_update"
                 android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="@drawable/btn_secondary" />
+                android:textColor="@color/textOnPrimary"
+                android:background="@color/v2Blue" />
 
             <Button
                 android:layout_width="match_parent"
@@ -42,8 +42,8 @@
                 android:text="Ecomm Return Process"
                 android:id="@+id/store_ecomm_return_process"
                 android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="@drawable/btn_secondary" />
+                android:textColor="@color/textOnPrimary"
+                android:background="@color/v2Blue" />
         </LinearLayout>
 
     </ScrollView>
