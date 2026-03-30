@@ -31,7 +31,7 @@
                     android:layout_gravity="center"
                     android:paddingLeft="5dp"
                     android:text="Stock"
-                    android:textColor="#FFF"
+                    android:textColor="@color/textOnPrimary"
                     android:textSize="@dimen/header_text_size"
                     android:textStyle="italic" />
 
@@ -491,7 +491,7 @@
                     android:layout_gravity="center"
                     android:paddingLeft="5dp"
                     android:text="Sales"
-                    android:textColor="#FFF"
+                    android:textColor="@color/textOnPrimary"
                     android:textSize="@dimen/header_text_size"
                     android:textStyle="italic" />
 
@@ -504,7 +504,7 @@
                     android:gravity="center"
                     android:maxLines="3"
                     android:singleLine="false"
-                    android:textColor="#FFF"
+                    android:textColor="@color/textOnPrimary"
                     android:textSize="@dimen/label_text_size" />
             </LinearLayout>
             <LinearLayout
