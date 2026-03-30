@@ -1,109 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgPage"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="24dp">
+    tools:context=".IPActivity">
 
-    <!-- Logo / brand block -->
     <LinearLayout
+        android:padding="10dp"
+
+        android:layout_margin="5dp"
+        android:gravity="center|center_horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:layout_marginBottom="32dp">
+        android:orientation="vertical">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="V2"
-            android:textSize="48sp"
+            android:text="Enter Host IP Address"
             android:textStyle="bold"
-            android:textColor="@color/v2Blue"
-            android:letterSpacing="0.1"
-            android:fontFamily="sans-serif-black" />
+            android:textSize="20sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Warehouse Operations"
-            android:textSize="13sp"
-            android:textColor="@color/textSecondary"
-            android:letterSpacing="0.08"
-            android:layout_marginTop="2dp" />
-    </LinearLayout>
-
-    <!-- Card -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@color/bgCard"
-        android:padding="20dp"
-        android:elevation="2dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select Server"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="@color/textSecondary"
-            android:letterSpacing="0.06"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Server spinner -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:orientation="vertical"
+            android:padding="4dp"
+            android:gravity="center"
+            android:background="#eee5e5"
+            android:layout_margin="3dp">
         <Spinner
-            android:id="@+id/address_spinner"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/bgInput"
-            android:padding="10dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_height="50dp"
+            android:id="@+id/ip_spinner"
+            android:entries="@array/ipAddress">
+        </Spinner>
 
-        <!-- App version chip -->
+
+        </LinearLayout>
+
         <TextView
-            android:id="@+id/tv_apk_version"
-            android:layout_width="wrap_content"
+            android:visibility="gone"
+            android:layout_width="218dp"
+            android:layout_height="30dp"
+            android:layout_margin="2dp"
+            android:layout_gravity="left"
+            android:text="Port No"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="v12.106"
-            android:textSize="11sp"
-            android:textColor="@color/textSecondary"
-            android:layout_marginBottom="20dp" />
+            android:orientation="vertical"
+            android:layout_gravity="left"
+            android:padding="8dp"
+            android:visibility="visible"
+            android:layout_margin="3dp">
 
-        <!-- Connect button -->
-        <Button
-            android:id="@+id/connect"
+            <LinearLayout
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RadioGroup
+                    android:id="@+id/portgrp"
+                    android:layout_gravity="left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                    <RadioButton
+                        android:text="@string/dev"
+                        android:textSize="18sp"
+                        android:id="@+id/dev"
+                        android:checked="true"
+                        android:layout_gravity="left"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <RadioButton
+                        android:id="@+id/prod"
+                        android:text="@string/prod"
+                        android:textSize="18sp"
+                        android:layout_gravity="left"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <RadioButton
+                        android:text="@string/qa"
+                        android:textSize="18sp"
+                        android:id="@+id/qa"
+                        android:layout_gravity="left"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </RadioGroup>
+            </LinearLayout>
+
+
+
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="CONNECT"
-            android:textColor="@color/textOnPrimary"
-            android:textSize="15sp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_margin="5dp">
+
+            <Button
+                android:layout_weight="1.5"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="EXIT"
+                android:id="@+id/exit"
+
+                android:background="@drawable/shadow"
+                android:layout_margin="5dp"
+
+                android:textSize="15sp" />
+
+            <Button
+                android:layout_weight="1.5"
+                android:textSize="15sp"
+                android:text="Connect"
+                android:id="@+id/connect"
+                android:background="@drawable/shadow"
+                android:layout_margin="5dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="" />
+        </LinearLayout>
+
+
+        <ImageView
+            android:layout_width="91dp"
+            android:layout_height="72dp"
+            android:layout_marginTop="1dp"
+            app:srcCompat="@mipmap/ic_launcher_foreground" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:text=""
+            android:id="@+id/ver"
             android:textStyle="bold"
-            android:letterSpacing="0.1"
-            android:background="@color/v2Blue"
-            android:layout_marginBottom="10dp" />
+            android:gravity="center"
+            android:layout_height="wrap_content" />
 
-        <!-- Exit button -->
-        <Button
-            android:id="@+id/exit"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="Exit"
-            android:textColor="@color/textSecondary"
-            android:textSize="13sp"
-            android:background="@color/bgInput" />
+
     </LinearLayout>
-
-    <!-- Footer -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="V2 Retail Ltd · WMS"
-        android:textSize="11sp"
-        android:textColor="@color/textHint"
-        android:layout_marginTop="32dp" />
-
-</LinearLayout>
+</RelativeLayout>
