@@ -252,9 +252,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Back"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
 
         <Button
@@ -263,9 +263,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Reset"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
 
     </LinearLayout>
