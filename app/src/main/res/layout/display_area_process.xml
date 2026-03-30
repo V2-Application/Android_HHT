@@ -11,17 +11,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/baseTodisplay"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Base Stock To Display" />
 
         <Button
@@ -29,10 +29,10 @@
             android:layout_height="wrap_content"
             android:text="Display To Base Stock"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/displaytobase"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
 
 
     </LinearLayout>
