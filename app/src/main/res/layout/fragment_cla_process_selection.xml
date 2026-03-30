@@ -11,17 +11,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/scan_crate_in_ecom_palette"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Scan Crate In Ecom Palette" />
 
         <Button
@@ -29,10 +29,10 @@
             android:layout_height="wrap_content"
             android:text="Tag Palette With Ecom CLA Bin"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/tag_palette_with_ecom_cla_bin"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -41,8 +41,8 @@
 
             android:id="@+id/untag_palette_with_ecom_cla_bin"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -51,8 +51,8 @@
 
             android:id="@+id/handover_to_courier_partner"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -61,8 +61,8 @@
 
             android:id="@+id/rejected_courier_scanning"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
 
