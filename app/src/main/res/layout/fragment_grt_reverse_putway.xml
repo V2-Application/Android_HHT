@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
         <Button
             android:layout_width="match_parent"
@@ -17,23 +17,23 @@
             android:text="Crate Tagging With Pallet"
             android:id="@+id/grt_reverse_putway_crate_with_pallet"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Pallet Receive at Floor"
             android:id="@+id/grt_reverse_putway_pallet_at_floor"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Crate To MSA Bin"
             android:id="@+id/grt_reverse_putway_crate_to_msa"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </FrameLayout>
