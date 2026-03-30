@@ -101,7 +101,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_gravity="center"
-                    android:background="@color/colorAccent"
+                    android:background="@drawable/btn_muted"
                     android:layout_weight="1.4">
                     <RelativeLayout
                         android:layout_width="match_parent"
