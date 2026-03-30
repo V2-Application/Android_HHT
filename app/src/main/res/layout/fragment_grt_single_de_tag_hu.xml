@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
         <Button
             android:layout_width="match_parent"
@@ -18,8 +18,7 @@
             android:id="@+id/btn_grt_single_de_tag_hu_close"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
