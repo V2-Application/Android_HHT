@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
 
@@ -31,7 +31,7 @@
             android:id="@+id/picking"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="#e71821" />
+            android:background="@drawable/btn_secondary" />
 
 
         <Button
@@ -42,10 +42,11 @@
             android:layout_margin="5dp"
             android:layout_weight="1"
             android:textColor="#fff"
-            android:background="#e71821" />
+            android:background="@drawable/btn_secondary" />
 
 
 
     </LinearLayout>
+    </ScrollView>
 
 </FrameLayout>
