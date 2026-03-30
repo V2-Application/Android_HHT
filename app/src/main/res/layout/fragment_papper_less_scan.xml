@@ -667,9 +667,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Back"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -686,9 +686,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Prev"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -705,9 +705,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Next"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -724,9 +724,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Save"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
