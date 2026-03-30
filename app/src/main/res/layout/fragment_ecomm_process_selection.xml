@@ -11,17 +11,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/picking"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="MSA Picking" />
 
         <Button
@@ -29,10 +29,10 @@
             android:layout_height="wrap_content"
             android:text="Putwall"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/putwall"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -41,8 +41,8 @@
 
             android:id="@+id/packing"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -51,8 +51,8 @@
 
             android:id="@+id/cla"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -61,8 +61,8 @@
 
             android:id="@+id/cancelqcputaway"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -71,8 +71,8 @@
 
             android:id="@+id/putawaycratetomsabin"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -80,8 +80,8 @@
 
             android:id="@+id/storeorderreject"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 
 </FrameLayout>
