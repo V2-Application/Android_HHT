@@ -147,6 +147,15 @@
             android:id="@+id/stock_movement"
             android:layout_margin="5dp"
             android:background="@color/colorAccent" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="HU Swap Print"
+            android:textColor="#fff"
+            android:id="@+id/hu_swap_print"
+            android:layout_margin="5dp"
+            android:background="#1B4F72" />
     </LinearLayout>
 
 </FrameLayout>
