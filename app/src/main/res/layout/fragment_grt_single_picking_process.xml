@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
         <Button
             android:layout_width="match_parent"
@@ -18,7 +18,7 @@
             android:id="@+id/grt_single_pick_crate_picking"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,7 +26,7 @@
             android:id="@+id/btn_grt_single_crate_sorting"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -34,7 +34,7 @@
             android:id="@+id/btn_hu_zone_store"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -42,7 +42,7 @@
             android:id="@+id/btn_crate_scan"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -50,7 +50,7 @@
             android:id="@+id/btn_grt_single_pick_de_tag_hu"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -58,8 +58,7 @@
             android:id="@+id/btn_grt_single_hu_pick"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
