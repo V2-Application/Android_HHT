@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.v2retail.dotvik.ecomm.Ecomm_Process_Selection"
-    android:background="@color/bgPage">
+    tools:context="com.v2retail.dotvik.ecomm.Ecomm_Process_Selection">
 
     <!-- TODO: Update blank fragment layout -->
     <LinearLayout
@@ -12,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
 
         <Button
@@ -22,7 +21,7 @@
             android:textColor="#fff"
 
             android:id="@+id/picking"
-            android:background="@drawable/btn_secondary"
+            android:background="#e71821"
             android:text="MSA Picking" />
 
         <Button
@@ -33,7 +32,7 @@
             android:textColor="#fff"
 
             android:id="@+id/putwall"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
         <Button
             android:layout_width="match_parent"
@@ -43,7 +42,7 @@
             android:id="@+id/packing"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
         <Button
             android:layout_width="match_parent"
@@ -53,7 +52,7 @@
             android:id="@+id/cla"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
         <Button
             android:layout_width="match_parent"
@@ -63,7 +62,7 @@
             android:id="@+id/cancelqcputaway"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
 
         <Button
             android:layout_width="match_parent"
@@ -73,7 +72,7 @@
             android:id="@+id/putawaycratetomsabin"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -82,8 +81,7 @@
             android:id="@+id/storeorderreject"
             android:layout_margin="5dp"
             android:textColor="#fff"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
     </LinearLayout>
-    </ScrollView>
 
 </FrameLayout>
