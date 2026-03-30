@@ -8,69 +8,89 @@ import com.v2retail.commons.Vars;
 import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
- * Plant / store name lookup for HU Swap label printing.
- *
- * Fetches from the HHT middleware /plants endpoint (which pre-caches
- * the Supabase store_plant_master_aka table on deployment).
- * Only one network call per app session; subsequent calls use the in-memory cache.
+ * Plant code → short name lookup.
+ * Fetched once from the HHT middleware /api/hht/plantnames endpoint,
+ * which caches the data from Supabase (refreshed every 12 hours).
+ * Supabase is never called directly from the device.
  *
  * Usage:
- *   PlantNames.load();           // call once, e.g. in FragmentHUSwapPrint.onResume()
- *   PlantNames.label("DW01")     // "DW01 KOLKATA-RDC" or just "DW01" if not loaded
- *   PlantNames.get("DW01")       // "KOLKATA-RDC" or "" if not found
+ *   PlantNames.load();                 // call from FragmentHUSwapPrint.onResume()
+ *   PlantNames.label("DW01")           // "DW01 KOLKATA-RDC" or "DW01" if not loaded
+ *   PlantNames.get("DW01")             // "KOLKATA-RDC" or ""
  */
 public class PlantNames {
 
     private static final String TAG = "PlantNames";
 
+    // Middleware endpoint — no direct Supabase calls from devices
+    private static final String ENDPOINT = "/api/hht/plantnames";
+
     private static final HashMap<String, String> CACHE = new HashMap<>();
-    private static volatile boolean loaded  = false;
-    private static volatile boolean loading = false;
+    private static boolean loaded  = false;
+    private static boolean loading = false;
 
-    // ── Public API ─────────────────────────────────────────────────────────────
+    // ── Public API ────────────────────────────────────────────────────────────
 
-    /** "CODE Name" e.g. "DW01 KOLKATA-RDC", or just "DW01" if names not loaded. */
+    /**
+     * Returns "CODE Short-Name" e.g. "DW01 KOLKATA-RDC"
+     * Returns just "CODE" if names not loaded yet or code not found.
+     */
     public static String label(String code) {
         if (code == null || code.trim().isEmpty()) return "";
         String name = get(code);
         return name.isEmpty() ? code.trim() : code.trim() + " " + name;
     }
 
-    /** Short name e.g. "KOLKATA-RDC", or "" if unknown / not yet loaded. */
+    /**
+     * Returns the short name, e.g. "KOLKATA-RDC", or "" if not found.
+     */
     public static String get(String code) {
         if (code == null || code.trim().isEmpty()) return "";
-        String v = CACHE.get(code.trim().toUpperCase());
-        return v != null ? v : "";
+        String name = CACHE.get(code.trim().toUpperCase());
+        return name != null ? name : "";
     }
 
     /**
-     * Trigger a one-time background fetch from the HHT middleware /plants endpoint.
+     * Fetch plant names from middleware (which caches from Supabase).
      * Safe to call multiple times — only fetches once per app session.
      */
     public static void load() {
         if (loaded || loading) return;
         loading = true;
 
-        // /plants returns a JSON object: { "DW01": "KOLKATA-RDC", "HD22": "KPSHR", ... }
-        String url = Vars.URL + "/plants";
+        // Build URL from the server address stored in SharedPreferences
+        SharedPreferencesData prefs = new SharedPreferencesData(
+            ApplicationController.getInstance().getApplicationContext());
+        String serverUrl = prefs.read("SERVER_URL");
+        if (serverUrl == null || serverUrl.isEmpty()) {
+            loading = false;
+            Log.w(TAG, "No server URL in prefs — skipping plant names load");
+            return;
+        }
+        // Normalise: strip trailing slash, remove /ValueXMW if present
+        String base = serverUrl.trim();
+        if (base.endsWith("/ValueXMW")) base = base.substring(0, base.length() - "/ValueXMW".length());
+        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+
+        String url = base + ENDPOINT;
+        Log.d(TAG, "Loading plant names from: " + url);
 
         JsonObjectRequest req = new JsonObjectRequest(
             Request.Method.GET, url, null,
             response -> {
                 try {
-                    HashMap<String, String> temp = new HashMap<>();
+                    CACHE.clear();
                     Iterator<String> keys = response.keys();
                     while (keys.hasNext()) {
-                        String code = keys.next().trim().toUpperCase();
-                        String name = response.optString(code, "").trim();
+                        String code = keys.next();
+                        String name = response.optString(code, "");
                         if (!code.isEmpty() && !name.isEmpty()) {
-                            temp.put(code, name);
+                            CACHE.put(code.toUpperCase(), name);
                         }
                     }
-                    CACHE.clear();
-                    CACHE.putAll(temp);
                     loaded  = true;
                     loading = false;
                     Log.d(TAG, "Loaded " + CACHE.size() + " plant names from middleware");
@@ -81,7 +101,7 @@ public class PlantNames {
             },
             error -> {
                 loading = false;
-                Log.w(TAG, "Could not load plant names — codes only on label: " + error.getMessage());
+                Log.w(TAG, "Plant names fetch failed — codes only on label: " + error.getMessage());
             }
         );
 
