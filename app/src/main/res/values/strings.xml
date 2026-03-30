@@ -35,14 +35,15 @@
     <string name="date">Date.</string>
 
     <array name="ipAddress">
-        <!-- Azure Cloud (PRIMARY — use this for all devices) -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Prod)</item>
-        <!-- Legacy on-prem (fallback only — DO NOT use for rollout) -->
+        <!-- PRIMARY: Cloudflare edge — works from any network in India -->
+        <item>https://hht-api.v2retail.net/api/hht (V2 Cloud)</item>
+        <!-- FALLBACK: Azure direct -->
+        <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Direct)</item>
+        <!-- Legacy on-prem — DC/warehouse use only -->
         <item>http://192.168.144.200:9080/xmwgw (HanaProd Legacy)</item>
         <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
-        <item>http://103.29.220.152:1080/hanadev (hanaDev Legacy)</item>
+        <item>http://103.29.220.152:1080/hanadev (HanaDev Public)</item>
         <item>http://192.168.151.40:17080/xmwgw (HanaQA Legacy)</item>
-        <item>http://103.29.220.152:1080/hanaqa (hanaQA Legacy)</item>
     </array>
     <array name="choose_store">
         <item>DC</item>
