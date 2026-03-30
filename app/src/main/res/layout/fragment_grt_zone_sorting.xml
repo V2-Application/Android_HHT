@@ -264,8 +264,8 @@
             android:visibility="invisible"
             android:text="Reset"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -279,7 +279,7 @@
             android:visibility="invisible"
             android:text="Empty Picked Crate"
             android:layout_margin="5dp"
-            android:textColor="@color/white"
-            android:background="@color/colorPrimary" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
     </LinearLayout>
 </LinearLayout>
