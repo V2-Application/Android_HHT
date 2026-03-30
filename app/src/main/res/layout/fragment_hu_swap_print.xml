@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <!-- Printer row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="6dp">
+
+                <EditText
+                    android:id="@+id/txt_hu_swap_printer"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Printer ID (scan or type)"
+                    android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone"
+                    android:textSize="14sp"
+                    android:padding="8dp"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btn_hu_swap_detect_printer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Detect"
+                    android:textColor="#fff"
+                    android:textSize="12sp"
+                    android:background="#1B4F72"
+                    android:padding="8dp" />
+            </LinearLayout>
+
+            <!-- Old HU scan field -->
+            <EditText
+                android:id="@+id/txt_hu_swap_old_hu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Scan Old HU Barcode"
+                android:inputType="textCapCharacters"
+                android:imeOptions="actionDone"
+                android:textSize="16sp"
+                android:padding="10dp"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Counter + last HU info card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#f0f0f0"
+                android:padding="10dp"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:id="@+id/txt_hu_swap_count"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Scanned: 0 HUs"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#1B4F72"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/txt_hu_swap_last_new_hu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="13sp"
+                    android:textColor="#333"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+            <!-- Status / result text -->
+            <TextView
+                android:id="@+id/txt_hu_swap_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="13sp"
+                android:textColor="#065f46"
+                android:padding="6dp"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Reset / Back buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_hu_swap_reset"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:text="Reset"
+                    android:textColor="#fff"
+                    android:background="#e71821" />
+
+                <Button
+                    android:id="@+id/btn_hu_swap_back"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:text="Back"
+                    android:textColor="#fff"
+                    android:background="#555" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
