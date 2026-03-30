@@ -233,7 +233,7 @@ public class TSPLPrinter {
     public void sendHuSwapPrintCommand(String printerName,
                                        String oldHu, String newHu,
                                        String qty,   String crDate,
-                                       String source, String dest) {
+                                       String crTime, String source, String dest) {
         try {
             findBluetoothPrinter(printerName, false);
             if (printerDevice == null) {
@@ -243,7 +243,7 @@ public class TSPLPrinter {
             connectToBluetoothPrinter();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected()) return;
 
-            String tspl = buildHuSwapLabel(oldHu, newHu, qty, crDate, source, dest);
+            String tspl = buildHuSwapLabel(oldHu, newHu, qty, crDate, crTime, source, dest);
             java.io.OutputStream out = bluetoothSocket.getOutputStream();
             java.io.PrintWriter w = new java.io.PrintWriter(out, true);
             w.write(tspl);
@@ -258,12 +258,25 @@ public class TSPLPrinter {
 
     private String buildHuSwapLabel(String oldHu, String newHu,
                                     String qty,   String crDate,
-                                    String source, String dest) {
-        // Format date from SAP DATS (YYYYMMDD) → DD/MM/YYYY
+                                    String crTime, String source, String dest) {
+
+        // 1. Remove leading zeros from HU numbers for barcode/display
+        String printHu = removeLeadingZeros(newHu);
+        String displayOldHu = removeLeadingZeros(oldHu);
+
+        // 2. Date: SAP DATS YYYYMMDD → DD.MM.YYYY
         String fmtDate = crDate;
         try {
             if (crDate != null && crDate.length() == 8) {
-                fmtDate = crDate.substring(6,8) + "/" + crDate.substring(4,6) + "/" + crDate.substring(0,4);
+                fmtDate = crDate.substring(6,8) + "." + crDate.substring(4,6) + "." + crDate.substring(0,4);
+            }
+        } catch (Exception ignore) { }
+
+        // 3. Time: SAP TIMS HHMMSS → HH:MM:SS
+        String fmtTime = crTime;
+        try {
+            if (crTime != null && crTime.length() == 6) {
+                fmtTime = crTime.substring(0,2) + ":" + crTime.substring(2,4) + ":" + crTime.substring(4,6);
             }
         } catch (Exception ignore) { }
 
@@ -277,10 +290,19 @@ public class TSPLPrinter {
                "TEXT 20, 10,  \"3\", 0, 1, 1, \"HU SWAP\"\n" +
                "TEXT 20, 40,  \"3\", 0, 1, 1, \"" + routeLine + "\"\n" +
                "TEXT 20, 80,  \"3\", 0, 1, 1, \"Qty: " + qty + "\"\n" +
-               "TEXT 20, 110, \"3\", 0, 1, 1, \"Date: " + fmtDate + "\"\n" +
-               "TEXT 20, 140, \"2\", 0, 1, 1, \"Old: " + oldHu + "\"\n" +
-               "BARCODE 20, 170, \"128\", 80, 1, 0, 3, 6, \"" + newHu + "\"\n" +
-               "TEXT 20, 260,  \"3\", 0, 1, 1, \"" + newHu + "\"\n" +
+               "TEXT 20, 110, \"3\", 0, 1, 1, \"" + fmtDate + "  " + fmtTime + "\"\n" +
+               "TEXT 20, 140, \"2\", 0, 1, 1, \"Old: " + displayOldHu + "\"\n" +
+               "BARCODE 20, 170, \"128\", 80, 1, 0, 3, 6, \"" + printHu + "\"\n" +
+               "TEXT 20, 260,  \"3\", 0, 1, 1, \"" + printHu + "\"\n" +
                "PRINT 1, 1\n";
+    }
+
+    /** Remove leading zeros: "000000H005678" → "H005678", "000012345" → "12345" */
+    private static String removeLeadingZeros(String hu) {
+        if (hu == null || hu.isEmpty()) return hu;
+        // Find first non-zero character
+        int i = 0;
+        while (i < hu.length() - 1 && hu.charAt(i) == '0') i++;
+        return hu.substring(i);
     }
 }
