@@ -410,9 +410,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Back"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
         <Button
             android:id="@+id/btn_hu_wise_article_scan_v01_v09_save"
@@ -420,9 +420,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Save"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
     </LinearLayout>
 </RelativeLayout>
