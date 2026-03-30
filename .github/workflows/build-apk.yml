@@ -2,7 +2,7 @@ name: Build V2 HHT APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ui-redesign ]
   workflow_dispatch:
 
 permissions:
@@ -39,35 +39,33 @@ jobs:
 
       - name: Collect APK
         run: |
-          find app/build/outputs/apk -name '*.apk'
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          echo "APK: $APK"
-          echo "Size: $(du -sh $APK)"
           cp "$APK" V2_HHT_Azure_Release.apk
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: V2-HHT-Azure-Release
-          path: V2_HHT_Azure_Release.apk
 
       - name: Get version name
         id: version
         run: |
           VER=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          BRANCH="${GITHUB_REF##*/}"
           echo "version=$VER" >> $GITHUB_OUTPUT
-          echo "Version: $VER"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: V2-HHT-${{ steps.version.outputs.branch }}-${{ steps.version.outputs.version }}
+          path: V2_HHT_Azure_Release.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}-build${{ github.run_number }}
-          name: 'V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}'
+          tag_name: v${{ steps.version.outputs.version }}-${{ steps.version.outputs.branch }}-build${{ github.run_number }}
+          name: 'V2 HHT v${{ steps.version.outputs.version }} (${{ steps.version.outputs.branch }}) Build ${{ github.run_number }}'
           body: |
+            Branch: ${{ steps.version.outputs.branch }}
             Version: ${{ steps.version.outputs.version }}
             Build: ${{ github.run_number }}
             Commit: ${{ github.sha }}
-            Fix: UMREZ pack ratio used for scan quantity (ZSDC_DIRECT_ART_VAL_BARCOD_RFC)
           files: V2_HHT_Azure_Release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
