@@ -9,25 +9,25 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/fullHuPutway"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Full Hu Putway" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/msa_inbound_putway_0002"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:visibility="gone"
             android:text="Putway To 0002" />
 
@@ -35,9 +35,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/hru_grc"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="HU GRC" />
 
         <Button
@@ -45,10 +45,10 @@
             android:layout_height="wrap_content"
             android:text="GRC Putway"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/grc_putway"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -56,8 +56,8 @@
             android:text="Floor To Process G "
             android:id="@+id/floortoprocessG"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -65,8 +65,8 @@
             android:text="Process G To MSA"
             android:id="@+id/processgtomsa"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -74,8 +74,8 @@
             android:text="Hu Bin Cons Putway"
             android:id="@+id/storeBinConsPutway"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
         <Button
             android:layout_width="match_parent"
@@ -83,8 +83,8 @@
             android:text="Store Bin Consolidation"
             android:id="@+id/storeBinConsolidation"
             android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:background="#e71821" />
+            android:textColor="@color/textOnPrimary"
+            android:background="@color/v2Blue" />
 
     </LinearLayout>
 
