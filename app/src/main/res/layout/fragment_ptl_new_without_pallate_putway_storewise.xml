@@ -365,9 +365,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Back"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
         <Button
             android:id="@+id/btn_ptl_new_wo_pallate_article_putway_storewise_reset"
@@ -375,9 +375,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="Reset"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
     </LinearLayout>
 </RelativeLayout>
