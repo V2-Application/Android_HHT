@@ -225,4 +225,62 @@ public class TSPLPrinter {
             return "Invalid date format";
         }
     }
+
+    /**
+     * Print a new HU label for the HU Swap process.
+     * Shows routing (source → destination), new HU barcode, quantity and date.
+     */
+    public void sendHuSwapPrintCommand(String printerName,
+                                       String oldHu, String newHu,
+                                       String qty,   String crDate,
+                                       String source, String dest) {
+        try {
+            findBluetoothPrinter(printerName, false);
+            if (printerDevice == null) {
+                Log.e("TSPLPrinter", "HU Swap: printer not found: " + printerName);
+                return;
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) return;
+
+            String tspl = buildHuSwapLabel(oldHu, newHu, qty, crDate, source, dest);
+            java.io.OutputStream out = bluetoothSocket.getOutputStream();
+            java.io.PrintWriter w = new java.io.PrintWriter(out, true);
+            w.write(tspl);
+            w.flush();
+            w.close();
+            out.close();
+            bluetoothSocket.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String buildHuSwapLabel(String oldHu, String newHu,
+                                    String qty,   String crDate,
+                                    String source, String dest) {
+        // Format date from SAP DATS (YYYYMMDD) → DD/MM/YYYY
+        String fmtDate = crDate;
+        try {
+            if (crDate != null && crDate.length() == 8) {
+                fmtDate = crDate.substring(6,8) + "/" + crDate.substring(4,6) + "/" + crDate.substring(0,4);
+            }
+        } catch (Exception ignore) { }
+
+        String routeLine = (source != null && !source.isEmpty() && dest != null && !dest.isEmpty())
+                ? source.trim() + " -> " + dest.trim() : "";
+
+        return "SIZE 70 mm, 40 mm\n" +
+               "GAP 3 mm, 0 mm\n" +
+               "DIRECTION 0\n" +
+               "CLS\n" +
+               "TEXT 20, 10,  \"3\", 0, 1, 1, \"HU SWAP\"\n" +
+               "TEXT 20, 40,  \"3\", 0, 1, 1, \"" + routeLine + "\"\n" +
+               "TEXT 20, 80,  \"3\", 0, 1, 1, \"Qty: " + qty + "\"\n" +
+               "TEXT 20, 110, \"3\", 0, 1, 1, \"Date: " + fmtDate + "\"\n" +
+               "TEXT 20, 140, \"2\", 0, 1, 1, \"Old: " + oldHu + "\"\n" +
+               "BARCODE 20, 170, \"128\", 80, 1, 0, 3, 6, \"" + newHu + "\"\n" +
+               "TEXT 20, 260,  \"3\", 0, 1, 1, \"" + newHu + "\"\n" +
+               "PRINT 1, 1\n";
+    }
 }
