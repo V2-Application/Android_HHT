@@ -1,39 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.v2retail.dotvik.ecomm.Ecomm_Process_Selection">
+    android:background="@color/bgPage">
 
-    <!-- TODO: Update blank fragment layout -->
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_margin="2dp"
-        android:background="#000"
-        android:padding="5dp">
+        android:layout_height="match_parent">
 
-        <Button
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            android:id="@+id/ecomm_qc_picking"
-            android:background="#e71821"
-            android:text="EComm QC Picking" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PACKING"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="10dp"
+                android:layout_marginStart="4dp" />
 
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TAG PACKING STATION WITH PICKED DATA"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
+            <Button
+                android:id="@+id/pick_order_packing"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary"
+                android:textColor="#fff"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="Pick Order for Packing" />
+            <Button
+                android:id="@+id/picklist_tag_packing"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_margin="5dp"
+                android:background="@drawable/btn_secondary"
+                android:textColor="#fff"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="Picklist Tagging" />
 
-            android:id="@+id/tag_packing_station_with_picked_data"
-            android:background="#e71821" />
-
-    </LinearLayout>
-
+        </LinearLayout>
+    </ScrollView>
 </FrameLayout>
