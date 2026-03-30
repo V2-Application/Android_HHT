@@ -9,48 +9,48 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000">
+        android:background="@color/bgPage">
         <LinearLayout
         android:id="@+id/ll_tvs_paperless"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/btn_tvs_paperless_picking"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Picking" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/btn_tvs_paperless_picking_confirm"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Picking Confirmation" />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/btn_tvs_paperless_re_print"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Re-Print" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:id="@+id/btn_tvs_paperless_test_print"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Test Print" />
     </LinearLayout>
         <LinearLayout
@@ -58,25 +58,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#000"
+            android:background="@color/bgPage"
             android:padding="5dp">
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:id="@+id/btn_tvs_paperless_picking_live_hu"
-                android:background="#e71821"
+                android:background="@color/v2Blue"
                 android:text="Picking" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:id="@+id/btn_tvs_paperless_re_print_live_hu"
-                android:background="#e71821"
+                android:background="@color/v2Blue"
                 android:visibility="gone"
                 android:text="Re-Print" />
         </LinearLayout>
