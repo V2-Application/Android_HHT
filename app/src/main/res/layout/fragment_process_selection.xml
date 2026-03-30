@@ -1,51 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    tools:context="com.v2retail.dotvik.dc.DC_DashBoard"
     android:background="@color/bgPage">
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
+        <!-- ScrollView MUST have only one child -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:background="@color/bgPage"
+            android:padding="2dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="DC OPERATIONS"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/textSecondary"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="10dp"
-                android:layout_marginStart="4dp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/inward"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Inward"
+                    android:textColor="#fff"
+                    android:background="@drawable/btn_secondary" />
+
+                <Button
+                    android:id="@+id/outward"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Outward"
+                    android:textColor="#fff"
+                    android:background="@drawable/btn_secondary" />
+            </LinearLayout>
 
             <Button
-                android:id="@+id/dc_inward"
+                android:id="@+id/v11_to_msa"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:background="@drawable/btn_secondary"
+                android:text="V11 To Msa"
                 android:textColor="#fff"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:text="Inward" />
+                android:background="@drawable/btn_secondary" />
+
             <Button
-                android:id="@+id/dc_outward"
+                android:id="@+id/stock_take"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:background="@drawable/btn_secondary"
+                android:text="Stock Take"
                 android:textColor="#fff"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:text="Outward" />
+                android:background="@drawable/btn_secondary" />
+
+            <Button
+                android:id="@+id/grt_process"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="GRT"
+                android:textColor="#fff"
+                android:background="@drawable/btn_secondary" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/ptl_process"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="PTL"
+                    android:textColor="#fff"
+                    android:background="@drawable/btn_secondary" />
+
+                <Button
+                    android:id="@+id/ptl_new"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="PTL-New"
+                    android:textColor="#fff"
+                    android:background="@drawable/btn_secondary" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/cla_process"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="CLA Process"
+                android:textColor="#fff"
+                android:background="@drawable/btn_secondary" />
+
+            <Button
+                android:id="@+id/msa_binwise_picking"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="MSA Binwise Picking Process"
+                android:textColor="#fff"
+                android:background="@drawable/btn_secondary" />
+
+            <Button
+                android:id="@+id/bin_crate_identifier"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Bin / Crate Identifier"
+                android:textColor="#fff"
+                android:background="@drawable/btn_secondary" />
+
+            <Button
+                android:id="@+id/msa_live_stock_take"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="MSA Live Stock Take"
+                android:textColor="#fff"
+                android:background="@drawable/btn_secondary" />
 
         </LinearLayout>
     </ScrollView>
+
 </FrameLayout>
