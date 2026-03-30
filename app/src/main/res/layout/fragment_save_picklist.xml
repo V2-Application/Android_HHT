@@ -81,9 +81,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="0.5"
-            android:background="@color/colorPrimary"
+            android:background="@color/v2Blue"
             android:text="NEXT"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="12sp" />
 
     </LinearLayout>
