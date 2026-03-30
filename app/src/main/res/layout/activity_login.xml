@@ -9,13 +9,13 @@
     android:padding="24dp"
     tools:context="com.v2retail.dotvik.LoginActivity">
 
-    <!-- Spinner while logging in -->
+    <!-- Progress spinner -->
     <ProgressBar
         android:id="@+id/login_progress"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         android:visibility="gone" />
 
     <!-- V2 Logo + greeting -->
@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="20dp">
 
         <ImageView
             android:layout_width="72dp"
@@ -32,7 +32,7 @@
             android:src="@drawable/ic_v2_logo"
             android:scaleType="fitCenter"
             android:contentDescription="V2 Retail"
-            android:layout_marginBottom="14dp" />
+            android:layout_marginBottom="12dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -52,8 +52,9 @@
             android:layout_marginTop="3dp" />
     </LinearLayout>
 
-    <!-- Login card -->
+    <!-- Login card — contains the form the Java code manipulates -->
     <LinearLayout
+        android:id="@+id/login_form"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -61,68 +62,108 @@
         android:padding="20dp"
         android:elevation="2dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Inner email form (Java show/hides this) -->
+        <LinearLayout
+            android:id="@+id/email_login_form"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="USER ID"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/textSecondary"
-            android:letterSpacing="0.1"
-            android:layout_marginBottom="6dp" />
+            android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/username"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="Enter your user ID"
-            android:inputType="textCapCharacters|textNoSuggestions"
-            android:textSize="15sp"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:background="@color/bgInput"
-            android:padding="12dp"
-            android:imeOptions="actionNext"
-            android:layout_marginBottom="14dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="USER ID"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="6dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="PASSWORD"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/textSecondary"
-            android:letterSpacing="0.1"
-            android:layout_marginBottom="6dp" />
+            <EditText
+                android:id="@+id/username"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="Enter your user ID"
+                android:inputType="textCapCharacters|textNoSuggestions"
+                android:textSize="15sp"
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textHint"
+                android:background="@color/bgInput"
+                android:padding="12dp"
+                android:imeOptions="actionNext"
+                android:layout_marginBottom="14dp" />
 
-        <EditText
-            android:id="@+id/password"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="Enter your password"
-            android:inputType="textPassword"
-            android:textSize="15sp"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:background="@color/bgInput"
-            android:padding="12dp"
-            android:imeOptions="actionDone"
-            android:layout_marginBottom="20dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PASSWORD"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@color/textSecondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="6dp" />
 
-        <Button
-            android:id="@+id/email_sign_in_button"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="SIGN IN"
-            android:textColor="@color/textOnPrimary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"
-            android:background="@color/v2Red" />
+            <EditText
+                android:id="@+id/password"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="Enter your password"
+                android:inputType="textPassword"
+                android:textSize="15sp"
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textHint"
+                android:background="@color/bgInput"
+                android:padding="12dp"
+                android:imeOptions="actionDone"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Location radio (hidden — Java toggles visibility) -->
+            <RadioGroup
+                android:id="@+id/loc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+                <RadioButton android:id="@+id/dc"    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DC"/>
+                <RadioButton android:id="@+id/store" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Store"/>
+            </RadioGroup>
+
+            <!-- Response text (hidden — Java shows error messages here) -->
+            <TextView
+                android:id="@+id/response"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="12sp"
+                android:textColor="@color/v2Red"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/email_sign_in_button"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="SIGN IN"
+                android:textColor="@color/textOnPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:background="@color/v2Red"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/clear"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="Clear"
+                android:textColor="@color/textSecondary"
+                android:textSize="12sp"
+                android:background="@color/bgInput"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
-        android:id="@+id/tv_version"
+        android:id="@+id/ver"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
