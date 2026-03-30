@@ -1,108 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgPage"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="5dp"
+    android:paddingEnd="5dp">
 
-    <!-- Printer row -->
-    <LinearLayout
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:layout_marginTop="20dp"
+        android:clickable="true"
+        android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:layout_marginEnd="5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="2dp"
+                android:weightSum="12">
 
-        <EditText
-            android:id="@+id/txt_outward_tvs_paperless_reprint_printer"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:hint="Printer ID"
-            android:inputType="textCapCharacters"
-            android:imeOptions="actionDone"
-            android:textSize="14sp"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:background="@color/bgInput"
-            android:padding="12dp"
-            android:layout_marginEnd="8dp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="7dp"
+                    android:text="Scan Printer"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:gravity="center"
-            android:text="Printer"
-            android:textSize="11sp"
-            android:textColor="@color/textSecondary" />
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7">
+
+                    <EditText
+                        android:id="@+id/txt_outward_tvs_paperless_reprint_printer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/border"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:padding="7dp"
+                        android:singleLine="true"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </RelativeLayout>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:layout_marginEnd="5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="2dp"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="7dp"
+                    android:text="Scan HU"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7">
+
+                    <EditText
+                        android:id="@+id/txt_outward_tvs_paperless_reprint_huno"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/border"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:padding="7dp"
+                        android:singleLine="true"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </RelativeLayout>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="2dp">
+
+                <Button
+                    android:id="@+id/btn_outward_tvs_paperless_reprint_print"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="2dp"
+                    android:layout_weight="1"
+                    android:background="@color/colorPrimary"
+                    android:text="Print"
+                    android:visibility="gone"
+                    android:textColor="@color/white"
+                    android:textSize="15sp" />
+            </LinearLayout>
     </LinearLayout>
 
-    <!-- HU number field -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="HU NUMBER"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:textColor="@color/textSecondary"
-        android:letterSpacing="0.08"
-        android:layout_marginBottom="6dp" />
-
-    <EditText
-        android:id="@+id/txt_outward_tvs_paperless_reprint_huno"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:hint="Scan HU barcode"
-        android:inputType="textCapCharacters"
-        android:imeOptions="actionDone"
-        android:textSize="16sp"
-        android:textColor="@color/textPrimary"
-        android:textColorHint="@color/textHint"
-        android:background="@color/bgInput"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Print button -->
-    <Button
-        android:id="@+id/btn_outward_tvs_paperless_reprint_print"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:text="PRINT LABEL"
-        android:textColor="@color/textOnPrimary"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:background="@color/v2Blue"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone" />
-
-    <!-- Action row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:layout_marginTop="8dp">
-
-        <Button
-            android:id="@+id/btn_outward_tvs_paperless_reprint_reset"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="Reset"
-            android:textColor="@color/v2Red"
-            android:textSize="13sp"
-            android:background="@color/bgInput" />
+        android:padding="5dp"
+        android:weightSum="2">
 
         <Button
             android:id="@+id/btn_outward_tvs_paperless_reprint_back"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
             android:layout_weight="1"
-            android:layout_marginStart="4dp"
+            android:background="@color/colorPrimary"
             android:text="Back"
-            android:textColor="@color/textSecondary"
-            android:textSize="13sp"
-            android:background="@color/bgInput" />
-    </LinearLayout>
+            android:textColor="@color/white"
+            android:textSize="15sp" />
 
-</LinearLayout>
+        <Button
+            android:id="@+id/btn_outward_tvs_paperless_reprint_reset"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:background="@color/colorPrimary"
+            android:text="Reset"
+            android:textColor="@color/white"
+            android:textSize="15sp" />
+    </LinearLayout>
+</RelativeLayout>
