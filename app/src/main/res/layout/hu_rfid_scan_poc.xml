@@ -23,7 +23,7 @@
                 android:layout_marginRight="5dp"
                 android:layout_weight="1"
                 android:text="Start"
-                android:textColor="@color/white" />
+                android:textColor="@color/textOnPrimary" />
 
             <Button
                 android:id="@+id/BtClear"
@@ -32,7 +32,7 @@
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="5dp"
                 android:text="Clear"
-                android:textColor="@color/white"
+                android:textColor="@color/textOnPrimary"
                 android:textSize="15sp" />
 
         </LinearLayout>
