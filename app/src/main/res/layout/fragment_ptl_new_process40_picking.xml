@@ -671,7 +671,7 @@
             android:layout_weight="1"
             android:background="@color/bgPage"
             android:text="Back"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
 
         <Button
@@ -683,7 +683,7 @@
             android:background="@color/bgPage"
             android:visibility="invisible"
             android:text="Save"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
 
         <Button
@@ -695,7 +695,7 @@
             android:background="@color/bgPage"
             android:text="Next"
             android:visibility="visible"
-            android:textColor="@color/white"
+            android:textColor="@color/textOnPrimary"
             android:textSize="15sp" />
     </LinearLayout>
 </FrameLayout>
