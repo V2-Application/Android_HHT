@@ -1,4 +1,7 @@
 <resources>
+    <!-- Base WMS style — required for WMS.* dot-notation children -->
+    <style name="WMS" parent="android:Widget" />
+
     <!-- App themes -->
     <style name="AppFullScreenTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowNoTitle">true</item>
