@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- V2 WMS Design System v3.0 -->
-    <color name="colorPrimary">#1A1A1A</color>
-    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorPrimary">#1B4F72</color>  <!-- was dark, now v2Blue -->
+    <color name="colorPrimaryDark">#154060</color>
     <color name="colorAccent">#4CAF50</color>
     <color name="bgPage">#F7F8F3</color>
     <color name="bgCard">#FFFFFF</color>
@@ -54,7 +54,7 @@
     <color name="black">#CB000000</color>
     <color name="lightGrey">#DCDCDC</color>
     <color name="redAccent">#fffaea</color>
-    <color name="buttonColor">#1A1A1A</color>
+    <color name="buttonColor">#1B4F72</color>  <!-- v2Blue -->
     <color name="buttonColortext">#FFFFFF</color>
     <color name="viewBg">#F7F8F3</color>
     <color name="album_title">#4c4c4c</color>
@@ -65,7 +65,7 @@
     <color name="stock_gen">#f18054</color>
     <color name="merchandise">#f77edf</color>
     <color name="dc">#FFEB3B</color>
-    <color name="enabled_color">#1A1A1A</color>
+    <color name="enabled_color">#1B4F72</color>
     <color name="disabled_color">#AAAAAA</color>
     <color name="toggle_false">#DDDDDD</color>
     <color name="tv_enabled_color">#1A1A1A</color>
