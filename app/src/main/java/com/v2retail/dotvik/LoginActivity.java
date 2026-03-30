@@ -352,14 +352,17 @@ public class LoginActivity extends AppCompatActivity {
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
-    // Parse old middleware response: "1#WERKS" = success, "0" = failure
+    // Parse old middleware response: "Response:1#WERKS" or "1#WERKS" = success
     private void handleLegacyLoginResponse(String response, String user, String pass) {
         if (response == null || response.trim().isEmpty()) {
             box.getBox("Err", "Empty response from server");
             return;
         }
-        String[] parts = response.trim().split("#");
-        if (parts.length >= 1 && parts[0].equals("1")) {
+        // Strip "Response:" prefix if present (old ValueXMW middleware format)
+        String raw = response.trim();
+        if (raw.startsWith("Response:")) raw = raw.substring("Response:".length());
+        String[] parts = raw.split("#");
+        if (parts.length >= 1 && parts[0].trim().equals("1")) {
             // Success — parts[1] is WERKS (plant/store code)
             String werks = parts.length >= 2 ? parts[1].trim() : "";
             SharedPreferencesData data = new SharedPreferencesData(getApplicationContext());
