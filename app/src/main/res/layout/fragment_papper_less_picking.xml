@@ -41,7 +41,7 @@
             android:textSize="16sp"
             android:id="@+id/title_h"
             android:gravity="center"
-            android:textColor="#000"
+            android:textColor="@color/textPrimary"
             />
         </androidx.cardview.widget.CardView>
 
@@ -58,7 +58,7 @@
                 android:layout_weight=".6"
                 android:text="  Pack. "
                 android:gravity="center_vertical"
-                android:textColor="#000"
+                android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
             <LinearLayout
@@ -66,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:background="@drawable/btn_muted"
+                android:background="@color/v2Blue"
                 android:layout_weight="1.4">
                  <RelativeLayout
                      android:layout_width="match_parent"
@@ -105,7 +105,7 @@
                 android:layout_weight=".6"
                 android:text="  Delivery: "
                 android:gravity="center_vertical"
-                android:textColor="#000"
+                android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
             <LinearLayout
@@ -113,7 +113,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:background="@drawable/btn_muted"
+                android:background="@color/v2Blue"
                 android:layout_weight="1.4">
 
                  <RelativeLayout
@@ -152,7 +152,7 @@
                 android:layout_weight=".6"
                 android:text="  External Hu. "
                 android:gravity="center_vertical"
-                android:textColor="#000"
+                android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
             <LinearLayout
@@ -190,9 +190,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Back"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
 
             <Button
@@ -202,9 +202,9 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="@drawable/btn_secondary"
+                android:background="@color/v2Blue"
                 android:text="Next"
-                android:textColor="#fff"
+                android:textColor="@color/textOnPrimary"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -222,9 +222,9 @@
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:layout_weight="1"
-            android:background="@drawable/btn_secondary"
+            android:background="@color/v2Blue"
             android:text="Clear Scanned Data"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
             android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
