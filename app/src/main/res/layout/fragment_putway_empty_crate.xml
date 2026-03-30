@@ -94,9 +94,9 @@
         android:layout_height="wrap_content"
         android:text="Validate Update"
         android:layout_margin="5dp"
-        android:textColor="@color/white"
+        android:textColor="@color/textOnPrimary"
         android:visibility="gone"
-        android:background="@color/colorPrimary" />
+        android:background="@color/v2Blue" />
 
 
 
