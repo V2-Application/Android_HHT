@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.v2retail.dotvik.dc.DC_DashBoard"
-    android:background="@color/bgPage">
+    tools:context="com.v2retail.dotvik.dc.DC_DashBoard">
 
     <!-- TODO: Update blank fragment layout -->
     <LinearLayout
@@ -12,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="@color/bgPage"
+        android:background="#000"
         android:padding="5dp">
 
         <Button
@@ -22,7 +21,7 @@
             android:textColor="#fff"
 
             android:id="@+id/hub_inward"
-            android:background="@drawable/btn_secondary"
+            android:background="#e71821"
             android:text="Inward" />
 
         <Button
@@ -33,7 +32,6 @@
             android:textColor="#fff"
 
             android:id="@+id/hub_outward"
-            android:background="@drawable/btn_secondary" />
+            android:background="#e71821" />
     </LinearLayout>
-    </ScrollView>
 </FrameLayout>
