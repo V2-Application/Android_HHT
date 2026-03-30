@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:background="@color/colorAccent"
+                android:background="@drawable/btn_muted"
                 android:layout_weight="1.4">
                 <RelativeLayout
                     android:layout_width="match_parent"
@@ -80,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:background="@color/colorAccent"
+                android:background="@drawable/btn_muted"
                 android:layout_weight="1.4">
                 <RelativeLayout
                     android:layout_width="match_parent"
@@ -115,7 +115,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="#e71821"
+                android:background="@drawable/btn_secondary"
                 android:text="Back"
                 android:textColor="#fff"
                 android:textStyle="bold" />
@@ -126,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="2dp"
                 android:layout_weight="1"
-                android:background="#e71821"
+                android:background="@drawable/btn_secondary"
                 android:text="Submit"
                 android:textColor="#fff"
                 android:textStyle="bold" />
