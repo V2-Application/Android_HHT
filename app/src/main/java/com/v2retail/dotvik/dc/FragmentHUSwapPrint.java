@@ -90,6 +90,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
 
     @Override
     public void onResume() {
+        com.v2retail.util.PlantNames.load();
         super.onResume();
         ((Process_Selection_Activity) getActivity())
                 .getSupportActionBar()
