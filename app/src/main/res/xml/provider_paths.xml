@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- App-private external Downloads — used for APK auto-update -->
+    <external-files-path name="external_downloads" path="Downloads/" />
+    <!-- Fallback for older code paths -->
+    <external-path name="external_storage" path="." />
+</paths>
