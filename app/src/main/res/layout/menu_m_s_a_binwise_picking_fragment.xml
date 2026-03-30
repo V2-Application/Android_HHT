@@ -3,49 +3,35 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bgPage">
-
-    <ScrollView
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="2dp"
+        android:background="@color/bgPage"
+        android:padding="5dp">
 
-        <LinearLayout
+        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
+            android:layout_margin="5dp"
+            android:textColor="#fff"
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="MSA BINWISE PICKING"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/textSecondary"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="10dp"
-                android:layout_marginStart="4dp" />
+            android:id="@+id/msa_binwise_pikcing_picking"
+            android:background="@drawable/btn_secondary"
+            android:text="Picking" />
 
-            <Button
-                android:id="@+id/msa_single"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/btn_secondary"
-                android:textColor="#fff"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:text="Single Pick" />
-            <Button
-                android:id="@+id/msa_combo"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_margin="5dp"
-                android:background="@drawable/btn_secondary"
-                android:textColor="#fff"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:text="Combo Pick" />
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="HU Print"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/msa_binwise_pikcing_hu_print"
+            android:background="@drawable/btn_secondary" />
 
-        </LinearLayout>
+    </LinearLayout>
     </ScrollView>
+
 </FrameLayout>
