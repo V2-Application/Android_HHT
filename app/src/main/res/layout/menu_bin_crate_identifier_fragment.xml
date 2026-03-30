@@ -11,17 +11,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="2dp"
-        android:background="#000"
+        android:background="@color/bgPage"
         android:padding="5dp">
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/bin_crate_identifier_bin"
-            android:background="#e71821"
+            android:background="@color/v2Blue"
             android:text="Bin Identifier" />
 
         <Button
@@ -29,10 +29,10 @@
             android:layout_height="wrap_content"
             android:text="Crate Identifier"
             android:layout_margin="5dp"
-            android:textColor="#fff"
+            android:textColor="@color/textOnPrimary"
 
             android:id="@+id/bin_crate_identifier_crate"
-            android:background="#e71821" />
+            android:background="@color/v2Blue" />
     </LinearLayout>
 
 </FrameLayout>
