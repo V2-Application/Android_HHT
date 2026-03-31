@@ -58,6 +58,7 @@
             android:layout_height="48dp"
             android:background="@color/bgInput"
             android:padding="10dp"
+            android:entries="@array/ipAddress"
             android:layout_marginBottom="8dp" />
 
         <!-- Hidden legacy radio group — Java references these IDs -->
