@@ -3,19 +3,31 @@ package com.v2retail;
 import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.LruCache;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.Volley;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Observable;
 
 import io.sentry.Sentry;
 
-// Custom Application class.
+/**
+ * Custom Application class.
+ *
+ * Adds X-HHT-Serial header to every Volley request so the Azure middleware
+ * can count individual HHT devices (not just store sessions).
+ *
+ * Header value: Android ANDROID_ID (unique per device, stable, no permission needed).
+ */
 public class ApplicationController extends Application  {
 
     public static final String TAG = ApplicationController.class.getSimpleName();
@@ -25,16 +37,18 @@ public class ApplicationController extends Application  {
     private RequestQueue mRequestQueue;
     private ImageLoader mImageLoader;
 
+    // Android ID — unique per device, stable across reboots, no permission needed
+    private String mDeviceId = "";
+
     private Observable mRefreshObservable = new RefreshObservable();
 
     @Override
     public void onCreate() {
         super.onCreate();
         mApplicationController = this;
-
-
-
-        // CookieHandler.setDefault(new CookieManager());
+        // Cache device ID once at startup
+        mDeviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (mDeviceId == null) mDeviceId = "";
 
         mImageLoader = new ImageLoader(getRequestQueue(),
                 new ImageLoader.ImageCache() {
@@ -50,17 +64,13 @@ public class ApplicationController extends Application  {
                     }
                 });
 
-
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t,  Throwable e) {
                 Sentry.captureException(e);
-                // Sentry.captureMessage("Something went wrong");
             }
         });
-
     }
-
 
     public static synchronized ApplicationController getInstance() {
         return mApplicationController;
@@ -72,17 +82,26 @@ public class ApplicationController extends Application  {
 
     @Override
     protected void attachBaseContext(Context base) {
-        // TODO Auto-generated method stub
         super.attachBaseContext(base);
-        // MultiDex.install(this);
     }
-
 
     public RequestQueue getRequestQueue() {
         if (mRequestQueue == null) {
-            mRequestQueue = Volley.newRequestQueue(getContext());
+            final String deviceId = mDeviceId;
+            // Custom HurlStack: injects X-HHT-Serial into every request
+            // Middleware reads this to count individual devices (not just stores)
+            HurlStack stack = new HurlStack() {
+                @Override
+                protected HttpURLConnection createConnection(URL url) throws IOException {
+                    HttpURLConnection conn = super.createConnection(url);
+                    if (deviceId != null && !deviceId.isEmpty()) {
+                        conn.setRequestProperty("X-HHT-Serial", deviceId);
+                    }
+                    return conn;
+                }
+            };
+            mRequestQueue = Volley.newRequestQueue(getContext(), stack);
         }
-
         return mRequestQueue;
     }
 
@@ -93,9 +112,7 @@ public class ApplicationController extends Application  {
         return mRefreshObservable;
     }
 
-
     public <T> void addToRequestQueue(Request<T> req, String tag) {
-        // set the default tag if tag is empty
         req.setTag(TextUtils.isEmpty(tag) ? TAG : tag);
         getRequestQueue().add(req);
     }
@@ -115,13 +132,10 @@ public class ApplicationController extends Application  {
         return mImageLoader;
     }
 
-
-    static class RefreshObservable extends  Observable {
-
+    static class RefreshObservable extends Observable {
         @Override
         public synchronized boolean hasChanged() {
             return true;
         }
     }
-
 }
