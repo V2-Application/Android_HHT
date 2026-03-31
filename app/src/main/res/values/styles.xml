@@ -9,7 +9,6 @@
         <item name="colorPrimary">@color/v2Blue</item>
         <item name="colorPrimaryDark">@color/v2BlueDark</item>
         <item name="colorAccent">@color/v2Red</item>
-        <item name="android:windowBackground">@color/bgPage</item>
     </style>
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
@@ -216,38 +215,4 @@
         <item name="android:paddingTop">3dp</item>
         <item name="android:paddingBottom">3dp</item>
     </style>
-
-    <!-- ── V2 Brand button styles (ui-redesign) ───────────────────── -->
-    <style name="BtnBase" parent="Widget.AppCompat.Button">
-        <item name="android:layout_height">48dp</item>
-        <item name="android:layout_margin">5dp</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-    </style>
-    <style name="BtnPrimary" parent="BtnBase">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:background">@drawable/btn_primary</item>
-        <item name="android:textColor">@color/textOnPrimary</item>
-    </style>
-    <style name="BtnSecondary" parent="BtnBase">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:background">@drawable/btn_secondary</item>
-        <item name="android:textColor">@color/textOnPrimary</item>
-    </style>
-    <style name="BtnGhost" parent="BtnBase">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:background">@drawable/btn_ghost</item>
-        <item name="android:textColor">@color/textSecondary</item>
-        <item name="android:textSize">13sp</item>
-    </style>
-    <style name="BtnMuted" parent="BtnBase">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:background">@drawable/btn_muted</item>
-        <item name="android:textColor">@color/textSecondary</item>
-    </style>
-
 </resources>
