@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,11 +45,11 @@ import org.json.JSONObject;
 
 /**
  * HU Swap Print Process
- * Scans old HU barcode → calls ZWM_HUSWAP RFC → prints new HU label via TVS Bluetooth printer.
+ * Scans old HU barcode -> calls ZWM_HUSWAP RFC -> prints new HU label via TVS Bluetooth printer.
  * Running counter tracks how many HUs have been swapped in this session.
  *
  * @author V2 Retail Tech
- * @version 12.104
+ * @version 12.106
  */
 public class FragmentHUSwapPrint extends Fragment implements View.OnClickListener {
 
@@ -74,6 +73,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
     TextView txt_count;
     TextView txt_last_new_hu;
     TextView txt_status;
+    TextView txt_printer_status;   // NEW: printer connection badge
     Button btn_detect_printer;
     Button btn_reset;
     Button btn_back;
@@ -117,14 +117,15 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         WERKS = data.read("WERKS");
         USER  = data.read("USER");
 
-        txt_printer       = view.findViewById(R.id.txt_hu_swap_printer);
-        txt_old_hu        = view.findViewById(R.id.txt_hu_swap_old_hu);
-        txt_count         = view.findViewById(R.id.txt_hu_swap_count);
-        txt_last_new_hu   = view.findViewById(R.id.txt_hu_swap_last_new_hu);
-        txt_status        = view.findViewById(R.id.txt_hu_swap_status);
-        btn_detect_printer = view.findViewById(R.id.btn_hu_swap_detect_printer);
-        btn_reset         = view.findViewById(R.id.btn_hu_swap_reset);
-        btn_back          = view.findViewById(R.id.btn_hu_swap_back);
+        txt_printer         = view.findViewById(R.id.txt_hu_swap_printer);
+        txt_old_hu          = view.findViewById(R.id.txt_hu_swap_old_hu);
+        txt_count           = view.findViewById(R.id.txt_hu_swap_count);
+        txt_last_new_hu     = view.findViewById(R.id.txt_hu_swap_last_new_hu);
+        txt_status          = view.findViewById(R.id.txt_hu_swap_status);
+        txt_printer_status  = view.findViewById(R.id.txt_hu_swap_printer_status);
+        btn_detect_printer  = view.findViewById(R.id.btn_hu_swap_detect_printer);
+        btn_reset           = view.findViewById(R.id.btn_hu_swap_reset);
+        btn_back            = view.findViewById(R.id.btn_hu_swap_back);
 
         btn_detect_printer.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
@@ -137,14 +138,15 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
             if (helper.findBluetoothPrinter(savedPrinter, false)) {
                 tvsPrinter = savedPrinter;
                 txt_printer.setText(savedPrinter);
-                UIFuncs.enableInput(con, txt_old_hu);
-                txt_old_hu.requestFocus();
+                setPrinterConnected(savedPrinter);
             } else {
                 txt_printer.requestFocus();
+                setPrinterDisconnected();
                 UIFuncs.disableInput(con, txt_old_hu);
             }
         } else {
             txt_printer.requestFocus();
+            setPrinterDisconnected();
             UIFuncs.disableInput(con, txt_old_hu);
         }
 
@@ -170,8 +172,44 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         }
     }
 
+    // ── Printer badge helpers ─────────────────────────────────────────────────
+
+    private void setPrinterConnected(String printerName) {
+        txt_printer_status.setText("● CONNECTED: " + printerName);
+        txt_printer_status.setTextColor(0xFF1B8A4C);
+        UIFuncs.enableInput(con, txt_old_hu);
+        txt_old_hu.requestFocus();
+    }
+
+    private void setPrinterDisconnected() {
+        txt_printer_status.setText("● NOT CONNECTED");
+        txt_printer_status.setTextColor(0xFFB71C1C);
+        UIFuncs.disableInput(con, txt_old_hu);
+    }
+
+    // ── Status card helpers ───────────────────────────────────────────────────
+
+    private void showStatus(String message, boolean isSuccess) {
+        txt_status.setVisibility(View.VISIBLE);
+        txt_status.setText(message);
+        if (isSuccess) {
+            txt_status.setTextColor(0xFF065f46);
+            txt_status.setBackgroundColor(0xFFE8F5E9);
+        } else {
+            txt_status.setTextColor(0xFF7F1D1D);
+            txt_status.setBackgroundColor(0xFFFFEBEE);
+        }
+    }
+
+    private void hideStatus() {
+        txt_status.setVisibility(View.GONE);
+        txt_status.setText("");
+    }
+
+    // ── Input listeners ───────────────────────────────────────────────────────
+
     private void addInputListeners() {
-        // Printer field — scan or manual entry
+        // Printer field: scan or manual entry
         txt_printer.setOnEditorActionListener((tv, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 UIFuncs.hideKeyboard(getActivity());
@@ -195,7 +233,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
             }
         });
 
-        // Old HU field — fires on hardware scanner (text dump) or IME done
+        // Old HU field: fires on hardware scanner (text dump) or IME done
         txt_old_hu.setOnEditorActionListener((tv, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 UIFuncs.hideKeyboard(getActivity());
@@ -221,6 +259,8 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         });
     }
 
+    // ── Printer detection ─────────────────────────────────────────────────────
+
     private void detectPrinter(String printerName) {
         if (printerName == null || printerName.isEmpty()) {
             box.getBox("Error", "Please enter or scan a printer name.");
@@ -233,17 +273,17 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
             tvsPrinter = null;
             txt_printer.setText("");
             txt_printer.requestFocus();
-            UIFuncs.disableInput(con, txt_old_hu);
+            setPrinterDisconnected();
             return;
         }
         tvsPrinter = printerName;
         data.write(Vars.TVS_PRINTER, printerName);
         txt_printer.setText(printerName);
-        UIFuncs.enableInput(con, txt_old_hu);
-        txt_old_hu.requestFocus();
-        txt_status.setText("Printer connected: " + printerName);
-        txt_status.setTextColor(0xFF059669);
+        setPrinterConnected(printerName);
+        showStatus("Printer ready: " + printerName, true);
     }
+
+    // ── RFC call ──────────────────────────────────────────────────────────────
 
     private void callHuSwap(String oldHu) {
         if (tvsPrinter == null || tvsPrinter.isEmpty()) {
@@ -287,9 +327,8 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
             // Update counter and UI
             scanCount++;
             updateCounter();
-            txt_last_new_hu.setText("Old: " + oldHu + "  →  New: " + newHu);
-            txt_status.setText("✓ Printed: " + newHu + "  (Qty: " + vemng + ")");
-            txt_status.setTextColor(0xFF059669);
+            txt_last_new_hu.setText(oldHu + "  →  " + newHu);
+            showStatus("✔ Printed: " + newHu + "   Qty: " + vemng, true);
 
             Toast.makeText(con, "Printed new HU: " + newHu, Toast.LENGTH_SHORT).show();
 
@@ -304,15 +343,17 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         }
     }
 
+    // ── Counter / reset ───────────────────────────────────────────────────────
+
     private void updateCounter() {
-        txt_count.setText("Scanned: " + scanCount + " HU" + (scanCount == 1 ? "" : "s"));
+        txt_count.setText(String.valueOf(scanCount));
     }
 
     private void resetSession() {
         scanCount = 0;
         updateCounter();
-        txt_last_new_hu.setText("");
-        txt_status.setText("");
+        txt_last_new_hu.setText("—");
+        hideStatus();
         txt_old_hu.setText("");
         txt_old_hu.requestFocus();
     }
@@ -356,6 +397,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
                             String type = ret.optString("TYPE", "");
                             if ("E".equals(type) || "A".equals(type)) {
                                 UIFuncs.errorSound(con);
+                                showStatus("SAP: " + ret.optString("MESSAGE", "Unknown error."), false);
                                 new AlertBox(getContext()).getBox("SAP Error",
                                         ret.optString("MESSAGE", "Unknown error."));
                                 txt_old_hu.setText("");
@@ -371,6 +413,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
                                         responsebody.getJSONObject("EX_DATA"), scannedOldHu);
                             } else {
                                 UIFuncs.errorSound(con);
+                                showStatus("No EX_DATA in RFC response.", false);
                                 new AlertBox(getContext()).getBox("Error",
                                         "No EX_DATA in RFC response.");
                                 txt_old_hu.setText("");
@@ -417,6 +460,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
                 msg = error.toString();
             }
             UIFuncs.errorSound(con);
+            showStatus(msg, false);
             new AlertBox(getContext()).getBox("Error", msg);
         };
     }
