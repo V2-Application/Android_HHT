@@ -130,7 +130,17 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                     iparr[0] = URL;
                 }
                 Log.d(TAG,"URL -> "+URL);
-                getAppUpdate(iparr);
+                // Old on-prem middleware (xmwgw) has no /appversion endpoint.
+                // Skip the version check and go straight to connectivity ping.
+                if (URL.contains("xmwgw")) {
+                    try {
+                        checkIP(URL + "/index.jsp");
+                    } catch (Exception e) {
+                        box.getErrBox(e);
+                    }
+                } else {
+                    getAppUpdate(iparr);
+                }
                 break;
             case R.id.exit:
                 this.finish();
