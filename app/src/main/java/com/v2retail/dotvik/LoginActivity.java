@@ -455,8 +455,10 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new android.content.Intent(LoginActivity.this,
                 com.v2retail.dotvik.store.Home_Activity.class));
         }
-        moveTaskToBack(true);
-        clear();
+        // finish() cleanly closes LoginActivity so the dashboard comes to foreground.
+        // moveTaskToBack() was incorrectly pushing the whole task to background,
+        // causing Android to surface the Downloads folder on login.
+        finish();
     }
 
     /**
