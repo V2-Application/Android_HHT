@@ -232,7 +232,7 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                     public void onResponse(JSONObject response) {
                         // get response
                         try {
-                            if (response.getString("upgrade").equals("available")){
+                            if (false && response.getString("upgrade").equals("available")){ // AUTO-UPDATE DISABLED
                                     // Auto-download — no button tap needed
                                     String downloadUrl = null;
                                     try {
