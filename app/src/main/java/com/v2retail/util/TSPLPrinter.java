@@ -260,39 +260,54 @@ public class TSPLPrinter {
                                     String qty,   String crDate,
                                     String crTime, String source, String dest) {
 
-        // 1. Strip leading zeros from HU numbers
+        // 1. Strip leading zeros
         String printHu      = removeLeadingZeros(newHu);
         String displayOldHu = removeLeadingZeros(oldHu);
 
-        // 2. Date: handles SAP DATS (YYYYMMDD) and Java Date.toString() garbage
+        // 2. Date — handles:
+        //    a) SAP DATS: "20260330"        → "30.03.2026"
+        //    b) Java Date: "Mon Mar 30 ..." → "30.03.2026"
+        //    c) Already formatted           → used as-is
         String fmtDate = "";
         try {
             if (crDate != null) {
                 String d = crDate.trim();
                 if (d.length() == 8 && d.matches("\\d{8}")) {
+                    // SAP DATS YYYYMMDD
                     fmtDate = d.substring(6,8) + "." + d.substring(4,6) + "." + d.substring(0,4);
-                } else {
+                } else if (d.matches(".*\\d{4}.*")) {
+                    // Try to extract day, month name, year from any order
+                    // Matches "Mon Mar 30 15:50:03 IST 2026" or "30 Mar 2026" etc
                     java.util.regex.Matcher m = java.util.regex.Pattern
-                        .compile("(\\d{1,2})\\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+(\\d{4})",
+                        .compile("(\\d{1,2})\\D+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\D+(\\d{4})|" +
+                                 "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\D+(\\d{1,2})\\D+(\\d{4})",
                                  java.util.regex.Pattern.CASE_INSENSITIVE).matcher(d);
                     String[] months = {"Jan","Feb","Mar","Apr","May","Jun",
                                        "Jul","Aug","Sep","Oct","Nov","Dec"};
                     if (m.find()) {
-                        String day = String.format("%02d", Integer.parseInt(m.group(1)));
-                        String yr  = m.group(3);
+                        String day, mon, yr;
+                        if (m.group(1) != null) { // day-month-year order
+                            day = String.format("%02d", Integer.parseInt(m.group(1)));
+                            mon = m.group(2); yr = m.group(3);
+                        } else {                  // month-day-year order (Java Date.toString)
+                            mon = m.group(4); day = String.format("%02d", Integer.parseInt(m.group(5)));
+                            yr  = m.group(6);
+                        }
                         int mi = 1;
                         for (int k = 0; k < months.length; k++) {
-                            if (months[k].equalsIgnoreCase(m.group(2))) { mi = k+1; break; }
+                            if (months[k].equalsIgnoreCase(mon)) { mi = k+1; break; }
                         }
                         fmtDate = day + "." + String.format("%02d", mi) + "." + yr;
                     } else {
                         fmtDate = d.length() > 10 ? d.substring(0, 10) : d;
                     }
+                } else {
+                    fmtDate = d.length() > 10 ? d.substring(0, 10) : d;
                 }
             }
         } catch (Exception ignore) { fmtDate = crDate != null ? crDate : ""; }
 
-        // 3. Time: SAP TIMS HHMMSS → HH:MM:SS, also handles pre-formatted strings
+        // 3. Time — SAP TIMS HHMMSS → HH:MM:SS, also extracts from Java Date.toString()
         String fmtTime = "";
         try {
             if (crTime != null) {
@@ -302,77 +317,92 @@ public class TSPLPrinter {
                 } else if (t.matches("\\d{2}:\\d{2}:\\d{2}")) {
                     fmtTime = t;
                 } else {
+                    // Extract HH:MM:SS from Java Date.toString() e.g. "Mon Mar 30 15:50:03 IST 2026"
                     java.util.regex.Matcher m = java.util.regex.Pattern
                         .compile("(\\d{2}:\\d{2}:\\d{2})").matcher(t);
-                    fmtTime = m.find() ? m.group(1) : "";
+                    if (m.find()) fmtTime = m.group(1);
                 }
+            }
+            // If time still empty, try extracting from crDate (Java Date has time embedded)
+            if (fmtTime.isEmpty() && crDate != null) {
+                java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("(\\d{2}:\\d{2}:\\d{2})").matcher(crDate);
+                if (m.find()) fmtTime = m.group(1);
             }
         } catch (Exception ignore) { fmtTime = crTime != null ? crTime : ""; }
 
-        // 4. Resolve codes to display labels using local plant name map
-        //    Format: "DW01 Dehradun-DC"  or just "DW01" if name unknown
-        String srcLabel  = com.v2retail.util.PlantNames.label(source);
-        String destLabel = com.v2retail.util.PlantNames.label(dest);
+        // 4. Resolve plant codes to names (loaded from middleware, code-only fallback)
+        String srcName  = com.v2retail.util.PlantNames.label(source);   // "DW01 KOLKATA-RDC"
+        String destName = com.v2retail.util.PlantNames.label(dest);     // "HB05 PTN-1(...)"
 
-        // Header line e.g. "HB05 Patna-HUB SWAP"
-        String headerLine = (destLabel.isEmpty() ? "HU SWAP" : destLabel + " SWAP");
+        // 5. Truncate to fit font "3" on right panel (16px/char, 380 dots wide = 23 chars max)
+        final int F3_MAX = 23;
+        String destSwap = (destName.isEmpty() ? "HU SWAP" : destName + " SWAP");
+        if (destSwap.length() > F3_MAX) destSwap = destSwap.substring(0, F3_MAX);
 
-        // Route line e.g. "DW01 Dehradun-DC -> HB05 Patna-HUB"
-        String routeLine = (!srcLabel.isEmpty() && !destLabel.isEmpty())
-                         ? srcLabel + " -> " + destLabel
-                         : srcLabel + destLabel;
+        String fromLine = "From: " + (srcName.isEmpty()  ? source  : srcName);
+        String toLine   = "To:   " + (destName.isEmpty() ? dest    : destName);
+        if (fromLine.length() > F3_MAX) fromLine = fromLine.substring(0, F3_MAX);
+        if (toLine.length()   > F3_MAX) toLine   = toLine.substring(0, F3_MAX);
 
-        // Date + time on one line
-        String dateTime = fmtDate + (fmtTime.isEmpty() ? "" : "  " + fmtTime);
-
-        // ── TSPL — Landscape 70mm × 40mm @ 203 DPI ───────────────────────
+        // ── TSPL — Landscape 70mm × 40mm @ 203 DPI = 560 × 320 dots ─────
         //
-        //  ┌──────────────┬────────────────────────────────────────────┐
-        //  │              │  {NEW HU}              (font 4, largest)  │
-        //  │  [ QR CODE ] │  {DEST SWAP}           (font 3)          │
-        //  │  left 30%    │  {SRC} -> {DEST}       (font 2)          │
-        //  │  centered    │  DD.MM.YYYY  HH:MM:SS  (font 2)          │
-        //  │              ├────────────────────────────────────────────│
-        //  │              │  Old: {OLD HU}    Qty: {QTY}  (font 1)  │
-        //  └──────────────┴────────────────────────────────────────────┘
-        //
-        // 70mm × 40mm @ 203 DPI = 560 × 320 dots
-        // QR: cell=7, Version 1 (21×21 modules) = 147 dots wide/tall
-        //   → left 30% = 168 dots. QR at x=12, centered vertically: y=(320-147)/2=87
-        // Vertical divider: x=166
-        // Text right side: x=175 onwards, 375 dots available
+        //  ┌───────────────┬──────────────────────────────────────┐
+        //  │               │  1006404600          font4 ×2 (64px) │ y=5→69
+        //  │               ├──────────────────────────────────────│ y=74
+        //  │   [QR CODE]   │  HB05 PTN-1(MAHARAJ A  font3 (28px) │ y=80→108
+        //  │   cell=8      ├──────────────────────────────────────│ y=113
+        //  │   y=76 centre │  From: DW01 KOLKATA-RDC font3 (28px)│ y=118→146
+        //  │               │  To:   HB05 PTN-1(MAH   font3 (28px)│ y=150→178
+        //  │               ├──────────────────────────────────────│ y=183
+        //  │               │  30.03.2026  15:50:03   font2 (20px)│ y=188→208
+        //  │               │  Qty: 1.000             font2 (20px)│ y=212→232
+        //  │               ╞══════════════════════════════════════╡ y=240
+        //  │               │  Old: 1006403898        font2 (20px)│ y=248→268
+        //  └───────────────┴──────────────────────────────────────┘
+        //  Bottom at y=268, 52 dots breathing room ✅
 
         return "SIZE 70 mm, 40 mm\n" +
                "GAP 3 mm, 0 mm\n" +
                "DIRECTION 0\n" +
                "CLS\n" +
 
-               // QR code — left side, vertically centered
-               // cell=7, ECC M, auto mode — no built-in readable text (zero overlap)
-               "QRCODE 12, 87, M, 7, A, 0, \"" + printHu + "\"\n" +
+               // QR code left side — cell=8 (168×168 dots), centred at y=76
+               "QRCODE 8, 76, M, 8, A, 0, \"" + printHu + "\"\n" +
 
-               // Vertical divider line
-               "BAR 166, 5, 2, 310\n" +
+               // Vertical divider
+               "BAR 175, 5, 2, 310\n" +
 
-               // ── Right side — text ──
-               // New HU number: largest text, most important
-               "TEXT 175, 10, \"4\", 0, 1, 1, \"" + printHu + "\"\n" +
+               // HU number — font 4, 2× vertical = 64px tall
+               "TEXT 180, 5, \"4\", 0, 1, 2, \"" + printHu + "\"\n" +
 
-               // Destination + SWAP header
-               "TEXT 175, 52, \"3\", 0, 1, 1, \"" + headerLine + "\"\n" +
+               // Thin rule under HU
+               "BAR 178, 74, 375, 1\n" +
 
-               // Route: src → dest  (with names)
-               "TEXT 175, 86, \"2\", 0, 1, 1, \"" + routeLine + "\"\n" +
+               // Destination SWAP header — font 3
+               "TEXT 180, 80, \"3\", 0, 1, 1, \"" + destSwap + "\"\n" +
+
+               // Thin rule
+               "BAR 178, 113, 375, 1\n" +
+
+               // From / To on separate lines — font 3 (16px wide, guaranteed to fit)
+               "TEXT 180, 118, \"3\", 0, 1, 1, \"" + fromLine + "\"\n" +
+               "TEXT 180, 150, \"3\", 0, 1, 1, \"" + toLine   + "\"\n" +
+
+               // Thin rule
+               "BAR 178, 183, 375, 1\n" +
 
                // Date + Time
-               "TEXT 175, 112, \"2\", 0, 1, 1, \"" + dateTime + "\"\n" +
+               "TEXT 180, 188, \"2\", 0, 1, 1, \"" + fmtDate + "  " + fmtTime + "\"\n" +
 
-               // Horizontal divider above footer
-               "BAR 175, 140, 375, 2\n" +
+               // Qty
+               "TEXT 180, 212, \"2\", 0, 1, 1, \"Qty: " + qty + "\"\n" +
 
-               // Footer: old HU left, qty right
-               "TEXT 175, 152, \"1\", 0, 1, 1, \"Old: " + displayOldHu + "\"\n" +
-               "TEXT 440, 152, \"1\", 0, 1, 1, \"Qty:" + qty + "\"\n" +
+               // Thick divider
+               "BAR 178, 240, 375, 3\n" +
+
+               // Old HU ref
+               "TEXT 180, 248, \"2\", 0, 1, 1, \"Old: " + displayOldHu + "\"\n" +
 
                "PRINT 1, 1\n";
     }
