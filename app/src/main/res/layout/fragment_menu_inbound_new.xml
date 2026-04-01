@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent"
+        android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="#000" android:padding="4dp">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="INBOUND PROCESS NEW" android:textColor="#AAAAAA"
+                android:textSize="11sp" android:padding="8dp"/>
+
+            <Button android:id="@+id/btn_hu_scan_putway"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="5dp" android:text="HU Scanning &amp; Putway to Palette"
+                android:textColor="#fff" android:background="#1B4F72"/>
+
+            <Button android:id="@+id/btn_hu_picking_bin"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="5dp" android:text="HU Picking From BIN"
+                android:textColor="#fff" android:background="#1B4F72"/>
+
+            <Button android:id="@+id/btn_put01_hu_scan"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="5dp" android:text="PUT01 — HU Wise Scanning"
+                android:textColor="#fff" android:background="#1B4F72"/>
+
+            <Button android:id="@+id/btn_back_inbound_new"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_margin="5dp" android:text="Back"
+                android:textColor="#fff" android:background="#555555"/>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
