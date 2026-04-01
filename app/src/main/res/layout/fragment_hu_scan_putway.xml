@@ -6,7 +6,7 @@
             android:orientation="vertical" android:padding="10dp">
 
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="UNLOADING — HU SCAN & PUTWAY TO PALETTE" android:textSize="13sp" android:textStyle="bold"
+                android:text="UNLOADING — HU SCAN &amp; PUTWAY TO PALETTE" android:textSize="13sp" android:textStyle="bold"
                 android:textColor="#1B4F72" android:layout_marginBottom="12dp"/>
 
             <TextView android:id="@+id/tv_dc" android:layout_width="match_parent"
