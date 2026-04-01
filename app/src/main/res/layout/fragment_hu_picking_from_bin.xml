@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="10dp">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="HU PICKING FROM BIN" android:textSize="13sp" android:textStyle="bold"
+                android:textColor="#1B4F72" android:layout_marginBottom="12dp"/>
+
+            <TextView android:id="@+id/tv_dc" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="DC: —"
+                android:textSize="11sp" android:textColor="#888888" android:layout_marginBottom="10dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="PICKLIST NO" android:textSize="10sp" android:textStyle="bold"
+                android:textColor="#1B4F72" android:layout_marginBottom="4dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:background="#1B4F72" android:layout_marginBottom="4dp">
+                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="#F39C12"/>
+                <EditText android:id="@+id/et_picklist" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:hint="Enter Picklist No." android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone" android:textSize="16sp"
+                    android:textColor="#FFFFFF" android:textColorHint="#AACCEE"
+                    android:padding="12dp" android:background="@null" android:singleLine="true"/>
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="BIN" android:textSize="10sp" android:textStyle="bold"
+                android:textColor="#1B4F72" android:layout_marginBottom="4dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:background="#1B4F72" android:layout_marginBottom="4dp">
+                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="#27AE60"/>
+                <EditText android:id="@+id/et_bin" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:hint="Scan BIN" android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone" android:textSize="16sp"
+                    android:textColor="#FFFFFF" android:textColorHint="#AACCEE"
+                    android:padding="12dp" android:background="@null" android:singleLine="true"/>
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="PALETTE" android:textSize="10sp" android:textStyle="bold"
+                android:textColor="#1B4F72" android:layout_marginBottom="4dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:background="#1B4F72" android:layout_marginBottom="4dp">
+                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="#27AE60"/>
+                <EditText android:id="@+id/et_palette" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:hint="Scan Palette" android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone" android:textSize="16sp"
+                    android:textColor="#FFFFFF" android:textColorHint="#AACCEE"
+                    android:padding="12dp" android:background="@null" android:singleLine="true"/>
+            </LinearLayout>
+
+            <!-- Info cards: PO / INV / Vendor / Qty -->
+            <TextView android:id="@+id/tv_po" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="PO: —"
+                android:textSize="12sp" android:textColor="#1B4F72" android:textStyle="bold"
+                android:visibility="gone" android:layout_marginBottom="4dp"/>
+            <TextView android:id="@+id/tv_inv" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="INV: —"
+                android:textSize="12sp" android:textColor="#1B4F72"
+                android:visibility="gone" android:layout_marginBottom="4dp"/>
+            <TextView android:id="@+id/tv_vendor" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="Vendor: —"
+                android:textSize="12sp" android:textColor="#555"
+                android:visibility="gone" android:layout_marginBottom="4dp"/>
+            <TextView android:id="@+id/tv_box_count" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="Boxes: —"
+                android:textSize="12sp" android:textColor="#555"
+                android:visibility="gone" android:layout_marginBottom="4dp"/>
+            <TextView android:id="@+id/tv_qty" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="HU Qty: —"
+                android:textSize="12sp" android:textColor="#555"
+                android:visibility="gone" android:layout_marginBottom="10dp"/>
+
+            <!-- Status -->
+            <TextView android:id="@+id/tv_status" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text=""
+                android:textSize="12sp" android:padding="10dp"
+                android:layout_marginBottom="12dp" android:visibility="gone"/>
+
+            <!-- Buttons -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button android:id="@+id/btn_save" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="4dp" android:text="Save"
+                    android:textColor="#fff" android:background="#1B4F72" android:enabled="false"/>
+                <Button android:id="@+id/btn_reset" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="4dp" android:text="Reset"
+                    android:textColor="#fff" android:background="#C0392B"/>
+                <Button android:id="@+id/btn_back" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="4dp" android:text="Back"
+                    android:textColor="#fff" android:background="#555555"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
