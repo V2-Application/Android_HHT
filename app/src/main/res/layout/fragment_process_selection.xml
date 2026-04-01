@@ -15,7 +15,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/bgPage"
+            android:background="#000"
             android:padding="2dp">
 
             <LinearLayout
@@ -32,8 +32,8 @@
                     android:layout_weight="1"
                     android:layout_margin="5dp"
                     android:text="Inward"
-                    android:textColor="@color/textOnPrimary"
-                    android:background="@color/v2Blue" />
+                    android:textColor="#fff"
+                    android:background="#e71821" />
 
                 <Button
                     android:id="@+id/outward"
@@ -42,8 +42,8 @@
                     android:layout_weight="1"
                     android:layout_margin="5dp"
                     android:text="Outward"
-                    android:textColor="@color/textOnPrimary"
-                    android:background="@color/v2Blue" />
+                    android:textColor="#fff"
+                    android:background="#e71821" />
             </LinearLayout>
 
             <Button
@@ -52,8 +52,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="V11 To Msa"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <Button
                 android:id="@+id/stock_take"
@@ -61,8 +61,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="Stock Take"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <Button
                 android:id="@+id/grt_process"
@@ -70,8 +70,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="GRT"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -87,8 +87,8 @@
                     android:layout_weight="1"
                     android:layout_margin="5dp"
                     android:text="PTL"
-                    android:textColor="@color/textOnPrimary"
-                    android:background="@color/v2Blue" />
+                    android:textColor="#fff"
+                    android:background="#e71821" />
 
                 <Button
                     android:id="@+id/ptl_new"
@@ -97,8 +97,8 @@
                     android:layout_weight="1"
                     android:layout_margin="5dp"
                     android:text="PTL-New"
-                    android:textColor="@color/textOnPrimary"
-                    android:background="@color/v2Blue" />
+                    android:textColor="#fff"
+                    android:background="#e71821" />
             </LinearLayout>
 
             <Button
@@ -107,8 +107,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="CLA Process"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <Button
                 android:id="@+id/msa_binwise_picking"
@@ -116,8 +116,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="MSA Binwise Picking Process"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <Button
                 android:id="@+id/bin_crate_identifier"
@@ -125,8 +125,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="Bin / Crate Identifier"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
 
             <Button
                 android:id="@+id/msa_live_stock_take"
@@ -134,8 +134,17 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="MSA Live Stock Take"
-                android:textColor="@color/textOnPrimary"
-                android:background="@color/v2Blue" />
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:id="@+id/rdc_to_rdc_hu_putway"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="RDC to RDC HU Putway"
+                android:textColor="#fff"
+                android:background="#1B4F72" />
 
         </LinearLayout>
     </ScrollView>
