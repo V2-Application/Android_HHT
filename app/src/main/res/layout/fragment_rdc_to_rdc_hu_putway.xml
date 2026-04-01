@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="RDC TO RDC HU PUTWAY"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#1B4F72"
+                android:layout_marginBottom="12dp" />
+
+            <!-- ══ BIN SECTION ════════════════════════════════════════════ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DESTINATION BIN"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#1B4F72"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Prominent BIN scan field with amber strip -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#1B4F72"
+                android:layout_marginBottom="4dp">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#F39C12" />
+
+                <EditText
+                    android:id="@+id/rdc_et_bin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Scan Destination BIN"
+                    android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone"
+                    android:textSize="18sp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AACCEE"
+                    android:padding="12dp"
+                    android:background="@null"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <!-- BIN validation status -->
+            <TextView
+                android:id="@+id/rdc_tv_bin_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● Awaiting BIN scan"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#B71C1C"
+                android:layout_marginBottom="14dp" />
+
+            <!-- ══ HU SECTION ══════════════════════════════════════════════ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SCAN HU"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#1B4F72"
+                android:layout_marginBottom="4dp" />
+
+            <!-- HU scan field (enabled after BIN validated) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#1B4F72"
+                android:layout_marginBottom="4dp">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#27AE60" />
+
+                <EditText
+                    android:id="@+id/rdc_et_hu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Scan HU Barcode"
+                    android:inputType="textCapCharacters"
+                    android:imeOptions="actionDone"
+                    android:textSize="18sp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AACCEE"
+                    android:padding="12dp"
+                    android:background="@null"
+                    android:singleLine="true"
+                    android:enabled="false" />
+            </LinearLayout>
+
+            <!-- ══ STATUS CARD ════════════════════════════════════════════ -->
+            <TextView
+                android:id="@+id/rdc_tv_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="12sp"
+                android:padding="10dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone" />
+
+            <!-- ══ BUTTONS ════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/rdc_btn_save"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:text="Save"
+                    android:textColor="#fff"
+                    android:background="#1B4F72"
+                    android:enabled="false" />
+
+                <Button
+                    android:id="@+id/rdc_btn_reset"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:text="Reset"
+                    android:textColor="#fff"
+                    android:background="#C0392B" />
+
+                <Button
+                    android:id="@+id/rdc_btn_back"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:text="Back"
+                    android:textColor="#fff"
+                    android:background="#555555" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</FrameLayout>
