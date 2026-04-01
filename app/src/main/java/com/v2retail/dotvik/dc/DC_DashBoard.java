@@ -72,6 +72,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
     Button msa_binwise_picking;
     Button bin_crate_identifier;
     Button msa_live_stock_take;
+    Button rdc_to_rdc_hu_putway;
 
     private OnFragmentInteractionListener mListener;
 
@@ -125,6 +126,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         msa_binwise_picking = view.findViewById(R.id.msa_binwise_picking);
         bin_crate_identifier = view.findViewById(R.id.bin_crate_identifier);
         msa_live_stock_take = view.findViewById(R.id.msa_live_stock_take);
+        rdc_to_rdc_hu_putway = view.findViewById(R.id.rdc_to_rdc_hu_putway);
 
         inbound.setOnClickListener(this);
         outbound.setOnClickListener(this);
@@ -137,6 +139,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         msa_binwise_picking.setOnClickListener(this);
         bin_crate_identifier.setOnClickListener(this);
         msa_live_stock_take.setOnClickListener(this);
+        rdc_to_rdc_hu_putway.setOnClickListener(this);
 
         return view;
     }
@@ -246,6 +249,9 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
                 break;
             case R.id.msa_live_stock_take:
                 fragment = new FragmentMSALiveStockTake();
+                break;
+            case R.id.rdc_to_rdc_hu_putway:
+                fragment = new FragmentRdcToRdcHuPutway();
                 break;
         }
         clearStack();
