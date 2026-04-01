@@ -146,6 +146,24 @@
                 android:textColor="#fff"
                 android:background="#1B4F72" />
 
+            <Button
+                android:id="@+id/inbound_process_new"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Inbound Process New"
+                android:textColor="#fff"
+                android:background="#1B4F72" />
+
+            <Button
+                android:id="@+id/inbound_putway_to_bin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Inbound Putway to BIN"
+                android:textColor="#fff"
+                android:background="#1B4F72" />
+
         </LinearLayout>
     </ScrollView>
 
