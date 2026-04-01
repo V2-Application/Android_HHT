@@ -137,6 +137,15 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
+            <Button
+                android:id="@+id/rdc_to_rdc_hu_putway"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="RDC to RDC HU Putway"
+                android:textColor="#fff"
+                android:background="#1B4F72" />
+
         </LinearLayout>
     </ScrollView>
 
