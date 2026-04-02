@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,15 +39,15 @@ import org.json.JSONObject;
  * RDC TO RDC HU PUTWAY
  *
  * Flow:
- *   1. Scan Destination BIN  → ZWM_HU_MVT_BIN_VAL_RFC  (validate bin)
- *   2. Scan HU               → ZWM_HU_MVT_HU_VAL_RFC   (validate HU against bin)
- *   3. Save                  → ZWM_HU_MVT_SAVE_RFC      (commit movement)
+ *   1. Scan Destination BIN  -> ZWM_HU_MVT_BIN_VAL_RFC  (validate bin)
+ *   2. Scan HU               -> ZWM_HU_MVT_HU_VAL_RFC   (validate HU against bin)
+ *   3. Save                  -> ZWM_HU_MVT_SAVE_RFC      (commit movement)
  *
  * BIN logic:
  *   - If BIN starts with "001", do NOT clear fields after save (consolidation mode).
  *   - Otherwise clear BIN + HU fields after each successful save.
  *
- * @version 12.106
+ * @version 12.107
  */
 public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickListener {
 
@@ -99,21 +100,27 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         btnBack.setOnClickListener(this);
 
         // BIN scan triggers validation on IME action (scan gun sends Enter)
-        etBin.setOnEditorActionListener((v, actionId, event) -> {
-            String bin = etBin.getText().toString().trim();
-            if (!bin.isEmpty()) validateBin(bin);
-            return true;
+        etBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                String bin = etBin.getText().toString().trim();
+                if (!bin.isEmpty()) validateBin(bin);
+                return true;
+            }
         });
 
         // HU scan triggers HU validation
-        etHu.setOnEditorActionListener((v, actionId, event) -> {
-            if (!binValidated) {
-                showStatus("Please scan and validate BIN first.", false);
+        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (!binValidated) {
+                    showStatus("Please scan and validate BIN first.", false);
+                    return true;
+                }
+                String hu = etHu.getText().toString().trim();
+                if (!hu.isEmpty()) validateHu(hu);
                 return true;
             }
-            String hu = etHu.getText().toString().trim();
-            if (!hu.isEmpty()) validateHu(hu);
-            return true;
         });
 
         init();
@@ -135,12 +142,17 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
 
     // ── BIN Validation ────────────────────────────────────────────────────────
 
-    private void validateBin(String bin) {
+    private void validateBin(final String bin) {
         showProgress("Validating BIN...");
-        new Handler().postDelayed(() -> callBinValRfc(bin), 300);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                callBinValRfc(bin);
+            }
+        }, 300);
     }
 
-    private void callBinValRfc(String bin) {
+    private void callBinValRfc(final String bin) {
         String rfcUrl = buildRfcUrl(RFC_BIN_VAL);
         JSONObject params = new JSONObject();
         try {
@@ -155,10 +167,19 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         }
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
-            response -> {
-                dismissProgress();
-                try {
-                    JSONObject ret = response.getJSONObject("EX_RETURN");
+            new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    dismissProgress();
+                    if (response == null || response.length() == 0) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
+                    JSONObject ret = response.optJSONObject("EX_RETURN");
+                    if (ret == null) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
                     String type = ret.optString("TYPE", "");
                     String msg  = ret.optString("MESSAGE", "");
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
@@ -167,19 +188,20 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                         etBin.setEnabled(false);
                         etHu.setEnabled(true);
                         etHu.requestFocus();
-                        showStatus("BIN OK: " + bin + " — Now scan HU.", true);
+                        showStatus("BIN OK: " + bin + " - Now scan HU.", true);
                     } else {
                         showStatus("BIN Error: " + msg, false);
                         etBin.setText("");
                         etBin.requestFocus();
                     }
-                } catch (JSONException e) {
-                    showStatus("Response parse error: " + e.getMessage(), false);
                 }
             },
-            error -> {
-                dismissProgress();
-                showStatus("Network error: " + parseVolleyError(error), false);
+            new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    dismissProgress();
+                    showStatus("Network error: " + parseVolleyError(error), false);
+                }
             });
 
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
@@ -189,12 +211,17 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
 
     // ── HU Validation ─────────────────────────────────────────────────────────
 
-    private void validateHu(String hu) {
+    private void validateHu(final String hu) {
         showProgress("Validating HU...");
-        new Handler().postDelayed(() -> callHuValRfc(hu), 300);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                callHuValRfc(hu);
+            }
+        }, 300);
     }
 
-    private void callHuValRfc(String hu) {
+    private void callHuValRfc(final String hu) {
         String rfcUrl = buildRfcUrl(RFC_HU_VAL);
         JSONObject params = new JSONObject();
         try {
@@ -210,27 +237,37 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         }
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
-            response -> {
-                dismissProgress();
-                try {
-                    JSONObject ret = response.getJSONObject("EX_RETURN");
+            new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    dismissProgress();
+                    if (response == null || response.length() == 0) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
+                    JSONObject ret = response.optJSONObject("EX_RETURN");
+                    if (ret == null) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
                     String type = ret.optString("TYPE", "");
                     String msg  = ret.optString("MESSAGE", "");
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
                         btnSave.setEnabled(true);
-                        showStatus("HU OK: " + hu + " — Ready to Save.", true);
+                        showStatus("HU OK: " + hu + " - Ready to Save.", true);
                     } else {
                         showStatus("HU Error: " + msg, false);
                         etHu.setText("");
                         etHu.requestFocus();
                     }
-                } catch (JSONException e) {
-                    showStatus("Response parse error: " + e.getMessage(), false);
                 }
             },
-            error -> {
-                dismissProgress();
-                showStatus("Network error: " + parseVolleyError(error), false);
+            new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    dismissProgress();
+                    showStatus("Network error: " + parseVolleyError(error), false);
+                }
             });
 
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
@@ -240,8 +277,8 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
     // ── Save ──────────────────────────────────────────────────────────────────
 
     private void saveMovement() {
-        String hu  = etHu.getText().toString().trim();
-        String bin = validatedBin;
+        final String hu  = etHu.getText().toString().trim();
+        final String bin = validatedBin;
 
         if (TextUtils.isEmpty(bin) || TextUtils.isEmpty(hu)) {
             showStatus("BIN and HU are required.", false);
@@ -249,10 +286,15 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         }
 
         showProgress("Saving movement...");
-        new Handler().postDelayed(() -> callSaveRfc(bin, hu), 300);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                callSaveRfc(bin, hu);
+            }
+        }, 300);
     }
 
-    private void callSaveRfc(String bin, String hu) {
+    private void callSaveRfc(final String bin, final String hu) {
         String rfcUrl = buildRfcUrl(RFC_SAVE);
         JSONObject params = new JSONObject();
         try {
@@ -268,40 +310,50 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         }
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
-            response -> {
-                dismissProgress();
-                try {
-                    JSONObject ret = response.getJSONObject("EX_RETURN");
+            new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    dismissProgress();
+                    if (response == null || response.length() == 0) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
+                    JSONObject ret = response.optJSONObject("EX_RETURN");
+                    if (ret == null) {
+                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        return;
+                    }
                     String type  = ret.optString("TYPE", "");
                     String msg   = ret.optString("MESSAGE", "Done");
                     String tanum = response.optString("EX_TANUM", "");
 
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                        String successMsg = "✔ Saved! HU " + hu + " → BIN " + bin;
+                        String successMsg = "Saved! HU " + hu + " -> BIN " + bin;
                         if (!tanum.isEmpty()) successMsg += " | TO: " + tanum;
                         showStatus(successMsg, true);
 
                         // Clear logic: keep BIN if it starts with "001", else clear all
                         if (bin.startsWith("001")) {
-                            // Consolidation bin — stay on same bin, clear only HU
+                            // Consolidation bin - stay on same bin, clear only HU
                             etHu.setText("");
                             etHu.setEnabled(true);
                             etHu.requestFocus();
                             btnSave.setEnabled(false);
                         } else {
-                            // Normal bin — clear everything for next scan
+                            // Normal bin - clear everything for next scan
                             resetFields();
                         }
                     } else {
                         showStatus("Save Error: " + msg, false);
                     }
-                } catch (JSONException e) {
-                    showStatus("Response parse error: " + e.getMessage(), false);
                 }
             },
-            error -> {
-                dismissProgress();
-                showStatus("Network error: " + parseVolleyError(error), false);
+            new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    dismissProgress();
+                    showStatus("Network error: " + parseVolleyError(error), false);
+                }
             });
 
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
@@ -357,7 +409,13 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         if (e instanceof TimeoutError)     return "Request timed out";
         if (e instanceof NoConnectionError) return "No network connection";
         if (e instanceof NetworkError)     return "Network error";
-        if (e instanceof ServerError)      return "Server error";
+        if (e instanceof ServerError) {
+            if (e.networkResponse != null && e.networkResponse.data != null) {
+                return "Server error: " + new String(e.networkResponse.data).substring(0,
+                    Math.min(100, e.networkResponse.data.length));
+            }
+            return "Server error";
+        }
         if (e instanceof ParseError)       return "Response parse error";
         return e.getMessage() != null ? e.getMessage() : "Unknown error";
     }
