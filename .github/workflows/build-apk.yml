@@ -1,73 +1,66 @@
-name: Build V2 HHT APK
+name: Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, HHT-Dev ]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > /tmp/V2Retail_keystore
-          ls -lh /tmp/V2Retail_keystore
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Build signed release APK
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
         env:
-          KEYSTORE_PATH: /tmp/V2Retail_keystore
-          KEYSTORE_PASSWORD: V2Retail@456
-          KEY_ALIAS: v2retail
-          KEY_PASSWORD: V2Retail@456
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
-      - name: Collect APK
-        run: |
-          find app/build/outputs/apk -name '*.apk'
-          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          echo "APK: $APK"
-          echo "Size: $(du -sh $APK)"
-          cp "$APK" V2_HHT_Azure_Release.apk
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
         with:
-          name: V2-HHT-Azure-Release
-          path: V2_HHT_Azure_Release.apk
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEYSTORE_PASSWORD }}
 
       - name: Get version name
         id: version
         run: |
-          VER=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VER" >> $GITHUB_OUTPUT
-          echo "Version: $VER"
+          VERSION=$(./gradlew -q printVersionName 2>/dev/null || grep "versionName" app/build.gradle | awk '{print $2}' | tr -d '"' | head -1)
+          BUILD=${{ github.run_number }}
+          echo "tag=v${VERSION}-build${BUILD}" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}-build${{ github.run_number }}
-          name: 'V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}'
+          tag_name: ${{ steps.version.outputs.tag }}-HHT-Dev
+          name: HHT-Dev Build ${{ github.run_number }}
           body: |
-            Version: ${{ steps.version.outputs.version }}
-            Build: ${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            Fix: UMREZ pack ratio used for scan quantity (ZSDC_DIRECT_ART_VAL_BARCOD_RFC)
-          files: V2_HHT_Azure_Release.apk
+            **Branch:** HHT-Dev
+            **SAP Environment:** DEV (192.168.144.174 / Client 210 / BATCHUSER)
+            **Endpoint:** https://v2-hht-api.azurewebsites.net/api/hht?env=dev
+            
+            ⚠️ This is a DEV build — for testing only. Do NOT deploy to production stores.
+          files: app/build/outputs/apk/release/V2_HHT_Azure_Release.apk
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
