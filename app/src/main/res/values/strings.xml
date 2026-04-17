@@ -39,6 +39,8 @@
         <item>https://hht-api.v2retail.net/api/hht (V2 Cloud)</item>
         <!-- FALLBACK: Azure direct -->
         <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Direct)</item>
+        <!-- SAP DEV: Azure middleware routed to SAP DEV 192.168.144.174 client 210 BATCHUSER -->
+        <item>https://v2-hht-api.azurewebsites.net/api/hht?env=dev (SAP DEV)</item>
         <!-- Legacy on-prem — DC/warehouse use only -->
         <item>http://192.168.144.200:9080/xmwgw (HanaProd Legacy)</item>
         <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
