@@ -26,23 +26,21 @@
     <string name="qa">7080 (QA) </string>
     <string name="prod">6080 (Dev)</string>
 
-
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <!--
-    <string name="version">Version : 2.5</string>
-    -->
     <string name="date">Date.</string>
 
+    <!-- ============================================================ -->
+    <!-- HHT-Dev BRANCH - Points to SAP DEV system 192.168.144.174   -->
+    <!-- User: BATCHUSER / Client: 210                                 -->
+    <!-- Route: Android -> Azure middleware (?env=dev) -> SAP DEV     -->
+    <!-- DO NOT MERGE to main until DEV testing is complete           -->
+    <!-- ============================================================ -->
     <array name="ipAddress">
-        <!-- PRIMARY: SAP DEV — Azure middleware routed to SAP DEV 192.168.144.174 client 210 BATCHUSER -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht?env=dev (SAP DEV)</item>
-        <!-- SECONDARY: Cloudflare edge — works from any network in India -->
-        <item>https://hht-api.v2retail.net/api/hht (V2 Cloud)</item>
-        <!-- FALLBACK: Azure direct -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Direct)</item>
-        <!-- Legacy on-prem — DC/warehouse use only -->
-        <item>http://192.168.144.200:9080/xmwgw (HanaProd Legacy)</item>
+        <!-- PRIMARY: Azure middleware -> SAP DEV 192.168.144.174 / Client 210 / BATCHUSER -->
+        <item>https://v2-hht-api.azurewebsites.net/api/hht?env=dev (SAP DEV - Azure)</item>
+        <!-- SECONDARY: Cloudflare edge -> SAP DEV -->
+        <item>https://hht-api.v2retail.net/api/hht?env=dev (SAP DEV - Cloud)</item>
+        <!-- Legacy on-prem DEV - internal network only -->
         <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
         <item>http://103.29.220.152:1080/hanadev (HanaDev Public)</item>
         <item>http://192.168.151.40:17080/xmwgw (HanaQA Legacy)</item>
@@ -61,7 +59,6 @@
         <item>0005</item>
         <item>0006</item>
     </array>
-
     <array name="delivery_rejection_reason">
         <item>Select Reason</item>
         <item>RTO (Return to origin)</item>
