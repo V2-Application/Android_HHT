@@ -1,0 +1,7 @@
+    <!-- Append inside existing <resources> in styles.xml -->
+    <style name="SrmAlertDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">#131720</item>
+        <item name="android:textColor">#E8EDF5</item>
+        <item name="colorAccent">#3B82F6</item>
+        <item name="android:windowBackground">#131720</item>
+    </style>
