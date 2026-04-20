@@ -1,100 +1,153 @@
 package com.v2retail.dotvik.srm;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.provider.OpenableColumns;
+import android.view.View;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
-import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.dotvik.srm.api.MultipartUploadRequest;
+import com.v2retail.dotvik.srm.api.SrmApiClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-/** My Documents — show upload status for all 4 mandatory docs */
 public class SrmMyDocumentsActivity extends AppCompatActivity {
 
-    private SharedPreferencesData prefs;
-    private LinearLayout llDocs;
+    private static final String[] DOC_TYPES  = {"PAN_CARD","CANCELLED_CHEQUE","GST_CERTIFICATE","BILL_COPY","MSME","TRADE_LICENCE","ISO"};
+    private static final String[] DOC_LABELS = {"PAN Card ★","Cancelled Cheque ★","GST Certificate ★","Bill Copy ★","MSME Certificate","Trade Licence","ISO Certificate"};
+    private static final int[]    PICK_RC    = {201,202,203,204,205,206,207};
+
+    private String appId;
+    private final Map<String, JSONObject> uploadedDocs = new HashMap<>();
+
+    private ProgressBar progress;
+    private LinearLayout docContainer;
+    private TextView tvNoApp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_srm_my_documents);
-        prefs  = new SharedPreferencesData(getApplicationContext());
-        llDocs = findViewById(R.id.srm_ll_docs);
+        progress     = findViewById(R.id.progressSrmMyDocs);
+        docContainer = findViewById(R.id.llSrmDocContainer);
+        tvNoApp      = findViewById(R.id.tvSrmMyDocsNoApp);
         loadApplication();
     }
 
     private void loadApplication() {
-        String url = getSrmBaseUrl() + SrmVars.APPLICATIONS_LIST + "?limit=1";
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-            response -> {
-                try {
-                    JSONArray data = response.getJSONArray("data");
-                    if (data.length() > 0) {
-                        String appId = data.getJSONObject(0).getString("id");
-                        loadDocs(appId);
-                    }
-                } catch (Exception ignored) {}
-            }, error -> {}
-        ) { @Override public Map<String,String> getHeaders() { Map<String,String> h=new HashMap<>(); h.put("Authorization","Bearer "+prefs.read(SrmVars.PREF_SRM_TOKEN)); return h; } };
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        progress.setVisibility(View.VISIBLE);
+        SrmApiClient.get(this, "/applications?limit=1", res -> {
+            try {
+                JSONArray data = res.getJSONArray("data");
+                if (data.length() == 0) {
+                    progress.setVisibility(View.GONE);
+                    tvNoApp.setVisibility(View.VISIBLE);
+                    return;
+                }
+                appId = data.getJSONObject(0).getString("id");
+                loadDocs();
+            } catch (Exception e) { progress.setVisibility(View.GONE); }
+        }, e -> progress.setVisibility(View.GONE));
     }
 
-    private void loadDocs(String appId) {
-        String url = getSrmBaseUrl() + String.format(SrmVars.DOCUMENTS_LIST, appId);
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-            response -> {
-                try {
-                    JSONArray docs = response.getJSONArray("data");
-                    if (llDocs == null) return;
-                    llDocs.removeAllViews();
-                    String[][] docTypes = {
-                        {"PAN_CARD","PAN Card"}, {"CANCELLED_CHEQUE","Cancelled Cheque"},
-                        {"GST_CERTIFICATE","GST Certificate"}, {"BILL_COPY","Bill Copy"},
-                        {"MSME","MSME Certificate"}, {"TRADE_LICENCE","Trade Licence"}
-                    };
-                    for (String[] dt : docTypes) {
-                        boolean found = false;
-                        String origName = "";
-                        for (int i = 0; i < docs.length(); i++) {
-                            JSONObject doc = docs.getJSONObject(i);
-                            if (dt[0].equals(doc.optString("doc_type"))) {
-                                found = true;
-                                origName = doc.optString("original_name","");
-                                break;
-                            }
-                        }
-                        LinearLayout row = new LinearLayout(this);
-                        row.setOrientation(LinearLayout.HORIZONTAL);
-                        row.setPadding(0, 12, 0, 12);
-                        row.setBackgroundColor(found ? 0xFFEEF6EC : 0xFFFEECEC);
-                        android.view.View sep = new android.view.View(this);
-                        sep.setLayoutParams(new LinearLayout.LayoutParams(4, LinearLayout.LayoutParams.MATCH_PARENT));
-                        sep.setBackgroundColor(found ? 0xFF059669 : 0xFFDC2626);
-                        row.addView(sep);
-                        LinearLayout info = new LinearLayout(this);
-                        info.setOrientation(LinearLayout.VERTICAL);
-                        info.setPadding(16, 0, 0, 0);
-                        info.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-                        TextView tvName = new TextView(this); tvName.setText(dt[1]); tvName.setTextColor(0xFF1A1A1A); tvName.setTextSize(13f); tvName.setTypeface(null, android.graphics.Typeface.BOLD);
-                        TextView tvStatus = new TextView(this); tvStatus.setText(found ? ("Uploaded: " + origName) : "Not uploaded"); tvStatus.setTextColor(found ? 0xFF059669 : 0xFFDC2626); tvStatus.setTextSize(11f);
-                        info.addView(tvName); info.addView(tvStatus);
-                        row.addView(info);
-                        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                        lp.setMargins(0, 0, 0, 8);
-                        row.setLayoutParams(lp);
-                        row.setPadding(12, 12, 12, 12);
-                        llDocs.addView(row);
-                    }
-                } catch (Exception e) { e.printStackTrace(); }
-            }, error -> {}
-        ) { @Override public Map<String,String> getHeaders() { Map<String,String> h=new HashMap<>(); h.put("Authorization","Bearer "+prefs.read(SrmVars.PREF_SRM_TOKEN)); return h; } };
-        ApplicationController.getInstance().getRequestQueue().add(req);
+    private void loadDocs() {
+        SrmApiClient.get(this, "/documents/" + appId, res -> {
+            progress.setVisibility(View.GONE);
+            try {
+                JSONArray docs = res.getJSONArray("data");
+                uploadedDocs.clear();
+                for (int i = 0; i < docs.length(); i++) {
+                    JSONObject d = docs.getJSONObject(i);
+                    uploadedDocs.put(d.optString("doc_type"), d);
+                }
+                buildDocCards();
+            } catch (Exception ignored) {}
+        }, e -> progress.setVisibility(View.GONE));
     }
 
-    String getSrmBaseUrl() { String u=prefs.read(SrmVars.PREF_SRM_URL); return (u!=null&&!u.isEmpty())?u:"http://192.168.151.49:5000"; }
+    private void buildDocCards() {
+        docContainer.removeAllViews();
+        for (int i = 0; i < DOC_TYPES.length; i++) {
+            final int idx = i;
+            String type = DOC_TYPES[i];
+            JSONObject uploaded = uploadedDocs.get(type);
+            boolean required = i < 4;
+
+            View card = getLayoutInflater().inflate(R.layout.item_srm_doc_card, docContainer, false);
+            TextView tvLabel  = card.findViewById(R.id.tvDocCardLabel);
+            TextView tvStatus = card.findViewById(R.id.tvDocCardStatus);
+            TextView tvVerify = card.findViewById(R.id.tvDocCardVerified);
+            Button   btnAction= card.findViewById(R.id.btnDocCardAction);
+
+            tvLabel.setText(DOC_LABELS[i]);
+
+            if (uploaded != null) {
+                tvStatus.setText(uploaded.optString("original_name", "Uploaded"));
+                tvStatus.setTextColor(0xFF388E3C);
+                tvVerify.setVisibility(uploaded.optBoolean("is_verified") ? View.VISIBLE : View.GONE);
+                btnAction.setText("Replace");
+            } else {
+                tvStatus.setText(required ? "Not uploaded — REQUIRED" : "Not uploaded (Optional)");
+                tvStatus.setTextColor(required ? 0xFFC62828 : 0xFF9E9E9E);
+                tvVerify.setVisibility(View.GONE);
+                btnAction.setText("Upload");
+            }
+
+            btnAction.setOnClickListener(v -> pickFile(idx));
+            docContainer.addView(card);
+        }
+    }
+
+    private void pickFile(int idx) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf","image/jpeg","image/png"});
+        startActivityForResult(Intent.createChooser(intent, "Select " + DOC_LABELS[idx]), PICK_RC[idx]);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK || data == null || appId == null) return;
+        for (int i = 0; i < PICK_RC.length; i++) {
+            if (requestCode == PICK_RC[i]) {
+                Uri uri = data.getData();
+                String name = getFileName(uri);
+                uploadDoc(DOC_TYPES[i], uri, name);
+                break;
+            }
+        }
+    }
+
+    private void uploadDoc(String docType, Uri uri, String name) {
+        progress.setVisibility(View.VISIBLE);
+        MultipartUploadRequest req = new MultipartUploadRequest(this, appId, docType, uri, name,
+                res -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, name + " uploaded", Toast.LENGTH_SHORT).show();
+                    loadDocs();
+                },
+                e -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "Upload failed: " + SrmApiClient.parseError(e), Toast.LENGTH_LONG).show();
+                });
+        SrmApiClient.getQueue(this).add(req);
+    }
+
+    private String getFileName(Uri uri) {
+        String name = "document";
+        Cursor c = getContentResolver().query(uri, null, null, null, null);
+        if (c != null && c.moveToFirst()) {
+            int idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            if (idx >= 0) name = c.getString(idx);
+            c.close();
+        }
+        return name;
+    }
 }
