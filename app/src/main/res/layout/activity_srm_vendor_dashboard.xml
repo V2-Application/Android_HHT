@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SRM Vendor Dashboard -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bgPage"
+    android:orientation="vertical">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/srm_tv_welcome" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Welcome, Vendor" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Vendor Account" android:textColor="#AAAAAA" android:textSize="11sp" />
+        </LinearLayout>
+        <Button android:id="@+id/srm_btn_logout" android:layout_width="wrap_content" android:layout_height="36dp"
+            android:text="Sign Out" android:textColor="@color/white" android:textSize="11sp"
+            android:background="@drawable/bg_btn_outline_white" android:paddingStart="12dp" android:paddingEnd="12dp" />
+    </LinearLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <!-- SAP Code banner (shown when approved) -->
+            <LinearLayout android:id="@+id/srm_card_sap_code"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@color/colorSuccessBg" android:orientation="vertical"
+                android:padding="16dp" android:layout_marginBottom="12dp" android:visibility="gone">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="SAP VENDOR CODE" android:textColor="@color/colorSuccess"
+                    android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.1" android:layout_marginBottom="4dp" />
+                <TextView android:id="@+id/srm_tv_sap_code" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="V-XXXXXXXX" android:textColor="@color/colorSuccess" android:textSize="28sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Application Status Card -->
+            <LinearLayout android:id="@+id/srm_card_status"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:background="@color/bgCard" android:orientation="vertical"
+                android:padding="16dp" android:layout_marginBottom="12dp" android:visibility="gone">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="ACTIVE APPLICATION" android:textColor="@color/textLabel"
+                    android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="10dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ticket No." android:textColor="@color/textLabel" android:textSize="10sp" />
+                        <TextView android:id="@+id/srm_tv_ticket" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/textPrimary" android:textSize="13sp" android:textStyle="bold" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Current Stage" android:textColor="@color/textLabel" android:textSize="10sp" />
+                        <TextView android:id="@+id/srm_tv_stage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/colorInfo" android:textSize="13sp" android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Pipeline dots -->
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="8dp">
+                    <View android:id="@+id/dot_l1" android:layout_width="18dp" android:layout_height="18dp" android:background="@drawable/srm_dot_pending" />
+                    <View android:layout_width="0dp" android:layout_height="2dp" android:layout_weight="1" android:background="@color/borderMedium" />
+                    <View android:id="@+id/dot_l2" android:layout_width="18dp" android:layout_height="18dp" android:background="@drawable/srm_dot_pending" />
+                    <View android:layout_width="0dp" android:layout_height="2dp" android:layout_weight="1" android:background="@color/borderMedium" />
+                    <View android:id="@+id/dot_l3" android:layout_width="18dp" android:layout_height="18dp" android:background="@drawable/srm_dot_pending" />
+                    <View android:layout_width="0dp" android:layout_height="2dp" android:layout_weight="1" android:background="@color/borderMedium" />
+                    <View android:id="@+id/dot_l4" android:layout_width="18dp" android:layout_height="18dp" android:background="@drawable/srm_dot_pending" />
+                    <View android:layout_width="0dp" android:layout_height="2dp" android:layout_weight="1" android:background="@color/borderMedium" />
+                    <View android:id="@+id/dot_l5" android:layout_width="18dp" android:layout_height="18dp" android:background="@drawable/srm_dot_pending" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="L1" android:textSize="9sp" android:textColor="@color/textHint" android:gravity="center" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="L2" android:textSize="9sp" android:textColor="@color/textHint" android:gravity="center" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="L3" android:textSize="9sp" android:textColor="@color/textHint" android:gravity="center" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="L4" android:textSize="9sp" android:textColor="@color/textHint" android:gravity="center" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SAP" android:textSize="9sp" android:textColor="@color/textHint" android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Quick Actions -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="QUICK ACTIONS" android:textColor="@color/textLabel"
+                android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="10dp" />
+
+            <Button android:id="@+id/srm_btn_register"
+                android:layout_width="match_parent" android:layout_height="52dp"
+                android:background="@color/colorPrimary"
+                android:text="+ New Vendor Registration"
+                android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <Button android:id="@+id/srm_btn_track"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:background="@drawable/bg_btn_secondary"
+                android:text="Track Application Status"
+                android:textColor="@color/textPrimary" android:textSize="13sp"
+                android:layout_marginBottom="10dp" />
+
+            <Button android:id="@+id/srm_btn_docs"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:background="@drawable/bg_btn_secondary"
+                android:text="My Documents"
+                android:textColor="@color/textPrimary" android:textSize="13sp" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
