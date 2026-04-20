@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Approver Dashboard -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bgPage"
+    android:orientation="vertical">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/colorPrimary" android:orientation="horizontal"
+        android:padding="16dp" android:gravity="center_vertical">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/srm_tv_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Approver" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:id="@+id/srm_tv_role" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Sub Division Head" android:textColor="#AAAAAA" android:textSize="11sp" />
+        </LinearLayout>
+        <Button android:id="@+id/srm_btn_logout" android:layout_width="wrap_content" android:layout_height="36dp"
+            android:text="Sign Out" android:textColor="@color/white" android:textSize="11sp"
+            android:background="@drawable/bg_btn_outline_white" android:paddingStart="12dp" android:paddingEnd="12dp" />
+    </LinearLayout>
+
+    <!-- Stats row -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/bgCard" android:orientation="horizontal" android:padding="12dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:background="@color/colorWarningBg" android:orientation="vertical"
+            android:padding="12dp" android:gravity="center" android:layout_marginEnd="6dp">
+            <TextView android:id="@+id/srm_tv_queue_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="0" android:textColor="@color/colorWarning" android:textSize="26sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="My Queue" android:textColor="@color/textSecondary" android:textSize="10sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:background="@color/statBlueBg" android:orientation="vertical"
+            android:padding="12dp" android:gravity="center" android:layout_marginStart="6dp">
+            <TextView android:id="@+id/srm_tv_total_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="0" android:textColor="@color/colorInfo" android:textSize="26sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Total" android:textColor="@color/textSecondary" android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Section header -->
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="PENDING QUEUE" android:textColor="@color/textLabel"
+        android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.08"
+        android:padding="16dp" android:paddingBottom="8dp" android:background="@color/bgPage" />
+
+    <!-- Queue list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/srm_rv_queue"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>
