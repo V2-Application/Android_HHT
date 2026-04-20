@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.v2retail.dotvik">
-    <!-- To auto-complete the email text field in the login form with the user's emails -->
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -9,7 +9,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-feature android:name="android.hardware.camera" />
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
@@ -23,6 +22,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
+
+        <!-- ── EXISTING ACTIVITIES ──────────────────────────────────────── -->
         <activity
             android:name="com.v2retail.dotvik.scanner.ScannerActivity"
             android:exported="false" />
@@ -30,7 +31,7 @@
         <meta-data
             android:name="io.sentry.dsn"
             android:value="https://790c5c61e722440aafa7f18d9affc9ce@o935813.ingest.sentry.io/5885804" />
-        <!--         <uses-library android:name="com.symbol.emdk"/> -->
+
         <activity
             android:name="com.v2retail.dotvik.store.Home_Activity"
             android:exported="false"
@@ -42,6 +43,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.v2retail.dotvik.LoginActivity" />
         </activity>
+
         <activity
             android:name="com.v2retail.dotvik.dc.Process_Selection_Activity"
             android:exported="false"
@@ -53,6 +55,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.v2retail.dotvik.LoginActivity" />
         </activity>
+
         <activity
             android:name="com.v2retail.dotvik.hub.HubProcessSelectionActivity"
             android:exported="false"
@@ -64,6 +67,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.v2retail.dotvik.LoginActivity" />
         </activity>
+
         <activity
             android:name="com.v2retail.dotvik.ecomm.Ecomm_Process_Selection"
             android:exported="false"
@@ -75,29 +79,105 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.v2retail.dotvik.LoginActivity" />
         </activity>
+
         <activity
             android:name="com.v2retail.dotvik.SplashScreen"
             android:exported="true"
-            android:theme="@style/AppTheme.Launcher"></activity>
+            android:theme="@style/AppTheme.Launcher" />
+
         <activity
             android:name="com.v2retail.dotvik.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
-            android:launchMode="singleTask" /> <!-- <activity -->
-        <!-- android:name=".ScannerActivity" -->
-        <!-- android:label="@string/scanner_activity" -->
-        <!-- android:launchMode="singleTask" > -->
-        <!-- </activity> -->
+            android:launchMode="singleTask" />
+
         <activity
             android:name="com.v2retail.dotvik.IPActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    
+
+        <!-- ── SRM PORTAL ACTIVITIES ────────────────────────────────────── -->
+
+        <!-- Entry point — token check → role route -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- Login -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmLoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Vendor flows -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmVendorDashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmVendorRegistrationActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmTrackApplicationActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmMyDocumentsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- Approver flows (L1–L4) -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmApproverDashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmApprovalDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- MDM flows (L5 + SAP push) -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmMdmDashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmMdmSapPushActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Admin -->
+        <activity
+            android:name="com.v2retail.dotvik.srm.SrmAdminDashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- File provider (already present, kept as-is) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -107,6 +187,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+
     </application>
 
 </manifest>
