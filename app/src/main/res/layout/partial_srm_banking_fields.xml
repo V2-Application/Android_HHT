@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="BANK NAME *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmBankName" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Full bank name"
+        android:inputType="textCapWords" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="ACCOUNT NUMBER *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmBankAccount" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Bank account number"
+        android:inputType="numberDecimal" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="BRANCH" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmBranch" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Branch name &amp; city"
+        android:inputType="textCapWords" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="IFSC CODE *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmIfsc" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="e.g. HDFC0001234"
+        android:inputType="textCapCharacters" android:maxLength="11" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="PAN NUMBER *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmPan" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="10-character PAN"
+        android:inputType="textCapCharacters" android:maxLength="10" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="GSTIN *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmGstin" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="15-character GSTIN"
+        android:inputType="textCapCharacters" android:maxLength="15" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="SERVICE TAX NO (Service Providers)" android:textColor="#5A6A8A"
+        android:textSize="10sp" android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmServiceTax" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Service tax number"
+        android:inputType="textCapCharacters" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="WITHHOLDING TAX CODE" android:textColor="#5A6A8A"
+        android:textSize="10sp" android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmWht" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="e.g. 194C, 194J"
+        android:inputType="textCapCharacters"/>
+</merge>
