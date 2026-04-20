@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vendor Registration — ViewFlipper 4 steps -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bgPage" android:orientation="vertical">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/colorPrimary" android:orientation="vertical" android:padding="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="New Vendor Registration" android:textColor="@color/white"
+            android:textSize="16sp" android:textStyle="bold"/>
+        <TextView android:id="@+id/srm_tv_step" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Step 1 of 4" android:textColor="#AAAAAA" android:textSize="11sp"/>
+    </LinearLayout>
+
+    <!-- Progress bar -->
+    <ProgressBar android:id="@+id/srm_progress_bar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="4dp"
+        android:max="4" android:progress="1"
+        android:progressTint="@color/colorPrimary" android:progressBackgroundTint="@color/borderMedium"/>
+
+    <!-- ViewFlipper: 4 steps -->
+    <ViewFlipper android:id="@+id/srm_vf"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+
+        <!-- STEP 1: Vendor Details -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="A. VENDOR DETAILS" android:textColor="@color/colorInfo" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.08" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VENDOR TYPE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/srm_sp_vendor_type" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BUSINESS TYPE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/srm_sp_business_type" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VENDOR RELATION *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/srm_sp_vendor_relation" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="COMPANY CODE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/srm_sp_company_code" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DIVISION *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <Spinner android:id="@+id/srm_sp_division" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VENDOR NAME *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_vendor_name" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Full company / firm name" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textCapCharacters" android:singleLine="true" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ADDRESS *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_address" android:layout_width="match_parent" android:layout_height="80dp" android:background="@drawable/bg_input_srm" android:hint="Complete mailing address" android:paddingStart="14dp" android:paddingTop="10dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textMultiLine" android:layout_marginBottom="12dp"/>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CITY *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_city" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="City" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PIN CODE" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_postal" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="6-digit PIN" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="number" android:maxLength="6" android:singleLine="true"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STATE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp" android:layout_marginTop="12dp"/>
+                <Spinner android:id="@+id/srm_sp_state" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/bg_input_srm" android:paddingStart="12dp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CONTACT PERSON *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_contact" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Authorised contact name" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true" android:layout_marginBottom="12dp"/>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MOBILE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_mobile" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="10-digit mobile" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="phone" android:maxLength="10" android:singleLine="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="EMAIL" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_email" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="email@company.com" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textEmailAddress" android:singleLine="true"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <Button android:id="@+id/srm_btn_step1_next" android:layout_width="match_parent" android:layout_height="52dp" android:background="@color/colorPrimary" android:text="CONTINUE: BANKING DETAILS →" android:textColor="@color/white" android:textSize="13sp" android:textStyle="bold" android:layout_marginTop="20dp"/>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- STEP 2: Banking & Tax -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="B. BANKING &amp; TAXATION" android:textColor="@color/colorInfo" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.08" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BANK NAME *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_bank_name" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Full bank name" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ACCOUNT NO. *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_account_no" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Account number" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="number" android:singleLine="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BRANCH *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_branch" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Branch name" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="IFSC CODE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_ifsc" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="e.g. HDFC0001234" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textCapCharacters" android:maxLength="11" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PAN NO. *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_pan" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="10-char PAN" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textCapCharacters" android:maxLength="10" android:singleLine="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GSTIN *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_gstin" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="15-char GSTIN" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textCapCharacters" android:maxLength="15" android:singleLine="true"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SERVICE TAX NO." android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_service_tax" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Service providers only" android:paddingStart="14dp" android:textSize="13sp" android:textColor="@color/textPrimary" android:singleLine="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="6dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WHT CODE" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                        <EditText android:id="@+id/srm_et_wht" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="e.g. 194C" android:paddingStart="14dp" android:textSize="13sp" android:textColor="@color/textPrimary" android:singleLine="true"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="20dp">
+                    <Button android:id="@+id/srm_btn_step2_back" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:background="@drawable/bg_btn_secondary" android:text="← BACK" android:textColor="@color/textPrimary" android:textSize="12sp" android:layout_marginEnd="8dp"/>
+                    <Button android:id="@+id/srm_btn_step2_next" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="2" android:background="@color/colorPrimary" android:text="CONTINUE: BUYING →" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- STEP 3: Buying Details -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="C. BUYING DETAILS" android:textColor="@color/colorInfo" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.08" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PAYMENT TERMS (DAYS) *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_payment_days" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="e.g. 30" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="number" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MERCHANDISE CATEGORY *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_merchandise" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="e.g. Apparels – Menswear" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VRP *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_vrp" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Vendor Reference Point" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ARTICLE TO PURCHASE *" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_article" android:layout_width="match_parent" android:layout_height="80dp" android:background="@drawable/bg_input_srm" android:hint="Article / product description" android:paddingStart="14dp" android:paddingTop="10dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="textMultiLine" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BUYING PER MONTH (₹)" android:textColor="@color/textLabel" android:textSize="10sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <EditText android:id="@+id/srm_et_buying" android:layout_width="match_parent" android:layout_height="52dp" android:background="@drawable/bg_input_srm" android:hint="Monthly buying value" android:paddingStart="14dp" android:textSize="14sp" android:textColor="@color/textPrimary" android:inputType="numberDecimal" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/srm_btn_step3_back" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:background="@drawable/bg_btn_secondary" android:text="← BACK" android:textColor="@color/textPrimary" android:textSize="12sp" android:layout_marginEnd="8dp"/>
+                    <Button android:id="@+id/srm_btn_step3_next" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="2" android:background="@color/colorPrimary" android:text="REVIEW →" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- STEP 4: Review & Submit -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="D. REVIEW &amp; SUBMIT" android:textColor="@color/colorSuccess" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.08" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/bgCard" android:orientation="vertical" android:padding="14dp" android:layout_marginBottom="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="All mandatory documents (PAN Card, Cancelled Cheque, GST Certificate, Bill Copy) must be uploaded from the Documents screen after submission." android:textColor="@color/colorWarning" android:textSize="12sp" android:layout_marginBottom="10dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Once submitted, a ticket number will be generated and your application will enter the approval queue." android:textColor="@color/textSecondary" android:textSize="12sp"/>
+                </LinearLayout>
+                <TextView android:id="@+id/srm_tv_result" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@color/colorErrorBg" android:padding="10dp"
+                    android:textColor="@color/colorError" android:textSize="13sp"
+                    android:visibility="gone" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+                    <Button android:id="@+id/srm_btn_step4_back" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1" android:background="@drawable/bg_btn_secondary" android:text="← BACK" android:textColor="@color/textPrimary" android:textSize="12sp" android:layout_marginEnd="8dp"/>
+                    <Button android:id="@+id/srm_btn_step4_submit" android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="2" android:background="@color/colorSuccess" android:text="SUBMIT APPLICATION" android:textColor="@color/white" android:textSize="12sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+
+    </ViewFlipper>
+</LinearLayout>
