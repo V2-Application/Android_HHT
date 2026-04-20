@@ -1,85 +1,43 @@
 package com.v2retail.dotvik.srm;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.v2retail.ApplicationController;
-import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.dotvik.srm.api.SrmApiClient;
 
 /**
- * SRM Entry Point — reads stored SRM token, validates it,
- * then routes to role-specific dashboard.
+ * SRM entry point. Checks saved token & role → routes to correct activity.
+ * Called from the existing HHT app when user taps "Vendor Registration".
  */
 public class SrmActivity extends AppCompatActivity {
-
-    private static final String TAG = "SrmActivity";
-    private SharedPreferencesData prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prefs = new SharedPreferencesData(getApplicationContext());
 
-        String token = prefs.read(SrmVars.PREF_SRM_TOKEN);
-        String role  = prefs.read(SrmVars.PREF_SRM_USER_ROLE);
+        String token = SrmApiClient.getToken(this);
+        String role  = SrmApiClient.getSavedRole(this);
 
-        if (token != null && !token.isEmpty() && role != null && !role.isEmpty()) {
-            verifyAndRoute(token, role);
+        if (token == null || token.isEmpty()) {
+            startActivity(new Intent(this, SrmLoginActivity.class));
         } else {
-            goToLogin();
+            routeByRole(role);
         }
-    }
-
-    private void verifyAndRoute(String token, String role) {
-        String url = getSrmBaseUrl() + SrmVars.AUTH_ME;
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-            response -> {
-                try {
-                    String liveRole = response.getJSONObject("data").getString("role");
-                    prefs.write(SrmVars.PREF_SRM_USER_ROLE, liveRole);
-                    routeByRole(this, liveRole);
-                } catch (Exception e) { goToLogin(); }
-            },
-            error -> goToLogin()
-        ) {
-            @Override
-            public java.util.Map<String, String> getHeaders() {
-                java.util.Map<String, String> h = new java.util.HashMap<>();
-                h.put("Authorization", "Bearer " + token);
-                return h;
-            }
-        };
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
-
-    /** Static helper — can be called from SrmLoginActivity after successful login */
-    public static void routeByRole(Activity context, String role) {
-        Intent intent;
-        switch (role == null ? "" : role) {
-            case SrmVars.ROLE_VENDOR:
-                intent = new Intent(context, SrmVendorDashboardActivity.class); break;
-            case SrmVars.ROLE_MDM:
-                intent = new Intent(context, SrmMdmDashboardActivity.class); break;
-            case SrmVars.ROLE_ADMIN:
-                intent = new Intent(context, SrmAdminDashboardActivity.class); break;
-            default:
-                // subdiv, divhead, finance, pocomm
-                intent = new Intent(context, SrmApproverDashboardActivity.class); break;
-        }
-        context.startActivity(intent);
-        context.finish();
-    }
-
-    void goToLogin() {
-        startActivity(new Intent(this, SrmLoginActivity.class));
         finish();
     }
 
-    String getSrmBaseUrl() {
-        String url = prefs.read(SrmVars.PREF_SRM_URL);
-        return (url != null && !url.isEmpty()) ? url : "http://192.168.151.49:5000";
+    void routeByRole(String role) {
+        Intent i;
+        switch (role) {
+            case "vendor":  i = new Intent(this, SrmVendorDashboardActivity.class);  break;
+            case "subdiv":
+            case "divhead":
+            case "finance":
+            case "pocomm":  i = new Intent(this, SrmApproverDashboardActivity.class); break;
+            case "mdm":     i = new Intent(this, SrmMdmDashboardActivity.class);      break;
+            case "admin":   i = new Intent(this, SrmAdminDashboardActivity.class);    break;
+            default:        i = new Intent(this, SrmLoginActivity.class);             break;
+        }
+        startActivity(i);
     }
 }
