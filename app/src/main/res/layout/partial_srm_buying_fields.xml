@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="MERCHANDISE CATEGORY *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <Spinner android:id="@+id/spSrmCategory" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="PAYMENT TERMS (DAYS) *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmPaymentTerms" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="e.g. 30"
+        android:inputType="number" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="VRP *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmVrp" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Vendor Reference Point"
+        android:inputType="textCapCharacters" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="ARTICLE TO BE PURCHASED *" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmArticle" android:layout_width="match_parent" android:layout_height="72dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:paddingTop="10dp" android:textColor="#E8EDF5" android:textColorHint="#5A6A8A"
+        android:hint="Article/product description" android:gravity="top"
+        android:inputType="textMultiLine" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="BUYING PER MONTH (₹)" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmBuyingMonth" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Monthly buying value"
+        android:inputType="numberDecimal" android:layout_marginBottom="12dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="PURCHASE VALUE / ANNUM (₹)" android:textColor="#5A6A8A" android:textSize="10sp"
+        android:letterSpacing="0.1" android:layout_marginBottom="4dp"/>
+    <EditText android:id="@+id/etSrmPurchaseValue" android:layout_width="match_parent" android:layout_height="48dp"
+        android:background="@drawable/bg_field" android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:textColor="#E8EDF5" android:textColorHint="#5A6A8A" android:hint="Annual purchase value"
+        android:inputType="numberDecimal" android:layout_marginBottom="20dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="DUE DILIGENCE DECLARATIONS" android:textColor="#5A6A8A"
+        android:textSize="10sp" android:letterSpacing="0.1" android:layout_marginBottom="10dp"/>
+
+    <CheckBox android:id="@+id/cbSrmDecl1" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="All information provided is true and correct"
+        android:textColor="#E8EDF5" android:textSize="13sp" android:layout_marginBottom="8dp"
+        android:buttonTint="#3B82F6"/>
+    <CheckBox android:id="@+id/cbSrmDecl2" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Subject to approval by authorised signatories of V2 Retail"
+        android:textColor="#E8EDF5" android:textSize="13sp" android:layout_marginBottom="8dp"
+        android:buttonTint="#3B82F6"/>
+    <CheckBox android:id="@+id/cbSrmDecl3" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="No duplicate vendor with same PAN / GST / Bank Account"
+        android:textColor="#E8EDF5" android:textSize="13sp" android:layout_marginBottom="8dp"
+        android:buttonTint="#3B82F6"/>
+    <CheckBox android:id="@+id/cbSrmDecl4" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="I agree to the V2 Retail Vendor Agreement terms"
+        android:textColor="#E8EDF5" android:textSize="13sp"
+        android:buttonTint="#3B82F6"/>
+</merge>
