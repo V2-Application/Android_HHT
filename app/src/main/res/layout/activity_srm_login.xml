@@ -1,164 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- SRM Login Screen -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage"
-    android:fillViewport="true">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#0F1F33" android:fillViewport="true">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="24dp">
 
-        <!-- Header strip -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:layout_marginBottom="24dp">
+        <!-- Logo + Brand -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="32dp">
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="SRM PORTAL"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="V2 Retail Limited"
-                android:textColor="#AAAAAA"
-                android:textSize="11sp" />
+                android:layout_width="48dp" android:layout_height="48dp"
+                android:text="V2" android:textColor="#FFFFFF" android:textStyle="bold"
+                android:textSize="18sp" android:gravity="center"
+                android:background="@drawable/bg_v2_badge" android:layout_marginEnd="12dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="SRM PORTAL" android:textColor="#FFFFFF"
+                    android:textStyle="bold" android:textSize="16sp" android:letterSpacing="0.08"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="V2 Retail Limited" android:textColor="#7B94B5"
+                    android:textSize="11sp"/>
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Brand -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Vendor Registration"
-            android:textColor="@color/textPrimary"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Sign in to access your dashboard"
-            android:textColor="@color/textSecondary"
-            android:textSize="13sp"
-            android:layout_marginBottom="28dp" />
+        <!-- Headline -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Welcome Back" android:textColor="#E8EDF5"
+            android:textSize="26sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Sign in to access your portal" android:textColor="#7B94B5"
+            android:textSize="13sp" android:layout_marginBottom="24dp"/>
+
+        <!-- Role selector label -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="SELECT YOUR ROLE" android:textColor="#5A6A8A"
+            android:textSize="10sp" android:letterSpacing="0.12" android:layout_marginBottom="8dp"/>
+
+        <!-- Role spinner -->
+        <Spinner android:id="@+id/spinnerSrmRole"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:background="@drawable/bg_field" android:paddingStart="14dp"
+            android:paddingEnd="14dp" android:layout_marginBottom="16dp"
+            android:spinnerMode="dropdown"/>
 
         <!-- Username -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="USERNAME / EMAIL"
-            android:textColor="@color/textLabel"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.08"
-            android:layout_marginBottom="6dp" />
-        <EditText
-            android:id="@+id/srm_et_username"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@drawable/bg_input_srm"
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="USERNAME / EMAIL" android:textColor="#5A6A8A"
+            android:textSize="10sp" android:letterSpacing="0.12" android:layout_marginBottom="6dp"/>
+        <EditText android:id="@+id/etSrmUsername"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:background="@drawable/bg_field"
+            android:paddingStart="14dp" android:paddingEnd="14dp"
+            android:textColor="#E8EDF5" android:textColorHint="#5A6A8A"
             android:hint="Enter username or email"
-            android:inputType="text"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:singleLine="true"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="14dp"/>
 
         <!-- Password -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="PASSWORD"
-            android:textColor="@color/textLabel"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.08"
-            android:layout_marginBottom="6dp" />
-        <EditText
-            android:id="@+id/srm_et_password"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@drawable/bg_input_srm"
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="PASSWORD" android:textColor="#5A6A8A"
+            android:textSize="10sp" android:letterSpacing="0.12" android:layout_marginBottom="6dp"/>
+        <EditText android:id="@+id/etSrmPassword"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:background="@drawable/bg_field"
+            android:paddingStart="14dp" android:paddingEnd="14dp"
+            android:textColor="#E8EDF5" android:textColorHint="#5A6A8A"
             android:hint="••••••••"
             android:inputType="textPassword"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:singleLine="true"
-            android:textColor="@color/textPrimary"
-            android:textColorHint="@color/textHint"
-            android:textSize="14sp"
-            android:layout_marginBottom="12dp" />
-
-        <!-- Remember me -->
-        <CheckBox
-            android:id="@+id/srm_cb_remember"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Remember username"
-            android:textColor="@color/textSecondary"
-            android:textSize="13sp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="10dp"/>
 
         <!-- Error -->
-        <TextView
-            android:id="@+id/srm_tv_error"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/colorErrorBg"
-            android:padding="10dp"
-            android:textColor="@color/colorError"
-            android:textSize="13sp"
-            android:visibility="gone"
-            android:layout_marginBottom="12dp" />
+        <TextView android:id="@+id/tvSrmLoginError"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:background="@drawable/bg_error_card"
+            android:padding="10dp" android:textColor="#EF9A9A"
+            android:textSize="12sp" android:visibility="gone"
+            android:layout_marginBottom="12dp"/>
 
-        <!-- Login Button -->
-        <Button
-            android:id="@+id/srm_btn_login"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@color/colorPrimary"
-            android:text="SIGN IN"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
+        <!-- Login button -->
+        <Button android:id="@+id/btnSrmLogin"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:text="SIGN IN" android:textColor="#FFFFFF"
+            android:textStyle="bold" android:textSize="14sp"
+            android:background="@drawable/bg_btn_primary"
+            android:layout_marginTop="4dp"/>
 
-        <!-- Info strip -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/statBlueBg"
-            android:orientation="horizontal"
-            android:padding="12dp">
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5" android:textColor="@color/colorInfo" android:textSize="20sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Approval Levels" android:textColor="@color/textSecondary" android:textSize="10sp" />
-            </LinearLayout>
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SAP" android:textColor="@color/colorSuccess" android:textSize="20sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Integrated" android:textColor="@color/textSecondary" android:textSize="10sp" />
-            </LinearLayout>
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4" android:textColor="@color/colorWarning" android:textSize="20sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mandatory Docs" android:textColor="@color/textSecondary" android:textSize="10sp" />
-            </LinearLayout>
+        <ProgressBar android:id="@+id/progressSrmLogin"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center" android:visibility="gone"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Demo creds hint -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@drawable/bg_card"
+            android:padding="14dp" android:layout_marginTop="20dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="DEMO CREDENTIALS" android:textColor="#5A6A8A"
+                android:textSize="10sp" android:letterSpacing="0.12" android:layout_marginBottom="6dp"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#7B94B5" android:textSize="11sp" android:lineSpacingMultiplier="1.4"
+                android:text="vendor / vendor123\nadmin / admin123\nsubdiv / sub123\ndivhead / div123\nfinance / fin123\npocomm / po123\nmdm / mdm123"/>
         </LinearLayout>
 
     </LinearLayout>
