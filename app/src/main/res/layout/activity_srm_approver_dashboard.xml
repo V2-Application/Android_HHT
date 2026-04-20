@@ -1,61 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Approver Dashboard -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bgPage"
-    android:orientation="vertical">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#0F1F33">
 
-    <!-- Header -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@color/colorPrimary" android:orientation="horizontal"
-        android:padding="16dp" android:gravity="center_vertical">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:id="@+id/srm_tv_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Approver" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
-            <TextView android:id="@+id/srm_tv_role" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Sub Division Head" android:textColor="#AAAAAA" android:textSize="11sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:background="#0A1628" android:gravity="center_vertical"
+        android:paddingStart="16dp" android:paddingEnd="16dp" android:elevation="4dp">
+        <TextView android:layout_width="32dp" android:layout_height="32dp"
+            android:text="V2" android:textColor="#FFFFFF" android:textStyle="bold"
+            android:textSize="13sp" android:gravity="center"
+            android:background="@drawable/bg_v2_badge" android:layout_marginEnd="10dp"/>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/tvApproverWelcome"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Approver" android:textColor="#E8EDF5"
+                android:textStyle="bold" android:textSize="15sp"/>
+            <TextView android:id="@+id/tvApproverRole"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Level 1 Approver" android:textColor="#5A6A8A" android:textSize="11sp"/>
         </LinearLayout>
-        <Button android:id="@+id/srm_btn_logout" android:layout_width="wrap_content" android:layout_height="36dp"
-            android:text="Sign Out" android:textColor="@color/white" android:textSize="11sp"
-            android:background="@drawable/bg_btn_outline_white" android:paddingStart="12dp" android:paddingEnd="12dp" />
+        <Button android:id="@+id/btnApproverLogout"
+            android:layout_width="wrap_content" android:layout_height="32dp"
+            android:text="Logout" android:textSize="11sp" android:textColor="#EF9A9A"
+            android:background="@drawable/bg_btn_outline_red" android:paddingStart="10dp"
+            android:paddingEnd="10dp"/>
     </LinearLayout>
 
-    <!-- Stats row -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@color/bgCard" android:orientation="horizontal" android:padding="12dp">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:background="@color/colorWarningBg" android:orientation="vertical"
-            android:padding="12dp" android:gravity="center" android:layout_marginEnd="6dp">
-            <TextView android:id="@+id/srm_tv_queue_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="0" android:textColor="@color/colorWarning" android:textSize="26sp" android:textStyle="bold" />
+    <ProgressBar android:id="@+id/progressApproverDash"
+        android:layout_width="match_parent" android:layout_height="3dp"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:indeterminate="true" android:progressTint="#F59E0B"
+        android:visibility="gone"/>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="14dp">
+
+            <!-- Stats -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="14dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical"
+                    android:background="@drawable/bg_stat_card_blue"
+                    android:padding="12dp" android:layout_marginEnd="6dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="MY QUEUE" android:textColor="#5A6A8A" android:textSize="9sp" android:letterSpacing="0.1"/>
+                    <TextView android:id="@+id/tvApproverPending"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textColor="#F59E0B"
+                        android:textStyle="bold" android:textSize="24sp"/>
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical"
+                    android:background="@drawable/bg_stat_card_blue"
+                    android:padding="12dp" android:layout_marginEnd="6dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="TOTAL" android:textColor="#5A6A8A" android:textSize="9sp" android:letterSpacing="0.1"/>
+                    <TextView android:id="@+id/tvApproverTotal"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textColor="#3B82F6"
+                        android:textStyle="bold" android:textSize="24sp"/>
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical"
+                    android:background="@drawable/bg_stat_card_green" android:padding="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SAP DONE" android:textColor="#5A6A8A" android:textSize="9sp" android:letterSpacing="0.1"/>
+                    <TextView android:id="@+id/tvApproverApproved"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textColor="#22C55E"
+                        android:textStyle="bold" android:textSize="24sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="My Queue" android:textColor="@color/textSecondary" android:textSize="10sp" />
+                android:text="PENDING APPROVALS" android:textColor="#5A6A8A"
+                android:textSize="10sp" android:letterSpacing="0.1" android:layout_marginBottom="8dp"/>
+
+            <TextView android:id="@+id/tvApproverEmptyQueue"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="✅  Your queue is clear. No pending approvals."
+                android:textColor="#66BB6A" android:background="#0A2A1A"
+                android:padding="14dp" android:textSize="13sp"
+                android:visibility="gone" android:layout_marginBottom="8dp"/>
+
+            <ListView android:id="@+id/lvApproverQueue"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:divider="@null" android:dividerHeight="0dp"
+                android:scrollbars="none"/>
+
         </LinearLayout>
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:background="@color/statBlueBg" android:orientation="vertical"
-            android:padding="12dp" android:gravity="center" android:layout_marginStart="6dp">
-            <TextView android:id="@+id/srm_tv_total_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="0" android:textColor="@color/colorInfo" android:textSize="26sp" android:textStyle="bold" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Total" android:textColor="@color/textSecondary" android:textSize="10sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Section header -->
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="PENDING QUEUE" android:textColor="@color/textLabel"
-        android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.08"
-        android:padding="16dp" android:paddingBottom="8dp" android:background="@color/bgPage" />
-
-    <!-- Queue list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/srm_rv_queue"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:clipToPadding="false" />
-
+    </ScrollView>
 </LinearLayout>
