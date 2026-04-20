@@ -1,15 +1,13 @@
 package com.v2retail.dotvik.srm;
 
-import android.app.ProgressDialog;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.util.SharedPreferencesData;
-import org.json.JSONObject;
 
 /**
  * SRM Entry Point — reads stored SRM token, validates it,
@@ -29,10 +27,8 @@ public class SrmActivity extends AppCompatActivity {
         String role  = prefs.read(SrmVars.PREF_SRM_USER_ROLE);
 
         if (token != null && !token.isEmpty() && role != null && !role.isEmpty()) {
-            // Token exists — verify it then route
             verifyAndRoute(token, role);
         } else {
-            // No token — go to SRM login
             goToLogin();
         }
     }
@@ -44,7 +40,7 @@ public class SrmActivity extends AppCompatActivity {
                 try {
                     String liveRole = response.getJSONObject("data").getString("role");
                     prefs.write(SrmVars.PREF_SRM_USER_ROLE, liveRole);
-                    routeByRole(liveRole);
+                    routeByRole(this, liveRole);
                 } catch (Exception e) { goToLogin(); }
             },
             error -> goToLogin()
@@ -59,21 +55,22 @@ public class SrmActivity extends AppCompatActivity {
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
-    void routeByRole(String role) {
+    /** Static helper — can be called from SrmLoginActivity after successful login */
+    public static void routeByRole(Activity context, String role) {
         Intent intent;
-        switch (role) {
+        switch (role == null ? "" : role) {
             case SrmVars.ROLE_VENDOR:
-                intent = new Intent(this, SrmVendorDashboardActivity.class); break;
+                intent = new Intent(context, SrmVendorDashboardActivity.class); break;
             case SrmVars.ROLE_MDM:
-                intent = new Intent(this, SrmMdmDashboardActivity.class); break;
+                intent = new Intent(context, SrmMdmDashboardActivity.class); break;
             case SrmVars.ROLE_ADMIN:
-                intent = new Intent(this, SrmAdminDashboardActivity.class); break;
+                intent = new Intent(context, SrmAdminDashboardActivity.class); break;
             default:
-                // subdiv, divhead, finance, pocomm — all go to approver dashboard
-                intent = new Intent(this, SrmApproverDashboardActivity.class); break;
+                // subdiv, divhead, finance, pocomm
+                intent = new Intent(context, SrmApproverDashboardActivity.class); break;
         }
-        startActivity(intent);
-        finish();
+        context.startActivity(intent);
+        context.finish();
     }
 
     void goToLogin() {
