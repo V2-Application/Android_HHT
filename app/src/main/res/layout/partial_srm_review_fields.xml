@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Vendor Name" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewName" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5"
+            android:textStyle="bold" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="PAN" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewPan" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="GSTIN" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewGstin" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Bank" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewBank" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Mobile" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewMobile" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Division" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewDivision" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Company" android:textColor="#5A6A8A" android:textSize="12sp"/>
+        <TextView android:id="@+id/tvSrmReviewCompany" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1.2" android:text="—" android:textColor="#E8EDF5" android:textSize="12sp"/>
+    </LinearLayout>
+</merge>
