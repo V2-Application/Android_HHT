@@ -1,253 +1,406 @@
 package com.v2retail.dotvik.srm;
 
-import android.app.ProgressDialog;
+import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.database.Cursor;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
-import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.dotvik.srm.api.MultipartUploadRequest;
+import com.v2retail.dotvik.srm.api.SrmApiClient;
+import com.v2retail.dotvik.srm.model.VendorApplication;
 import org.json.JSONObject;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * Vendor Registration — 4-section form
- * Section A: Vendor Details  B: Banking & Tax
- * Section C: Buying Details  D: Submit
- *
- * Uses a ViewFlipper to navigate between steps.
- * On Step 4, sends POST /api/applications and returns to dashboard.
- */
 public class SrmVendorRegistrationActivity extends AppCompatActivity {
 
-    private SharedPreferencesData prefs;
-    private ViewFlipper vf;
-    private ProgressDialog progress;
+    // ── Step tracking ────────────────────────────────────────────────────
+    private int currentStep = 0; // 0..4
+    private static final String[] STEP_TITLES = {
+            "Vendor Details", "Banking & Tax", "Buying Details", "Documents", "Review & Submit"
+    };
+    private static final int STEPS = 5;
 
-    // Step 1 — Vendor Details
-    private Spinner  spVendorType, spBusinessType, spVendorRelation, spCompanyCode, spDivision, spState;
-    private EditText etVendorName, etAddress, etCity, etPostal, etContact, etMobile, etEmail;
+    // ── Data model ───────────────────────────────────────────────────────
+    private final VendorApplication app = new VendorApplication();
+    private final Map<String, Uri>    docUris   = new HashMap<>();
+    private final Map<String, String> docNames  = new HashMap<>();
+    private String createdAppId;
 
-    // Step 2 — Banking
-    private EditText etBankName, etAccountNo, etBranch, etIfsc, etPan, etGstin, etServiceTax, etWht;
+    // ── Stepper views ────────────────────────────────────────────────────
+    private TextView  tvStepTitle, tvStepCount;
+    private ProgressBar stepProgress;
+    private Button btnBack, btnNext;
+    private ProgressBar progressSubmit;
 
-    // Step 3 — Buying
-    private EditText etPaymentDays, etMerchandise, etVrp, etArticle, etBuying;
+    // ── STEP 0: Vendor details ────────────────────────────────────────────
+    private LinearLayout layoutStep0;
+    private Spinner spVendorType, spBusinessType, spVendorRelation, spCompanyCode, spDivision;
+    private EditText etVendorName, etContactPerson, etAddress, etCity, etMobile, etEmail;
+    private Spinner spState;
 
-    // Buttons
-    private Button btn1Next, btn2Back, btn2Next, btn3Back, btn3Next, btn4Back, btn4Submit;
-    private TextView tvStep, tvResult;
+    // ── STEP 1: Banking ───────────────────────────────────────────────────
+    private LinearLayout layoutStep1;
+    private EditText etBankName, etBankAccount, etBranch, etIfsc, etPan, etGstin, etServiceTax, etWht;
 
-    private static final String[] COMPANY_CODES = {"1100 – Store Level","2000 – VRL Foods","3000 – VRL E-Commerce","4000 – DC/HO Level","5000 – VRL Franchises","6000 – Logistics","7000 – VRL Infrastructure","8000 – VRL IT"};
-    private static final String[] VENDOR_TYPES  = {"TRADING","IMPORTED","SERVICE","NONTRADING"};
-    private static final String[] BIZ_TYPES     = {"TRADER","MANUFACTURER","IMPORTER"};
-    private static final String[] RELATIONS     = {"PV – Permanent","OTV – One Time"};
-    private static final String[] DIVISIONS     = {"Apparels","Non-Apparels","FMCG","Non-Trading","Services","Customer"};
-    private static final String[] STATES        = {"Andhra Pradesh","Delhi","Gujarat","Haryana","Karnataka","Kerala","Maharashtra","Punjab","Rajasthan","Tamil Nadu","Telangana","Uttar Pradesh","West Bengal","Other"};
+    // ── STEP 2: Buying ────────────────────────────────────────────────────
+    private LinearLayout layoutStep2;
+    private Spinner spCategory;
+    private EditText etPaymentTerms, etVrp, etArticle, etBuyingMonth, etPurchaseValue;
+    private CheckBox cbDecl1, cbDecl2, cbDecl3, cbDecl4;
+
+    // ── STEP 3: Documents ─────────────────────────────────────────────────
+    private LinearLayout layoutStep3;
+    private static final String[] DOC_TYPES   = {"PAN_CARD","CANCELLED_CHEQUE","GST_CERTIFICATE","BILL_COPY"};
+    private static final String[] DOC_LABELS  = {"PAN Card *","Cancelled Cheque *","GST Certificate *","Bill Copy *"};
+    private static final int[]    DOC_PICK_RC = {101, 102, 103, 104};
+    private TextView[] tvDocStatus;
+
+    // ── STEP 4: Review ────────────────────────────────────────────────────
+    private LinearLayout layoutStep4;
+    private TextView tvReviewName, tvReviewPan, tvReviewGstin, tvReviewBank, tvReviewMobile,
+                     tvReviewDivision, tvReviewCompany, tvReviewDocs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_srm_vendor_registration);
-        prefs = new SharedPreferencesData(getApplicationContext());
 
-        vf       = findViewById(R.id.srm_vf);
-        tvStep   = findViewById(R.id.srm_tv_step);
-        tvResult = findViewById(R.id.srm_tv_result);
+        // Stepper controls
+        tvStepTitle   = findViewById(R.id.tvSrmRegStepTitle);
+        tvStepCount   = findViewById(R.id.tvSrmRegStepCount);
+        stepProgress  = findViewById(R.id.progressSrmRegStep);
+        btnBack       = findViewById(R.id.btnSrmRegBack);
+        btnNext       = findViewById(R.id.btnSrmRegNext);
+        progressSubmit= findViewById(R.id.progressSrmRegSubmit);
+
+        // Step containers
+        layoutStep0 = findViewById(R.id.layoutSrmStep0);
+        layoutStep1 = findViewById(R.id.layoutSrmStep1);
+        layoutStep2 = findViewById(R.id.layoutSrmStep2);
+        layoutStep3 = findViewById(R.id.layoutSrmStep3);
+        layoutStep4 = findViewById(R.id.layoutSrmStep4);
+
+        // Step 0
+        spVendorType    = findViewById(R.id.spSrmVendorType);
+        spBusinessType  = findViewById(R.id.spSrmBusinessType);
+        spVendorRelation= findViewById(R.id.spSrmVendorRelation);
+        spCompanyCode   = findViewById(R.id.spSrmCompanyCode);
+        spDivision      = findViewById(R.id.spSrmDivision);
+        spState         = findViewById(R.id.spSrmState);
+        etVendorName    = findViewById(R.id.etSrmVendorName);
+        etContactPerson = findViewById(R.id.etSrmContactPerson);
+        etAddress       = findViewById(R.id.etSrmAddress);
+        etCity          = findViewById(R.id.etSrmCity);
+        etMobile        = findViewById(R.id.etSrmMobile);
+        etEmail         = findViewById(R.id.etSrmEmail);
 
         // Step 1
-        spVendorType    = findViewById(R.id.srm_sp_vendor_type);
-        spBusinessType  = findViewById(R.id.srm_sp_business_type);
-        spVendorRelation= findViewById(R.id.srm_sp_vendor_relation);
-        spCompanyCode   = findViewById(R.id.srm_sp_company_code);
-        spDivision      = findViewById(R.id.srm_sp_division);
-        spState         = findViewById(R.id.srm_sp_state);
-        etVendorName    = findViewById(R.id.srm_et_vendor_name);
-        etAddress       = findViewById(R.id.srm_et_address);
-        etCity          = findViewById(R.id.srm_et_city);
-        etPostal        = findViewById(R.id.srm_et_postal);
-        etContact       = findViewById(R.id.srm_et_contact);
-        etMobile        = findViewById(R.id.srm_et_mobile);
-        etEmail         = findViewById(R.id.srm_et_email);
-        btn1Next        = findViewById(R.id.srm_btn_step1_next);
+        etBankName    = findViewById(R.id.etSrmBankName);
+        etBankAccount = findViewById(R.id.etSrmBankAccount);
+        etBranch      = findViewById(R.id.etSrmBranch);
+        etIfsc        = findViewById(R.id.etSrmIfsc);
+        etPan         = findViewById(R.id.etSrmPan);
+        etGstin       = findViewById(R.id.etSrmGstin);
+        etServiceTax  = findViewById(R.id.etSrmServiceTax);
+        etWht         = findViewById(R.id.etSrmWht);
 
         // Step 2
-        etBankName  = findViewById(R.id.srm_et_bank_name);
-        etAccountNo = findViewById(R.id.srm_et_account_no);
-        etBranch    = findViewById(R.id.srm_et_branch);
-        etIfsc      = findViewById(R.id.srm_et_ifsc);
-        etPan       = findViewById(R.id.srm_et_pan);
-        etGstin     = findViewById(R.id.srm_et_gstin);
-        etServiceTax= findViewById(R.id.srm_et_service_tax);
-        etWht       = findViewById(R.id.srm_et_wht);
-        btn2Back    = findViewById(R.id.srm_btn_step2_back);
-        btn2Next    = findViewById(R.id.srm_btn_step2_next);
+        spCategory     = findViewById(R.id.spSrmCategory);
+        etPaymentTerms = findViewById(R.id.etSrmPaymentTerms);
+        etVrp          = findViewById(R.id.etSrmVrp);
+        etArticle      = findViewById(R.id.etSrmArticle);
+        etBuyingMonth  = findViewById(R.id.etSrmBuyingMonth);
+        etPurchaseValue= findViewById(R.id.etSrmPurchaseValue);
+        cbDecl1 = findViewById(R.id.cbSrmDecl1);
+        cbDecl2 = findViewById(R.id.cbSrmDecl2);
+        cbDecl3 = findViewById(R.id.cbSrmDecl3);
+        cbDecl4 = findViewById(R.id.cbSrmDecl4);
 
-        // Step 3
-        etPaymentDays  = findViewById(R.id.srm_et_payment_days);
-        etMerchandise  = findViewById(R.id.srm_et_merchandise);
-        etVrp          = findViewById(R.id.srm_et_vrp);
-        etArticle      = findViewById(R.id.srm_et_article);
-        etBuying       = findViewById(R.id.srm_et_buying);
-        btn3Back       = findViewById(R.id.srm_btn_step3_back);
-        btn3Next       = findViewById(R.id.srm_btn_step3_next);
+        // Step 3 – document upload buttons
+        tvDocStatus = new TextView[]{
+                findViewById(R.id.tvSrmDoc0Status),
+                findViewById(R.id.tvSrmDoc1Status),
+                findViewById(R.id.tvSrmDoc2Status),
+                findViewById(R.id.tvSrmDoc3Status),
+        };
+        Button[] btnDocs = new Button[]{
+                findViewById(R.id.btnSrmDoc0), findViewById(R.id.btnSrmDoc1),
+                findViewById(R.id.btnSrmDoc2), findViewById(R.id.btnSrmDoc3),
+        };
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            btnDocs[i].setOnClickListener(v -> pickFile(idx));
+        }
 
         // Step 4
-        btn4Back   = findViewById(R.id.srm_btn_step4_back);
-        btn4Submit = findViewById(R.id.srm_btn_step4_submit);
+        tvReviewName     = findViewById(R.id.tvSrmReviewName);
+        tvReviewPan      = findViewById(R.id.tvSrmReviewPan);
+        tvReviewGstin    = findViewById(R.id.tvSrmReviewGstin);
+        tvReviewBank     = findViewById(R.id.tvSrmReviewBank);
+        tvReviewMobile   = findViewById(R.id.tvSrmReviewMobile);
+        tvReviewDivision = findViewById(R.id.tvSrmReviewDivision);
+        tvReviewCompany  = findViewById(R.id.tvSrmReviewCompany);
+        tvReviewDocs     = findViewById(R.id.tvSrmReviewDocs);
 
-        populateSpinner(spVendorType,    VENDOR_TYPES);
-        populateSpinner(spBusinessType,  BIZ_TYPES);
-        populateSpinner(spVendorRelation,RELATIONS);
-        populateSpinner(spCompanyCode,   COMPANY_CODES);
-        populateSpinner(spDivision,      DIVISIONS);
-        populateSpinner(spState,         STATES);
+        btnBack.setOnClickListener(v -> goBack());
+        btnNext.setOnClickListener(v -> goNext());
 
-        if (btn1Next  != null) btn1Next.setOnClickListener(v -> { if (validateStep1()) goTo(1); });
-        if (btn2Back  != null) btn2Back.setOnClickListener(v -> goTo(0));
-        if (btn2Next  != null) btn2Next.setOnClickListener(v -> { if (validateStep2()) goTo(2); });
-        if (btn3Back  != null) btn3Back.setOnClickListener(v -> goTo(1));
-        if (btn3Next  != null) btn3Next.setOnClickListener(v -> goTo(3));
-        if (btn4Back  != null) btn4Back.setOnClickListener(v -> goTo(2));
-        if (btn4Submit!= null) btn4Submit.setOnClickListener(v -> submitApplication());
-
-        updateStepLabel(0);
+        populateSpinners();
+        showStep(0);
     }
 
-    private void populateSpinner(Spinner sp, String[] items) {
-        if (sp == null) return;
-        ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
-        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        sp.setAdapter(ad);
+    private void populateSpinners() {
+        setupSpinner(spVendorType,    new String[]{"TRADING","IMPORTED","SERVICE","NONTRADING"},
+                                      new String[]{"Trading Goods","Imported","Service Provider","Non-Trading"});
+        setupSpinner(spBusinessType,  new String[]{"TRADER","MANUFACTURER","IMPORTER"},
+                                      new String[]{"Trader","Manufacturer","Importer"});
+        setupSpinner(spVendorRelation,new String[]{"PV","OTV"},
+                                      new String[]{"Permanent (PV)","One Time (OTV)"});
+        setupSpinner(spCompanyCode,   new String[]{"1100","2000","3000","4000","5000","6000","7000","8000"},
+                                      new String[]{"1100 – Store Level","2000 – VRL Foods","3000 – VRL E-Comm",
+                                                   "4000 – DC/HO Level","5000 – Franchises","6000 – Logistics",
+                                                   "7000 – Infrastructure","8000 – VRL IT"});
+        setupSpinner(spDivision, null,
+                new String[]{"Apparels","Non-Apparels","FMCG","Non-Trading","Services","Customer"});
+        setupSpinner(spState, null,
+                new String[]{"Andhra Pradesh","Delhi","Gujarat","Haryana","Karnataka","Kerala",
+                             "Madhya Pradesh","Maharashtra","Punjab","Rajasthan","Tamil Nadu",
+                             "Telangana","Uttar Pradesh","West Bengal","Other"});
+        setupSpinner(spCategory, null,
+                new String[]{"Apparels – Menswear","Apparels – Womenswear","Apparels – Kidswear",
+                             "Footwear","Accessories","FMCG – Food","FMCG – Non-Food",
+                             "Home Furnishing","Electronics","Services – Logistics","Services – IT","Other"});
     }
 
-    private void goTo(int idx) {
-        if (vf != null) vf.setDisplayedChild(idx);
-        updateStepLabel(idx);
+    private void setupSpinner(Spinner sp, String[] values, String[] labels) {
+        ArrayAdapter<String> a = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, labels);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(a);
+        if (values != null) sp.setTag(values); // store value keys
     }
 
-    private void updateStepLabel(int step) {
-        if (tvStep == null) return;
-        String[] labels = {"Step 1 of 4 — Vendor Details", "Step 2 of 4 — Banking & Tax",
-                           "Step 3 of 4 — Buying Details", "Step 4 of 4 — Review & Submit"};
-        tvStep.setText(labels[Math.min(step, 3)]);
+    private String getSpinnerValue(Spinner sp) {
+        String[] vals = (String[]) sp.getTag();
+        int idx = sp.getSelectedItemPosition();
+        if (vals != null && idx < vals.length) return vals[idx];
+        return (String) sp.getSelectedItem();
     }
 
-    private boolean validateStep1() {
-        if (etVendorName == null || etVendorName.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Vendor Name is required", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (etMobile == null || etMobile.getText().toString().trim().length() != 10) {
-            Toast.makeText(this, "Valid 10-digit mobile number required", Toast.LENGTH_SHORT).show(); return false;
+    // ── Navigation ────────────────────────────────────────────────────────
+    private void goNext() {
+        if (!validateStep(currentStep)) return;
+        collectStep(currentStep);
+        if (currentStep == STEPS - 1) { submitAll(); return; }
+        showStep(currentStep + 1);
+    }
+
+    private void goBack() {
+        if (currentStep == 0) { finish(); return; }
+        showStep(currentStep - 1);
+    }
+
+    private void showStep(int step) {
+        currentStep = step;
+        tvStepTitle.setText(STEP_TITLES[step]);
+        tvStepCount.setText((step + 1) + " / " + STEPS);
+        stepProgress.setProgress((step + 1) * 100 / STEPS);
+        btnBack.setText(step == 0 ? "Cancel" : "Back");
+        btnNext.setText(step == STEPS - 1 ? "Submit" : "Next →");
+
+        layoutStep0.setVisibility(step == 0 ? View.VISIBLE : View.GONE);
+        layoutStep1.setVisibility(step == 1 ? View.VISIBLE : View.GONE);
+        layoutStep2.setVisibility(step == 2 ? View.VISIBLE : View.GONE);
+        layoutStep3.setVisibility(step == 3 ? View.VISIBLE : View.GONE);
+        layoutStep4.setVisibility(step == 4 ? View.VISIBLE : View.GONE);
+
+        if (step == 4) populateReview();
+    }
+
+    // ── Validation ────────────────────────────────────────────────────────
+    private boolean validateStep(int step) {
+        switch (step) {
+            case 0:
+                if (TextUtils.isEmpty(etVendorName.getText())) { etVendorName.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etContactPerson.getText())) { etContactPerson.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etMobile.getText()) || etMobile.getText().length() != 10) { etMobile.setError("10-digit mobile required"); return false; }
+                if (TextUtils.isEmpty(etCity.getText())) { etCity.setError("Required"); return false; }
+                break;
+            case 1:
+                if (TextUtils.isEmpty(etBankName.getText())) { etBankName.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etBankAccount.getText())) { etBankAccount.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etIfsc.getText()) || etIfsc.getText().length() != 11) { etIfsc.setError("11-char IFSC required"); return false; }
+                if (TextUtils.isEmpty(etPan.getText()) || etPan.getText().length() != 10) { etPan.setError("10-char PAN required"); return false; }
+                if (TextUtils.isEmpty(etGstin.getText()) || etGstin.getText().length() != 15) { etGstin.setError("15-char GSTIN required"); return false; }
+                break;
+            case 2:
+                if (TextUtils.isEmpty(etVrp.getText())) { etVrp.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etArticle.getText())) { etArticle.setError("Required"); return false; }
+                if (TextUtils.isEmpty(etPaymentTerms.getText())) { etPaymentTerms.setError("Required"); return false; }
+                break;
+            case 3:
+                for (int i = 0; i < 4; i++) {
+                    if (!docUris.containsKey(DOC_TYPES[i])) {
+                        Toast.makeText(this, DOC_LABELS[i] + " is required", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                }
+                break;
         }
         return true;
     }
 
-    private boolean validateStep2() {
-        if (etPan == null || etPan.getText().toString().trim().length() != 10) {
-            Toast.makeText(this, "Valid 10-character PAN required", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (etGstin == null || etGstin.getText().toString().trim().length() != 15) {
-            Toast.makeText(this, "Valid 15-character GSTIN required", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (etBankName == null || etBankName.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Bank Name is required", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (etIfsc == null || etIfsc.getText().toString().trim().length() != 11) {
-            Toast.makeText(this, "Valid 11-character IFSC Code required", Toast.LENGTH_SHORT).show(); return false;
-        }
-        return true;
-    }
-
-    private void submitApplication() {
-        progress = new ProgressDialog(this);
-        progress.setMessage("Submitting application…");
-        progress.setCancelable(false);
-        progress.show();
-
-        try {
-            JSONObject body = new JSONObject();
-            // Section A
-            body.put("vendor_type",     VENDOR_TYPES[spVendorType != null ? spVendorType.getSelectedItemPosition() : 0]);
-            body.put("business_type",   BIZ_TYPES[spBusinessType != null ? spBusinessType.getSelectedItemPosition() : 0]);
-            body.put("vendor_relation", spVendorRelation != null && spVendorRelation.getSelectedItemPosition() == 0 ? "PV" : "OTV");
-            body.put("company_code",    COMPANY_CODES[spCompanyCode != null ? spCompanyCode.getSelectedItemPosition() : 0].substring(0,4));
-            body.put("division",        DIVISIONS[spDivision != null ? spDivision.getSelectedItemPosition() : 0]);
-            body.put("vendor_name",     etVendorName != null ? etVendorName.getText().toString().trim() : "");
-            body.put("vendor_address",  etAddress   != null ? etAddress.getText().toString().trim() : "");
-            body.put("city",            etCity      != null ? etCity.getText().toString().trim() : "");
-            body.put("state",           STATES[spState != null ? spState.getSelectedItemPosition() : 0]);
-            body.put("postal_code",     etPostal    != null ? etPostal.getText().toString().trim() : "");
-            body.put("country",         "India");
-            body.put("contact_person",  etContact   != null ? etContact.getText().toString().trim() : "");
-            body.put("mobile",          etMobile    != null ? etMobile.getText().toString().trim() : "");
-            body.put("email",           etEmail     != null ? etEmail.getText().toString().trim() : "");
-            // Section B
-            body.put("bank_name",       etBankName  != null ? etBankName.getText().toString().trim() : "");
-            body.put("bank_account_no", etAccountNo != null ? etAccountNo.getText().toString().trim() : "");
-            body.put("bank_branch",     etBranch    != null ? etBranch.getText().toString().trim() : "");
-            body.put("ifsc_code",       etIfsc      != null ? etIfsc.getText().toString().trim().toUpperCase() : "");
-            body.put("pan_no",          etPan       != null ? etPan.getText().toString().trim().toUpperCase() : "");
-            body.put("gstin",           etGstin     != null ? etGstin.getText().toString().trim().toUpperCase() : "");
-            body.put("service_tax_no",  etServiceTax!= null ? etServiceTax.getText().toString().trim() : "");
-            body.put("withholding_tax_code", etWht  != null ? etWht.getText().toString().trim() : "");
-            // Section C
-            body.put("payment_terms_days", etPaymentDays != null && !etPaymentDays.getText().toString().isEmpty() ? Integer.parseInt(etPaymentDays.getText().toString().trim()) : 30);
-            body.put("merchandise_category", etMerchandise != null ? etMerchandise.getText().toString().trim() : "");
-            body.put("vrp",             etVrp       != null ? etVrp.getText().toString().trim() : "");
-            body.put("article_to_purchase", etArticle != null ? etArticle.getText().toString().trim() : "");
-            body.put("buying_per_month", etBuying   != null && !etBuying.getText().toString().isEmpty() ? Double.parseDouble(etBuying.getText().toString().trim()) : 0);
-
-            String url = getSrmBaseUrl() + SrmVars.APPLICATIONS_LIST;
-            JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, url, body,
-                response -> {
-                    dismiss();
-                    try {
-                        String ticket = response.getJSONObject("data").optString("ticket_no", "");
-                        Toast.makeText(this, "Submitted! Ticket: " + ticket, Toast.LENGTH_LONG).show();
-                        startActivity(new Intent(this, SrmVendorDashboardActivity.class));
-                        finish();
-                    } catch (Exception e) {
-                        Toast.makeText(this, "Submitted successfully", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                },
-                error -> {
-                    dismiss();
-                    String msg = "Submission failed";
-                    if (error.networkResponse != null) {
-                        try { msg = new JSONObject(new String(error.networkResponse.data)).optString("message", msg); } catch (Exception ignored) {}
-                    }
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-                }
-            ) {
-                @Override public Map<String,String> getHeaders() {
-                    Map<String,String> h = new HashMap<>();
-                    h.put("Authorization","Bearer " + prefs.read(SrmVars.PREF_SRM_TOKEN));
-                    return h;
-                }
-                @Override public String getBodyContentType() { return "application/json"; }
-                @Override public byte[] getBody() { return body.toString().getBytes(); }
-            };
-            req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(20000, 1, com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-            ApplicationController.getInstance().getRequestQueue().add(req);
-
-        } catch (Exception e) {
-            dismiss();
-            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+    // ── Collect field values ───────────────────────────────────────────────
+    private void collectStep(int step) {
+        switch (step) {
+            case 0:
+                app.vendorType     = getSpinnerValue(spVendorType);
+                app.businessType   = getSpinnerValue(spBusinessType);
+                app.vendorRelation = getSpinnerValue(spVendorRelation);
+                app.companyCode    = getSpinnerValue(spCompanyCode);
+                app.division       = (String) spDivision.getSelectedItem();
+                app.vendorName     = etVendorName.getText().toString().trim();
+                app.contactPerson  = etContactPerson.getText().toString().trim();
+                app.vendorAddress  = etAddress.getText().toString().trim();
+                app.city           = etCity.getText().toString().trim();
+                app.state          = (String) spState.getSelectedItem();
+                app.mobile         = etMobile.getText().toString().trim();
+                app.email          = etEmail.getText().toString().trim();
+                break;
+            case 1:
+                app.bankName      = etBankName.getText().toString().trim();
+                app.bankAccountNo = etBankAccount.getText().toString().trim();
+                app.bankBranch    = etBranch.getText().toString().trim();
+                app.ifscCode      = etIfsc.getText().toString().trim().toUpperCase();
+                app.panNo         = etPan.getText().toString().trim().toUpperCase();
+                app.gstin         = etGstin.getText().toString().trim().toUpperCase();
+                app.serviceTaxNo  = etServiceTax.getText().toString().trim();
+                app.withholdingTaxCode = etWht.getText().toString().trim();
+                break;
+            case 2:
+                app.merchandiseCategory = (String) spCategory.getSelectedItem();
+                app.paymentTermsDays    = etPaymentTerms.getText().toString().trim();
+                app.vrp                 = etVrp.getText().toString().trim();
+                app.articleToPurchase   = etArticle.getText().toString().trim();
+                app.buyingPerMonth      = etBuyingMonth.getText().toString().trim();
+                app.purchaseValuePa     = etPurchaseValue.getText().toString().trim();
+                break;
         }
     }
 
-    private void dismiss() {
-        if (progress != null && progress.isShowing()) { progress.dismiss(); progress = null; }
+    private void populateReview() {
+        tvReviewName.setText(app.vendorName);
+        tvReviewPan.setText(app.panNo);
+        tvReviewGstin.setText(app.gstin);
+        tvReviewBank.setText(app.bankName + " — " + app.bankAccountNo);
+        tvReviewMobile.setText(app.mobile);
+        tvReviewDivision.setText(app.division);
+        tvReviewCompany.setText(app.companyCode);
+        StringBuilder docs = new StringBuilder();
+        for (String dt : DOC_TYPES) {
+            docs.append(docUris.containsKey(dt) ? "✔ " : "✗ ").append(dt.replace("_", " ")).append("\n");
+        }
+        tvReviewDocs.setText(docs.toString().trim());
     }
 
-    String getSrmBaseUrl() {
-        String url = prefs.read(SrmVars.PREF_SRM_URL);
-        return (url != null && !url.isEmpty()) ? url : "http://192.168.151.49:5000";
+    // ── Submit ─────────────────────────────────────────────────────────────
+    private void submitAll() {
+        btnNext.setEnabled(false);
+        btnBack.setEnabled(false);
+        progressSubmit.setVisibility(View.VISIBLE);
+
+        SrmApiClient.post(this, "/applications", app.toJson(), response -> {
+            try {
+                JSONObject data = response.getJSONObject("data");
+                createdAppId = data.getString("id");
+                String ticket = data.getString("ticket_no");
+                uploadDocuments(ticket);
+            } catch (Exception e) {
+                onSubmitError("Failed to parse response");
+            }
+        }, error -> onSubmitError(SrmApiClient.parseError(error)));
+    }
+
+    private void uploadDocuments(String ticket) {
+        final int[] remaining = {docUris.size()};
+        for (Map.Entry<String, Uri> entry : docUris.entrySet()) {
+            String docType = entry.getKey();
+            Uri    uri     = entry.getValue();
+            String name    = docNames.getOrDefault(docType, "document.pdf");
+
+            MultipartUploadRequest req = new MultipartUploadRequest(this,
+                    createdAppId, docType, uri, name,
+                    r -> {
+                        remaining[0]--;
+                        if (remaining[0] == 0) onSubmitSuccess(ticket);
+                    },
+                    e -> {
+                        remaining[0]--;
+                        if (remaining[0] == 0) onSubmitSuccess(ticket); // proceed even if optional doc fails
+                    });
+            SrmApiClient.getQueue(this).add(req);
+        }
+    }
+
+    private void onSubmitSuccess(String ticket) {
+        progressSubmit.setVisibility(View.GONE);
+        Intent i = new Intent(this, SrmTrackApplicationActivity.class);
+        i.putExtra("ticket_no", ticket);
+        i.putExtra("submitted", true);
+        startActivity(i);
+        finish();
+    }
+
+    private void onSubmitError(String msg) {
+        runOnUiThread(() -> {
+            progressSubmit.setVisibility(View.GONE);
+            btnNext.setEnabled(true);
+            btnBack.setEnabled(true);
+            Toast.makeText(this, "Error: " + msg, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    // ── File picker ────────────────────────────────────────────────────────
+    private void pickFile(int idx) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf","image/jpeg","image/png"});
+        startActivityForResult(Intent.createChooser(intent, "Select " + DOC_LABELS[idx]),
+                DOC_PICK_RC[idx]);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK || data == null) return;
+        for (int i = 0; i < 4; i++) {
+            if (requestCode == DOC_PICK_RC[i]) {
+                Uri uri = data.getData();
+                String name = getFileName(uri);
+                docUris.put(DOC_TYPES[i], uri);
+                docNames.put(DOC_TYPES[i], name);
+                tvDocStatus[i].setText("✔ " + name);
+                tvDocStatus[i].setTextColor(0xFF2E7D32);
+                break;
+            }
+        }
+    }
+
+    private String getFileName(Uri uri) {
+        String name = "document";
+        Cursor c = getContentResolver().query(uri, null, null, null, null);
+        if (c != null && c.moveToFirst()) {
+            int idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            if (idx >= 0) name = c.getString(idx);
+            c.close();
+        }
+        return name;
     }
 }
