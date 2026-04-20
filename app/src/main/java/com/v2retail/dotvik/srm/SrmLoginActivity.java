@@ -1,130 +1,102 @@
 package com.v2retail.dotvik.srm;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
-import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.dotvik.srm.api.SrmApiClient;
 import org.json.JSONObject;
 
-/**
- * SRM Login Screen
- * POST /api/auth/login → stores JWT tokens → routes by role
- */
 public class SrmLoginActivity extends AppCompatActivity {
 
     private EditText etUsername, etPassword;
+    private Spinner  spinnerRole;
     private Button   btnLogin;
-    private TextView tvError, tvVersion;
-    private CheckBox cbRemember;
-    private ProgressDialog progress;
-    private SharedPreferencesData prefs;
+    private ProgressBar progress;
+    private TextView tvError;
+
+    private final String[] ROLES       = {"vendor","admin","subdiv","divhead","finance","pocomm","mdm"};
+    private final String[] ROLE_LABELS = {"Vendor","Admin","Sub-Division Head","Division Head","Finance Dept","PO Committee","MDM Team"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_srm_login);
 
-        prefs      = new SharedPreferencesData(getApplicationContext());
-        etUsername = findViewById(R.id.srm_et_username);
-        etPassword = findViewById(R.id.srm_et_password);
-        btnLogin   = findViewById(R.id.srm_btn_login);
-        tvError    = findViewById(R.id.srm_tv_error);
-        cbRemember = findViewById(R.id.srm_cb_remember);
+        etUsername  = findViewById(R.id.etSrmUsername);
+        etPassword  = findViewById(R.id.etSrmPassword);
+        spinnerRole = findViewById(R.id.spinnerSrmRole);
+        btnLogin    = findViewById(R.id.btnSrmLogin);
+        progress    = findViewById(R.id.progressSrmLogin);
+        tvError     = findViewById(R.id.tvSrmLoginError);
 
-        // Pre-fill if remembered
-        String saved = prefs.read(SrmVars.PREF_SRM_USERNAME);
-        if (saved != null && !saved.isEmpty()) {
-            etUsername.setText(saved);
-            cbRemember.setChecked(true);
-        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, ROLE_LABELS);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerRole.setAdapter(adapter);
 
-        btnLogin.setOnClickListener(v -> attemptLogin());
+        // Demo credential quick-fill on role change
+        spinnerRole.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> a, View v, int pos, long id) {
+                String key = ROLES[pos];
+                etUsername.setText(key);
+                String pass = key.equals("vendor") ? "vendor123"
+                        : key.equals("admin") ? "admin123"
+                        : key.equals("subdiv") ? "sub123"
+                        : key.equals("divhead") ? "div123"
+                        : key.equals("finance") ? "fin123"
+                        : key.equals("pocomm") ? "po123"
+                        : "mdm123";
+                etPassword.setText(pass);
+            }
+            @Override public void onNothingSelected(AdapterView<?> a) {}
+        });
+
+        btnLogin.setOnClickListener(v -> doLogin());
     }
 
-    private void attemptLogin() {
-        String user = etUsername.getText().toString().trim();
-        String pass = etPassword.getText().toString().trim();
+    private void doLogin() {
+        String username = etUsername.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
+            tvError.setText("Enter username and password");
+            tvError.setVisibility(View.VISIBLE);
+            return;
+        }
+
         tvError.setVisibility(View.GONE);
-
-        if (TextUtils.isEmpty(user)) { etUsername.setError("Required"); return; }
-        if (TextUtils.isEmpty(pass)) { etPassword.setError("Required"); return; }
-
-        progress = new ProgressDialog(this);
-        progress.setMessage("Signing in…");
-        progress.setCancelable(false);
-        progress.show();
+        btnLogin.setEnabled(false);
+        progress.setVisibility(View.VISIBLE);
 
         try {
             JSONObject body = new JSONObject();
-            body.put("username", user);
-            body.put("password", pass);
+            body.put("username", username);
+            body.put("password", password);
 
-            String url = getSrmBaseUrl() + SrmVars.AUTH_LOGIN;
-            JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, url, body,
-                response -> {
-                    dismiss();
-                    try {
-                        if (response.getBoolean("success")) {
-                            JSONObject data = response.getJSONObject("data");
-                            JSONObject userObj = data.getJSONObject("user");
-                            String token   = data.getString("accessToken");
-                            String refresh = data.getString("refreshToken");
-                            String role    = userObj.getString("role");
-                            String name    = userObj.optString("fullName", user);
-                            String dept    = userObj.optString("department", "");
-
-                            prefs.write(SrmVars.PREF_SRM_TOKEN,     token);
-                            prefs.write(SrmVars.PREF_SRM_REFRESH,   refresh);
-                            prefs.write(SrmVars.PREF_SRM_USER_ROLE, role);
-                            prefs.write(SrmVars.PREF_SRM_USER_NAME, name);
-                            prefs.write(SrmVars.PREF_SRM_USER_DEPT, dept);
-                            prefs.write(SrmVars.PREF_SRM_USER_ID,   userObj.getString("id"));
-                            if (cbRemember.isChecked()) {
-                                prefs.write(SrmVars.PREF_SRM_USERNAME, user);
-                            } else {
-                                prefs.write(SrmVars.PREF_SRM_USERNAME, "");
-                            }
-
-                            new SrmActivity().routeByRole(SrmLoginActivity.this, role);
-                            finish();
-                        } else {
-                            showError(response.optString("message", "Login failed"));
-                        }
-                    } catch (Exception e) { showError(e.getMessage()); }
-                },
-                error -> {
-                    dismiss();
-                    String msg = "Connection error";
-                    if (error.networkResponse != null) {
-                        try {
-                            JSONObject err = new JSONObject(new String(error.networkResponse.data));
-                            msg = err.optString("message", msg);
-                        } catch (Exception ignored) {}
-                    }
-                    showError(msg);
+            SrmApiClient.post(this, "/auth/login", body, response -> {
+                progress.setVisibility(View.GONE);
+                btnLogin.setEnabled(true);
+                try {
+                    JSONObject data = response.getJSONObject("data");
+                    String token    = data.getString("accessToken");
+                    JSONObject user = data.getJSONObject("user");
+                    String role     = user.getString("role");
+                    SrmApiClient.saveSession(this, token, user.toString(), role);
+                    routeByRole(role);
+                } catch (Exception e) {
+                    showError("Unexpected response format");
                 }
-            ) {
-                @Override public String getBodyContentType() { return "application/json"; }
-                @Override public byte[] getBody() { return body.toString().getBytes(); }
-            };
-            req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(15000, 1,
-                com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-            ApplicationController.getInstance().getRequestQueue().add(req);
+            }, error -> {
+                progress.setVisibility(View.GONE);
+                btnLogin.setEnabled(true);
+                showError(SrmApiClient.parseError(error));
+            });
         } catch (Exception e) {
-            dismiss();
-            showError(e.getMessage());
+            showError("Error building request");
         }
     }
 
@@ -133,12 +105,18 @@ public class SrmLoginActivity extends AppCompatActivity {
         tvError.setVisibility(View.VISIBLE);
     }
 
-    private void dismiss() {
-        if (progress != null && progress.isShowing()) { progress.dismiss(); progress = null; }
-    }
-
-    String getSrmBaseUrl() {
-        String url = prefs.read(SrmVars.PREF_SRM_URL);
-        return (url != null && !url.isEmpty()) ? url : "http://192.168.151.49:5000";
+    private void routeByRole(String role) {
+        Intent i;
+        switch (role) {
+            case "vendor":  i = new Intent(this, SrmVendorDashboardActivity.class);  break;
+            case "subdiv":
+            case "divhead":
+            case "finance":
+            case "pocomm":  i = new Intent(this, SrmApproverDashboardActivity.class); break;
+            case "mdm":     i = new Intent(this, SrmMdmDashboardActivity.class);      break;
+            default:        i = new Intent(this, SrmAdminDashboardActivity.class);    break;
+        }
+        startActivity(i);
+        finish();
     }
 }
