@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RecyclerView item: vendor application row -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/bgCard"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:layout_marginBottom="8dp"
+    android:elevation="1dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="6dp">
+        <TextView android:id="@+id/srm_item_vendor_name"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="Vendor Name" android:textColor="@color/textPrimary"
+            android:textSize="14sp" android:textStyle="bold" />
+        <TextView android:id="@+id/srm_item_type"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@color/statBlueBg"
+            android:textColor="@color/colorInfo" android:textSize="10sp"
+            android:paddingStart="8dp" android:paddingEnd="8dp"
+            android:paddingTop="3dp" android:paddingBottom="3dp"
+            android:text="TRADING" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="10dp">
+        <TextView android:id="@+id/srm_item_ticket"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="TKT-XXXX" android:textColor="@color/textSecondary" android:textSize="12sp" />
+        <TextView android:id="@+id/srm_item_date"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="16 Apr 2026" android:textColor="@color/textHint" android:textSize="11sp" />
+    </LinearLayout>
+
+    <Button android:id="@+id/srm_item_btn_review"
+        android:layout_width="match_parent" android:layout_height="40dp"
+        android:background="@color/colorPrimary"
+        android:text="REVIEW" android:textColor="@color/white"
+        android:textSize="12sp" android:textStyle="bold" />
+
+</LinearLayout>
