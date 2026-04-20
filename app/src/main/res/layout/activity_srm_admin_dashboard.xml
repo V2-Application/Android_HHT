@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bgPage" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/colorPrimary" android:orientation="horizontal"
+        android:padding="16dp" android:gravity="center_vertical">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="Admin Dashboard" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold"/>
+        <Button android:id="@+id/srm_btn_logout" android:layout_width="wrap_content" android:layout_height="36dp"
+            android:text="Sign Out" android:textColor="@color/white" android:textSize="11sp"
+            android:background="@drawable/bg_btn_outline_white" android:paddingStart="12dp" android:paddingEnd="12dp"/>
+    </LinearLayout>
+    <!-- Stats grid -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/bgCard" android:orientation="horizontal" android:padding="10dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@color/statBlueBg" android:orientation="vertical" android:padding="10dp" android:gravity="center" android:layout_margin="3dp">
+            <TextView android:id="@+id/srm_tv_total" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorInfo" android:textSize="20sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total" android:textColor="@color/textSecondary" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@color/statOrangeBg" android:orientation="vertical" android:padding="10dp" android:gravity="center" android:layout_margin="3dp">
+            <TextView android:id="@+id/srm_tv_pipeline" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorWarning" android:textSize="20sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pipeline" android:textColor="@color/textSecondary" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@color/colorSuccessBg" android:orientation="vertical" android:padding="10dp" android:gravity="center" android:layout_margin="3dp">
+            <TextView android:id="@+id/srm_tv_created" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorSuccess" android:textSize="20sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SAP Created" android:textColor="@color/textSecondary" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@color/colorErrorBg" android:orientation="vertical" android:padding="10dp" android:gravity="center" android:layout_margin="3dp">
+            <TextView android:id="@+id/srm_tv_rejected" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorError" android:textSize="20sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rejected" android:textColor="@color/textSecondary" android:textSize="9sp"/>
+        </LinearLayout>
+    </LinearLayout>
+    <!-- Level breakdown -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/bgCard" android:orientation="horizontal" android:padding="10dp" android:layout_marginTop="1dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:layout_margin="3dp" android:background="@color/statPurpleBg" android:padding="8dp">
+            <TextView android:id="@+id/srm_tv_l1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorPurple" android:textSize="16sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="L1" android:textColor="@color/textHint" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:layout_margin="3dp" android:background="@color/statPurpleBg" android:padding="8dp">
+            <TextView android:id="@+id/srm_tv_l2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorPurple" android:textSize="16sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="L2" android:textColor="@color/textHint" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:layout_margin="3dp" android:background="@color/statTealBg" android:padding="8dp">
+            <TextView android:id="@+id/srm_tv_l3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorTeal" android:textSize="16sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="L3" android:textColor="@color/textHint" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:layout_margin="3dp" android:background="@color/statTealBg" android:padding="8dp">
+            <TextView android:id="@+id/srm_tv_l4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorTeal" android:textSize="16sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="L4" android:textColor="@color/textHint" android:textSize="9sp"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:layout_margin="3dp" android:background="@color/statOrangeBg" android:padding="8dp">
+            <TextView android:id="@+id/srm_tv_l5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/colorWarning" android:textSize="16sp" android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SAP" android:textColor="@color/textHint" android:textSize="9sp"/>
+        </LinearLayout>
+    </LinearLayout>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="ALL APPLICATIONS" android:textColor="@color/textLabel"
+        android:textSize="10sp" android:textStyle="bold" android:padding="16dp" android:paddingBottom="8dp"/>
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/srm_rv_apps"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:paddingStart="12dp" android:paddingEnd="12dp" android:clipToPadding="false"/>
+</LinearLayout>
