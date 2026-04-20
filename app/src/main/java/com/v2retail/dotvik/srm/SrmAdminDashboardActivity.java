@@ -2,136 +2,138 @@ package com.v2retail.dotvik.srm;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.*;
-import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
-import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.dotvik.srm.api.SrmApiClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.util.*;
 
-/** Admin Dashboard — full pipeline overview + user management */
 public class SrmAdminDashboardActivity extends AppCompatActivity {
 
-    private SharedPreferencesData prefs;
-    private TextView tvTotal, tvPipeline, tvCreated, tvRejected, tvL1, tvL2, tvL3, tvL4, tvL5;
-    private RecyclerView rvApps;
-    private Button btnLogout;
-    private List<JSONObject> appList = new ArrayList<>();
-    private AppAdapter adapter;
+    private TextView tvTotal, tvPipeline, tvCreated, tvRejected, tvL1, tvL2, tvL3, tvL5;
+    private ListView lvApplications;
+    private Spinner spStageFilter;
+    private Button btnLogout, btnRefresh;
+    private ProgressBar progress;
+    private EditText etSearch;
+
+    private JSONArray allApps = new JSONArray();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_srm_admin_dashboard);
-        prefs      = new SharedPreferencesData(getApplicationContext());
-        tvTotal    = findViewById(R.id.srm_tv_total);
-        tvPipeline = findViewById(R.id.srm_tv_pipeline);
-        tvCreated  = findViewById(R.id.srm_tv_created);
-        tvRejected = findViewById(R.id.srm_tv_rejected);
-        tvL1       = findViewById(R.id.srm_tv_l1);
-        tvL2       = findViewById(R.id.srm_tv_l2);
-        tvL3       = findViewById(R.id.srm_tv_l3);
-        tvL4       = findViewById(R.id.srm_tv_l4);
-        tvL5       = findViewById(R.id.srm_tv_l5);
-        rvApps     = findViewById(R.id.srm_rv_apps);
-        btnLogout  = findViewById(R.id.srm_btn_logout);
 
-        adapter = new AppAdapter();
-        if (rvApps != null) { rvApps.setLayoutManager(new LinearLayoutManager(this)); rvApps.setAdapter(adapter); }
-        if (btnLogout != null) btnLogout.setOnClickListener(v -> { prefs.write(SrmVars.PREF_SRM_TOKEN,""); startActivity(new Intent(this,SrmLoginActivity.class)); finish(); });
+        tvTotal    = findViewById(R.id.tvAdminTotal);
+        tvPipeline = findViewById(R.id.tvAdminPipeline);
+        tvCreated  = findViewById(R.id.tvAdminCreated);
+        tvRejected = findViewById(R.id.tvAdminRejected);
+        tvL1       = findViewById(R.id.tvAdminL1);
+        tvL2       = findViewById(R.id.tvAdminL2);
+        tvL3       = findViewById(R.id.tvAdminL3);
+        tvL5       = findViewById(R.id.tvAdminL5);
+        lvApplications = findViewById(R.id.lvAdminApps);
+        spStageFilter  = findViewById(R.id.spAdminFilter);
+        btnLogout  = findViewById(R.id.btnAdminLogout);
+        btnRefresh = findViewById(R.id.btnAdminRefresh);
+        progress   = findViewById(R.id.progressAdminDash);
+        etSearch   = findViewById(R.id.etAdminSearch);
 
-        loadStats();
+        setupStageFilter();
+        btnLogout.setOnClickListener(v -> logout());
+        btnRefresh.setOnClickListener(v -> loadData());
+        lvApplications.setOnItemClickListener((parent, view, position, id) -> {
+            try {
+                JSONObject app = allApps.getJSONObject(position);
+                Intent i = new Intent(this, SrmApprovalDetailActivity.class);
+                i.putExtra("app_id", app.optString("id"));
+                startActivity(i);
+            } catch (Exception ignored) {}
+        });
+
+        loadData();
+    }
+
+    @Override protected void onResume() { super.onResume(); loadData(); }
+
+    private void setupStageFilter() {
+        String[] stages = {"All", "SUBMITTED", "L1", "L2", "L3", "L4", "L5", "APPROVED", "REJECTED"};
+        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, stages);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spStageFilter.setAdapter(a);
+        spStageFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) { loadApps(); }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+    }
+
+    private void loadData() {
+        // Stats
+        SrmApiClient.get(this, "/applications/stats", res -> {
+            try {
+                JSONObject d = res.getJSONObject("data");
+                tvTotal.setText(String.valueOf(d.optInt("total", 0)));
+                tvPipeline.setText(String.valueOf(d.optInt("inPipeline", 0)));
+                tvCreated.setText(String.valueOf(d.optInt("approved", 0)));
+                tvRejected.setText(String.valueOf(d.optInt("rejected", 0)));
+                tvL1.setText(String.valueOf(d.optInt("l1", 0)));
+                tvL2.setText(String.valueOf(d.optInt("l2", 0)));
+                tvL3.setText(String.valueOf(d.optInt("l3", 0)));
+                tvL5.setText(String.valueOf(d.optInt("l5", 0)));
+            } catch (Exception ignored) {}
+        }, e -> {});
         loadApps();
     }
 
-    @Override protected void onResume() { super.onResume(); loadStats(); loadApps(); }
-
-    private void loadStats() {
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET,
-            getSrmBaseUrl() + SrmVars.APPLICATIONS_STATS, null,
-            response -> {
-                try {
-                    JSONObject d = response.getJSONObject("data");
-                    set(tvTotal,    d.optInt("total",0));
-                    set(tvPipeline, d.optInt("inPipeline",0));
-                    set(tvCreated,  d.optInt("approved",0));
-                    set(tvRejected, d.optInt("rejected",0));
-                    set(tvL1, d.optInt("l1",0)); set(tvL2, d.optInt("l2",0));
-                    set(tvL3, d.optInt("l3",0)); set(tvL4, d.optInt("l4",0));
-                    set(tvL5, d.optInt("l5",0));
-                } catch (Exception ignored) {}
-            }, error -> {}
-        ) { @Override public Map<String,String> getHeaders() { return auth(); } };
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
-
     private void loadApps() {
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET,
-            getSrmBaseUrl() + SrmVars.APPLICATIONS_LIST + "?limit=30", null,
-            response -> {
-                try {
-                    JSONArray arr = response.getJSONArray("data");
-                    appList.clear();
-                    for (int i=0;i<arr.length();i++) appList.add(arr.getJSONObject(i));
-                    adapter.notifyDataSetChanged();
-                } catch (Exception ignored) {}
-            }, error -> {}
-        ) { @Override public Map<String,String> getHeaders() { return auth(); } };
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
+        progress.setVisibility(View.VISIBLE);
+        String stage = spStageFilter.getSelectedItemPosition() == 0 ? "" :
+                (String) spStageFilter.getSelectedItem();
+        String url = "/applications?limit=100" + (stage.isEmpty() ? "" : "&stage=" + stage);
 
-    private void set(TextView tv, int val) { if (tv != null) tv.setText(String.valueOf(val)); }
-
-    class AppAdapter extends RecyclerView.Adapter<AppAdapter.VH> {
-        class VH extends RecyclerView.ViewHolder {
-            TextView tvName, tvTicket, tvType, tvDate;
-            Button btnReview;
-            VH(View v) {
-                super(v);
-                tvName   = v.findViewById(R.id.srm_item_vendor_name);
-                tvTicket = v.findViewById(R.id.srm_item_ticket);
-                tvType   = v.findViewById(R.id.srm_item_type);
-                tvDate   = v.findViewById(R.id.srm_item_date);
-                btnReview= v.findViewById(R.id.srm_item_btn_review);
-            }
-        }
-        @Override public VH onCreateViewHolder(ViewGroup p, int t) {
-            return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_srm_application,p,false));
-        }
-        @Override public void onBindViewHolder(VH h, int pos) {
+        SrmApiClient.get(this, url, res -> {
+            progress.setVisibility(View.GONE);
             try {
-                JSONObject app = appList.get(pos);
-                h.tvName.setText(app.optString("vendor_name",""));
-                h.tvTicket.setText(app.optString("ticket_no","") + " · " + SrmVars.stageName(app.optString("current_stage","")));
-                h.tvType.setText(app.optString("vendor_type",""));
-                String dt = app.optString("submitted_at","");
-                h.tvDate.setText(dt.length()>=10?dt.substring(0,10):dt);
-                h.btnReview.setOnClickListener(v -> {
-                    try {
-                        String stage = app.optString("current_stage","");
-                        Intent intent;
-                        if (SrmVars.STAGE_L5.equals(stage)) {
-                            intent = new Intent(SrmAdminDashboardActivity.this, SrmMdmSapPushActivity.class);
-                        } else {
-                            intent = new Intent(SrmAdminDashboardActivity.this, SrmApprovalDetailActivity.class);
-                        }
-                        intent.putExtra("app_id", app.getString("id"));
-                        intent.putExtra("ticket_no", app.optString("ticket_no",""));
-                        startActivity(intent);
-                    } catch (Exception e) { e.printStackTrace(); }
-                });
+                allApps = res.getJSONArray("data");
+                buildList();
             } catch (Exception ignored) {}
-        }
-        @Override public int getItemCount() { return appList.size(); }
+        }, e -> progress.setVisibility(View.GONE));
     }
 
-    private Map<String,String> auth() { Map<String,String> h=new HashMap<>(); h.put("Authorization","Bearer "+prefs.read(SrmVars.PREF_SRM_TOKEN)); return h; }
-    String getSrmBaseUrl() { String u=prefs.read(SrmVars.PREF_SRM_URL); return (u!=null&&!u.isEmpty())?u:"http://192.168.151.49:5000"; }
+    private void buildList() {
+        try {
+            String[] items = new String[allApps.length()];
+            for (int i = 0; i < allApps.length(); i++) {
+                JSONObject app = allApps.getJSONObject(i);
+                String stage = app.optString("current_stage", "");
+                String sapCode = app.optString("sap_vendor_code", "");
+                items[i] = app.optString("ticket_no") + "  |  " + app.optString("vendor_name")
+                        + "\n" + app.optString("vendor_type") + " · " + app.optString("division")
+                        + "  ·  " + stageLabel(stage)
+                        + (sapCode.isEmpty() || sapCode.equals("null") ? "" : "  →  " + sapCode);
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    R.layout.item_srm_queue_row, R.id.tvQueueRowText, items);
+            lvApplications.setAdapter(adapter);
+        } catch (Exception ignored) {}
+    }
+
+    private String stageLabel(String s) {
+        switch (s) {
+            case "L1": return "L1 Sub Div"; case "L2": return "L2 Div Head";
+            case "L3": return "L3 Finance"; case "L4": return "L4 PO Comm";
+            case "L5": return "L5 MDM"; case "APPROVED": return "SAP Created ✓";
+            case "REJECTED": return "Rejected"; case "SUBMITTED": return "Submitted";
+            default: return s;
+        }
+    }
+
+    private void logout() {
+        SrmApiClient.post(this, "/auth/logout", new JSONObject(), r -> {}, e -> {});
+        SrmApiClient.clearSession(this);
+        startActivity(new Intent(this, SrmLoginActivity.class));
+        finish();
+    }
 }
