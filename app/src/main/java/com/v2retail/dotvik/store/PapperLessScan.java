@@ -72,7 +72,8 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
     private static final String ARG_PARAM2 = "param2";
 
     private TextView back;
-    private int currentIndex = 1;
+    /** Index into {@link #mEtBinMc} (0-based; JSON row 0 is the first pick line). */
+    private int currentIndex = 0;
     private boolean isContinueScan;
 
     private TextView pickingNo;
@@ -228,7 +229,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         prev_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (currentIndex >= 2) {
+                if (currentIndex >= 1) {
                     currentIndex--;
                     Log.d("realtimevalue", currentIndex + "");
                     setDataInView(currentIndex);
@@ -611,7 +612,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         thirdItemCrate.setText("");
         thirdItemMatnr.setText("");
         thirdItemRemainQty.setText("");
-        currentIndex = 1;
+        currentIndex = 0;
         validateDelivery(mDeliveryNumber);
     }
 
@@ -684,8 +685,12 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                         String key = emptyBinMapKeys.next();
                         emptyBinMap.put(key, emptyBinMapJson.getString(key));
                     }
-                    if(mEtBinMc.getJSONObject(1).has("STORE")) {
-                        storeIdText.setText(mEtBinMc.getJSONObject(1).getString("STORE"));
+                    for (int si = 0; si < mEtBinMc.length(); si++) {
+                        JSONObject row = mEtBinMc.getJSONObject(si);
+                        if (row.has("STORE")) {
+                            storeIdText.setText(row.getString("STORE"));
+                            break;
+                        }
                     }
                     currentIndex = Integer.parseInt(state.param18);
                     setDataInView(currentIndex);
@@ -705,7 +710,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
     private void setDataInView(int position) {
         try {
-            if (position >= 1 && position < mEtBinMc.length()) {
+            if (position >= 0 && position < mEtBinMc.length()) {
                 JSONObject json_2 = mEtBinMc.getJSONObject(position);
                 String binVLPlA = json_2.getString("VLPLA");
                 String crate = json_2.getString("CRATE");
@@ -1053,7 +1058,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
             params.put("bapiname", rfc);
             params.put("IM_READ_DELV_ALL","X");
             params.put("IM_READ_EAN","X");
-            params.put("IM_VBELN",deliveryNumber);
+            params.put("IM_VBELN", Util.deliveryVbelnForPaperlessRfc(deliveryNumber));
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -1099,7 +1104,9 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                         mEtEanData =   responsebody.getJSONArray("ET_EAN_DATA");
                                         try {
                                             mEtBinMc = responsebody.getJSONArray("ET_BIN_MC");
-                                            for (int i = 1; i < PapperLessScan.this.mEtBinMc.length(); i++) {
+                                            tqCount = 0;
+                                            trQCount = 0;
+                                            for (int i = 0; i < PapperLessScan.this.mEtBinMc.length(); i++) {
                                                 JSONObject etBin = PapperLessScan.this.mEtBinMc.getJSONObject(i);
                                                 int lineQty = sapNumberToInt("VISTM", etBin);
                                                 int remainQty = sapNumberToInt("REMAIN_QTY", etBin);
@@ -1109,8 +1116,12 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                                 rqEditTextFiled.setText("" + trQCount);
                                                 PapperLessScan.this.mEtBinMc.getJSONObject(i).put("UMREZ","1");
                                             }
-                                            if(mEtBinMc.getJSONObject(1).has("STORE")) {
-                                                storeIdText.setText(mEtBinMc.getJSONObject(1).getString("STORE"));
+                                            for (int si = 0; si < mEtBinMc.length(); si++) {
+                                                JSONObject row = mEtBinMc.getJSONObject(si);
+                                                if (row.has("STORE")) {
+                                                    storeIdText.setText(row.getString("STORE"));
+                                                    break;
+                                                }
                                             }
                                             String binMcJson = mEtBinMc.toString();
                                             mEtBinMc = new JSONArray(binMcJson);
@@ -1180,7 +1191,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
         final JSONObject params = new JSONObject();
         try {
             params.put("bapiname",rfc);
-            params.put("IM_VBELN", mDeliveryNumber);
+            params.put("IM_VBELN", Util.deliveryVbelnForPaperlessRfc(mDeliveryNumber));
             params.put("IM_USER",  loginUser);
             params.put("IM_EXIDV", mExternalHu);
             params.put("IT_DATA", scannedDataForSubmit);
@@ -1195,8 +1206,8 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
         // set IT_BIN_EMPTY info
         JSONArray itBinEmpty = new JSONArray();
-        if(this.mEtBinMc!=null && this.mEtBinMc.length()>1) {
-            for (int i = 1; i < this.mEtBinMc.length(); i++) {
+        if(this.mEtBinMc!=null && this.mEtBinMc.length()>0) {
+            for (int i = 0; i < this.mEtBinMc.length(); i++) {
                 try {
                     JSONObject etBin = this.mEtBinMc.getJSONObject(i);
                     String binVLPlA = etBin.getString("VLPLA");

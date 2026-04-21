@@ -53,4 +53,23 @@ public class Util {
                 con.getResources().getDisplayMetrics()
         );
     }
+
+    /**
+     * Paperless delivery dropdown stores {@code VBELN-WERKS-PRIORITY-FLOOR}; SAP RFCs expect {@code IM_VBELN}
+     * as the delivery document number only.
+     */
+    public static String deliveryVbelnForPaperlessRfc(String deliverySelection) {
+        if (deliverySelection == null) {
+            return "";
+        }
+        String s = deliverySelection.trim();
+        if (s.isEmpty()) {
+            return "";
+        }
+        int dash = s.indexOf('-');
+        if (dash > 0) {
+            return s.substring(0, dash).trim();
+        }
+        return s;
+    }
 }

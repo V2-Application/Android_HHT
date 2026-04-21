@@ -19,6 +19,9 @@ public class LiveScanData  implements Serializable {
     private String stockTakeId;
     @SerializedName("SCAN_QTY")
     private String scanQty;
+    /** Maps to ZWM_DCSTK2-Typ / IT_DATA; MSA live stock take uses E01 (see ZWM_STK_E01_B01_V04). */
+    @SerializedName("TYP")
+    private String typ;
 
     public static LiveScanData copyProperties(LiveStockBinCrate binData){
         if(binData == null){
@@ -29,6 +32,12 @@ public class LiveScanData  implements Serializable {
         target.setBin(binData.getBin());
         target.setPlant(binData.getPlant());
         target.setStockTakeId(binData.getStockTakeId());
+        target.setCrate(binData.getCrate() != null ? binData.getCrate() : "");
+        if (binData.getTyp() != null && !binData.getTyp().trim().isEmpty()) {
+            target.setTyp(binData.getTyp().trim());
+        } else {
+            target.setTyp("E01");
+        }
         return target;
     }
 
@@ -84,5 +93,13 @@ public class LiveScanData  implements Serializable {
 
     public void setScanQty(String scanQty) {
         this.scanQty = scanQty;
+    }
+
+    public String getTyp() {
+        return typ;
+    }
+
+    public void setTyp(String typ) {
+        this.typ = typ;
     }
 }

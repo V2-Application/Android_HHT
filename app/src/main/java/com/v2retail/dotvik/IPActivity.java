@@ -130,100 +130,12 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                     iparr[0] = URL;
                 }
                 Log.d(TAG,"URL -> "+URL);
-                // Old on-prem middleware (xmwgw) has no /appversion endpoint.
-                // Skip the version check and go straight to connectivity ping.
-                if (URL.contains("xmwgw")) {
-                    try {
-                        checkIP(URL + "/index.jsp");
-                    } catch (Exception e) {
-                        box.getErrBox(e);
-                    }
-                } else {
-                    getAppUpdate(iparr);
-                }
+                getAppUpdate(iparr);
                 break;
             case R.id.exit:
                 this.finish();
                 break;
         }
-    }
-
-
-    /**
-     * Launch the APK installer. If the install is blocked due to a signing
-     * certificate conflict (old app signed with different key), show a dialog
-     * offering to uninstall the old package so the user can re-install cleanly.
-     */
-    private void launchInstaller(Context ctx, java.io.File apkFile) {
-        try {
-            android.content.Intent install = new android.content.Intent(Intent.ACTION_VIEW);
-            Uri apkUri;
-            if (android.os.Build.VERSION.SDK_INT >= 24) {
-                apkUri = androidx.core.content.FileProvider.getUriForFile(
-                    ctx, ctx.getPackageName() + ".provider", apkFile);
-                install.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_ACTIVITY_NEW_TASK);
-            } else {
-                apkUri = Uri.fromFile(apkFile);
-                install.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            }
-            install.setDataAndType(apkUri, "application/vnd.android.package-archive");
-            ctx.startActivity(install);
-        } catch (android.content.ActivityNotFoundException e) {
-            Log.e(TAG, "No installer activity found", e);
-            // Fallback: open package installer directly
-            try {
-                android.content.Intent fallback = new android.content.Intent(
-                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                    Uri.parse("package:" + ctx.getPackageName()));
-                fallback.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(fallback);
-            } catch (Exception ex) {
-                Toast.makeText(ctx, "Please enable 'Install unknown apps' in Settings.",
-                    Toast.LENGTH_LONG).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Install launch failed: " + e.getMessage(), e);
-            // Could be a signing conflict — offer to uninstall old package
-            showSigningConflictDialog(ctx, apkFile);
-        }
-    }
-
-    /**
-     * Show a dialog when install fails due to signing certificate mismatch.
-     * Guides the user to uninstall the old version first.
-     */
-    private void showSigningConflictDialog(Context ctx, java.io.File apkFile) {
-        runOnUiThread(() -> {
-            new android.app.AlertDialog.Builder(ctx)
-                .setTitle("Update Required — Action Needed")
-                .setMessage("A newer version is ready to install, but the existing app "
-                    + "needs to be removed first (one-time process due to a security key change).\n\n"
-                    + "Tap UNINSTALL to remove the current app, then re-open this file from "
-                    + "notifications to install the new version.\n\n"
-                    + "You will NOT lose any data.")
-                .setCancelable(false)
-                .setPositiveButton("UNINSTALL OLD APP", (dialog, which) -> {
-                    try {
-                        // Launch system uninstall for this package
-                        android.content.Intent uninstall = new android.content.Intent(
-                            Intent.ACTION_DELETE,
-                            Uri.parse("package:" + ctx.getPackageName()));
-                        uninstall.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        ctx.startActivity(uninstall);
-                    } catch (Exception ex) {
-                        Toast.makeText(ctx,
-                            "Go to Settings > Apps > V2 HHT > Uninstall, then re-install from apk.v2retail.net/download",
-                            Toast.LENGTH_LONG).show();
-                    }
-                })
-                .setNegativeButton("Manual Install Later", (dialog, which) -> {
-                    Toast.makeText(ctx,
-                        "APK saved. Go to Settings > Apps > V2 HHT > Uninstall, then install from: apk.v2retail.net/download",
-                        Toast.LENGTH_LONG).show();
-                })
-                .show();
-        });
     }
 
     private void getAppUpdate(String iparr[]){
@@ -243,59 +155,48 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                         // get response
                         try {
                             if (response.getString("upgrade").equals("available")){
-                                    // Auto-download — no button tap needed
-                                    String downloadUrl = null;
-                                    try {
-                                        downloadUrl = response.getString("downloadLink");
-                                    } catch (JSONException je) {
-                                        downloadUrl = "https://apk.v2retail.net/download";
-                                    }
-                                    final String finalUrl = downloadUrl;
 
-                                    Toast.makeText(IPActivity.this,
-                                        "New version available — downloading update...",
-                                        Toast.LENGTH_LONG).show();
+                                    AlertDialog.Builder builder
+                                            = new AlertDialog
+                                            .Builder(IPActivity.this);
+                                    builder.setMessage("New Version apk available");
+                                    builder.setTitle("Alert !");
+                                    builder.setCancelable(false);
+                                    builder.setPositiveButton("Download", new DialogInterface.OnClickListener() {
 
-                                    try {
-                                        // Download to app-private external dir (no WRITE_EXTERNAL_STORAGE needed)
-                                        java.io.File outFile = new java.io.File(
-                                            getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS),
-                                            "V2_HHT_Update.apk");
-                                        if (outFile.exists()) outFile.delete();
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
 
-                                        android.app.DownloadManager dm =
-                                            (android.app.DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                                        android.app.DownloadManager.Request req =
-                                            new android.app.DownloadManager.Request(Uri.parse(finalUrl));
-                                        req.setTitle("V2 HHT Update");
-                                        req.setDescription("Downloading latest version...");
-                                        req.setNotificationVisibility(
-                                            android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                                        req.setDestinationUri(Uri.fromFile(outFile));
-                                        final long dlId = dm.enqueue(req);
 
-                                        // BroadcastReceiver fires when download completes → auto-launch installer
-                                        final java.io.File apkFile = outFile;
-                                        android.content.BroadcastReceiver onDone =
-                                            new android.content.BroadcastReceiver() {
-                                            @Override
-                                            public void onReceive(Context ctx, android.content.Intent intent) {
-                                                long id = intent.getLongExtra(
-                                                    android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                                                if (id != dlId) return;
-                                                ctx.unregisterReceiver(this);
-                                                launchInstaller(ctx, apkFile);
+                                            String downloadUrl = null;
+
+
+                                            try {
+                                                downloadUrl = response.getString("downloadLink");
+                                                File fileName = new File(downloadUrl);
+                                                String destination = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName.getName();
+                                                Log.d("ApkDownloadUtil", "URL : " + fileName.getName());
+                                                Log.d("ApkDownloadUtil", "URL : " + downloadUrl);
+
+                                                Uri uri = Uri.parse("file://" + destination);
+
+                                                DownloadManager downloadManager = (DownloadManager) getApplicationContext().getSystemService(Context.DOWNLOAD_SERVICE);
+
+                                                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
+                                                request.setDestinationUri(uri);
+
+                                                long requestId = downloadManager.enqueue(request);
+                                                Toast.makeText(IPActivity.this, "New Apk Downloading", Toast.LENGTH_SHORT).show();
+
+
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
                                             }
-                                        };
-                                        registerReceiver(onDone, new android.content.IntentFilter(
-                                            android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                                        }
+                                    });
 
-                                    } catch (Exception e) {
-                                        Log.e(TAG, "Auto-download failed", e);
-                                        Toast.makeText(IPActivity.this,
-                                            "Please update manually from apk.v2retail.net",
-                                            Toast.LENGTH_LONG).show();
-                                    }
+                                    AlertDialog alertDialog = builder.create();
+                                    alertDialog.show();
 
                             }else {
                                 try{

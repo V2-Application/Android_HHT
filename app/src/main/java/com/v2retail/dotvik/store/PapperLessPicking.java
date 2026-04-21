@@ -57,6 +57,7 @@ import com.v2retail.dotvik.modal.material.ETPACKMAT;
 
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.AppConstants;
+import com.v2retail.util.Util;
 import com.v2retail.util.Barcode2D;
 import com.v2retail.util.IBarcodeResult;
 import com.v2retail.util.SharedPreferencesData;
@@ -742,7 +743,7 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             params.put("bapiname", rfc);
             params.put("IM_READ_DELV_ALL","X");
             params.put("IM_READ_EAN","X");
-            params.put("IM_VBELN",deliveryNumber);
+            params.put("IM_VBELN", Util.deliveryVbelnForPaperlessRfc(deliveryNumber));
 
         } catch (JSONException e) {
             e.printStackTrace();

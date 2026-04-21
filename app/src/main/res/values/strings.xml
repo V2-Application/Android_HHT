@@ -35,17 +35,15 @@
     <string name="date">Date.</string>
 
     <array name="ipAddress">
-        <!-- PRIMARY: Cloudflare edge — works from any network in India -->
-        <item>https://hht-api.v2retail.net/api/hht (V2 Cloud)</item>
-        <!-- FALLBACK: Azure direct -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht (Azure Direct)</item>
-        <!-- SAP DEV: Azure middleware routed to SAP DEV 192.168.144.174 client 210 BATCHUSER -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht?env=dev (SAP DEV)</item>
-        <!-- Legacy on-prem — DC/warehouse use only -->
-        <item>http://192.168.144.200:9080/xmwgw (HanaProd Legacy)</item>
-        <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
-        <item>http://103.29.220.152:1080/hanadev (HanaDev Public)</item>
-        <item>http://192.168.151.40:17080/xmwgw (HanaQA Legacy)</item>
+        <!-- V2 Cloud (PROD via Azure middleware) -->
+        <item>https://v2-hht-api.azurewebsites.net/api/hht (V2 Cloud)</item>
+        <!-- DEV and QA via Cloudflare proxy (supports v12 JSON format) -->
+        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
+        <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
+        <!-- Legacy (for old devices only — v12 JSON format incompatible) -->
+        <item>http://192.168.151.40:16080/xmwgw (Dev Tomcat Legacy)</item>
+        <item>http://192.168.151.40:17080/xmwgw (QA Tomcat Legacy)</item>
+        <item>http://192.168.144.200:9080/xmwgw (Prod Tomcat Legacy)</item>
     </array>
     <array name="choose_store">
         <item>DC</item>

@@ -345,10 +345,10 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
             barcodeData = barcodeDataMap.get(barcode);
             double sqty  = Util.convertStringToDouble(barcodeData.getScanQty());
             double rqty  = Util.convertStringToDouble(barcodeData.getVerme());
-            // UMREZ = pack conversion ratio from ZSDC_DIRECT_ART_VAL_BARCOD_RFC
-            // e.g. UMREZ=4 means 1 barcode scan = 4 units
+            // Use UMREZ from RFC response — pack conversion ratio per barcode scan
+            // e.g. UMREZ=4 means one scan = 4 units (not 1)
             double umrez = Util.convertStringToDouble(barcodeData.getUmrez());
-            if (umrez <= 0) umrez = 1;
+            if (umrez <= 0) umrez = 1; // safety fallback if SAP returns 0
             sqty = sqty + umrez;
             if(sqty > rqty){
                 box.getBox("Invalid", "Already scanned maximum allowed Qty " + rqty);

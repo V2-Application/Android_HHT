@@ -77,6 +77,8 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
     Map<String, ETEan> eanDataMap = new HashMap<>();
     Map<String, DiscountArticle> discountDataMap = new HashMap<>();
     Map<String, DiscountArticleScan> discountArticleScanMap = new HashMap<>();
+    /** Normalized EAN from last GET_EAN call — used to pick the row when ET_* has one line at index 0. */
+    private String lastValidatedBarcode = "";
 
     public FragmentCArticleProcess() {
     }
@@ -198,6 +200,13 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         });
     }
 
+    private static String normalizeEanKey(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.trim().toUpperCase();
+    }
+
     private void showError(String title, String message) {
         UIFuncs.errorSound(con);
         AlertBox box = new AlertBox(getContext());
@@ -208,6 +217,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         eanDataMap = new HashMap<>();
         discountDataMap = new HashMap<>();
         discountArticleScanMap = new HashMap<>();
+        lastValidatedBarcode = "";
         totalQty = 0;
         btn_reset.setVisibility(View.INVISIBLE);
         btn_save.setVisibility(View.GONE);
@@ -222,14 +232,18 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
     }
 
     private void validateBarcode(String barcode){
-        if(discountArticleScanMap.containsKey(barcode)){
-            DiscountArticleScan scannedArticle = discountArticleScanMap.get(barcode);
+        String barcodeKey = normalizeEanKey(barcode);
+        if(discountArticleScanMap.containsKey(barcodeKey)){
+            DiscountArticleScan scannedArticle = discountArticleScanMap.get(barcodeKey);
             double sqty = Util.convertStringToDouble(scannedArticle.getSqnty()) + 1;
             totalQty = totalQty + 1;
             txt_sqty.setText(Util.formatDouble(sqty));
             txt_tqty.setText(Util.formatDouble(totalQty));
             scannedArticle.setSqnty(Util.formatDouble(sqty));
-            txt_article.setText(UIFuncs.removeLeadingZeros(eanDataMap.get(UIFuncs.toUpperTrim(txt_scan_barcode)).getLgmatnr()));
+            ETEan eanRow = eanDataMap.get(barcodeKey);
+            if (eanRow != null) {
+                txt_article.setText(UIFuncs.removeLeadingZeros(eanRow.getLgmatnr()));
+            }
             txt_cur_discount.setText(scannedArticle.getDisper());
             txt_prev_discount.setText(scannedArticle.getDisper1());
             txt_scan_barcode.setText("");
@@ -237,10 +251,13 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         }else{
             JSONObject args = new JSONObject();
             try {
+                lastValidatedBarcode = barcodeKey;
                 args.put("bapiname", Vars.ZSTORE_DISCOUNT_GET_EAN_DATA);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
                 args.put("IM_EAN", barcode);
+                args.put("IM_0001", radio_0001.isChecked() ? "X" : "");
+                args.put("IM_0006", radio_0006.isChecked() ? "X" : "");
                 showProcessingAndSubmit(Vars.ZSTORE_DISCOUNT_GET_EAN_DATA, REQUEST_VALIDATE_BARCODE, args);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -262,18 +279,39 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
             int eanLength = arrEanData.length();
             int discLength = arrDiscData.length();
 
+            for (int i = 0; i < eanLength; i++) {
+                JSONObject row = arrEanData.optJSONObject(i);
+                if (row == null || row.length() == 0) {
+                    continue;
+                }
+                ETEan eanData = new Gson().fromJson(row.toString(), ETEan.class);
+                if (eanData.getLgean11() == null || eanData.getLgean11().trim().isEmpty()) {
+                    continue;
+                }
+                eanDataMap.put(normalizeEanKey(eanData.getLgean11()), eanData);
+            }
+
             DiscountArticle discData = null;
-            for(int i=1; i < eanLength; i++){
-                ETEan eanData = new Gson().fromJson(arrEanData.get(i).toString(), ETEan.class);
-                eanDataMap.put(eanData.getLgean11(), eanData);
+            for (int i = 0; i < discLength; i++) {
+                JSONObject row = arrDiscData.optJSONObject(i);
+                if (row == null || row.length() == 0) {
+                    continue;
+                }
+                DiscountArticle d = new Gson().fromJson(row.toString(), DiscountArticle.class);
+                if (d.getEan11() == null || d.getEan11().trim().isEmpty()) {
+                    continue;
+                }
+                discountDataMap.put(normalizeEanKey(d.getEan11()), d);
             }
 
-            for(int i=1; i < discLength; i++){
-                discData = new Gson().fromJson(arrDiscData.get(i).toString(), DiscountArticle.class);
-                discountDataMap.put(discData.getEan11(), discData);
+            if (!lastValidatedBarcode.isEmpty()) {
+                discData = discountDataMap.get(lastValidatedBarcode);
+            }
+            if (discData == null && !discountDataMap.isEmpty()) {
+                discData = discountDataMap.values().iterator().next();
             }
 
-            if(eanLength > 1 && discLength > 1){
+            if (discData != null) {
                 String startdate = Util.DateTime("yyyyMMdd", new Date());
                 String starttime = Util.DateTime("HHmmss", new Date());
 
@@ -288,6 +326,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 txt_prev_discount.setText(discData.getDisper1());
 
                 DiscountArticleScan articleScan = new DiscountArticleScan();
+                String eanKey = normalizeEanKey(discData.getEan11());
                 articleScan.setEan11(discData.getEan11());
                 articleScan.setErname(discData.getErname());
                 articleScan.setHhtuser(USER);
@@ -300,7 +339,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 articleScan.setStime(starttime);
                 articleScan.setDisper(discData.getDisper());
                 articleScan.setDisper1(discData.getDisper1());
-                discountArticleScanMap.put(discData.getEan11(), articleScan);
+                discountArticleScanMap.put(eanKey, articleScan);
             }
 
         }catch (Exception exce){

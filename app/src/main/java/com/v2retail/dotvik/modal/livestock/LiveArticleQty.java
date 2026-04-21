@@ -6,11 +6,11 @@ import java.io.Serializable;
 
 public class LiveArticleQty  implements Serializable {
 
-    @SerializedName("ARTICLE")
+    @SerializedName(value = "ARTICLE", alternate = {"MATERIAL"})
     private String article;
     @SerializedName("BARCODE")
     private String barcode;
-    @SerializedName("QUANTITY")
+    @SerializedName(value = "QUANTITY", alternate = {"SCAN_QTY", "QTY"})
     private String qty;
 
     public String getArticle() {

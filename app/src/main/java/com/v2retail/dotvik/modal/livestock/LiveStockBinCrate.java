@@ -17,6 +17,8 @@ public class LiveStockBinCrate  implements Serializable {
     private String stockTakeId;
     @SerializedName("HHT_ID")
     private String hhtId;
+    @SerializedName("TYP")
+    private String typ;
     private boolean picked;
 
     public static LiveStockBinCrate newInstance(LiveStockBinCrate source){
@@ -30,6 +32,7 @@ public class LiveStockBinCrate  implements Serializable {
         target.setCrate(source.getCrate());
         target.setStockTakeId(source.getStockTakeId());
         target.setHhtId(source.getHhtId());
+        target.setTyp(source.getTyp());
         target.setPicked(source.isPicked());
 
         return target;
@@ -90,5 +93,13 @@ public class LiveStockBinCrate  implements Serializable {
 
     public void setHhtId(String hhtId) {
         this.hhtId = hhtId;
+    }
+
+    public String getTyp() {
+        return typ;
+    }
+
+    public void setTyp(String typ) {
+        this.typ = typ;
     }
 }
