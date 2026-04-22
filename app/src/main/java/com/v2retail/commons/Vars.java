@@ -187,6 +187,13 @@ public class Vars {
     public static String ZHUB_HU_VALIDATION_RFC = "ZHUB_HU_VALIDATION_RFC";
     public static String ZDIS_HU_DC_HUB_PRO_RFC = "ZDIS_HU_DC_HUB_PRO_RFC";
 
+    // ── HUB: HU Stock Review at Hub ─────────────────────────────────────────
+    // RFC: ZWM_HU_STOCK_REV_RFC
+    // IV_WERKS — Plant | IV_HU — HU number | IV_LGTYP — Storage Type
+    // ES_RETURN — BAPIRET2 return structure
+    // Added: 2026-04-21 | DEV BRANCH ONLY
+    public static String ZWM_HU_STOCK_REV_RFC = "ZWM_HU_STOCK_REV_RFC";
+
     public static String ZWM_PTL_GET_ZONE = "ZWM_PTL_GET_ZONE";
     public static String ZWM_GET_MSA_SECTION_LIST = "ZWM_GET_MSA_SECTION_LIST";
     public static String ZGRT_PICK_GET_TO_LIST_PTL = "ZGRT_PICK_GET_TO_LIST_PTL";

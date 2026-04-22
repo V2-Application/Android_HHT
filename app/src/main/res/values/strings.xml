@@ -8,8 +8,6 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_login">Sign in</string>
     <string name="scanner_activity">Scan</string>
-
-    <!-- Strings related to login -->
     <string name="prompt_email">User</string>
     <string name="prompt_password">Password </string>
     <string name="action_sign_in">Login</string>
@@ -18,32 +16,19 @@
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
-    </string>
-
+    <string name="permission_rationale">"Contacts permissions are needed for providing email completions."</string>
     <string name="dev">8080 (Prod)</string>
     <string name="qa">7080 (QA) </string>
     <string name="prod">6080 (Dev)</string>
-
-
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <!--
-    <string name="version">Version : 2.5</string>
-    -->
     <string name="date">Date.</string>
-
     <array name="ipAddress">
-        <!-- V2 Cloud (PROD via Azure middleware) -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht (V2 Cloud)</item>
-        <!-- DEV and QA via Cloudflare proxy (supports v12 JSON format) -->
         <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
+        <item>https://v2-hht-api.azurewebsites.net/api/hht (V2 Cloud)</item>
         <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
-        <!-- Legacy (for old devices only — v12 JSON format incompatible) -->
-        <item>http://192.168.151.40:16080/xmwgw (Dev Tomcat Legacy)</item>
-        <item>http://192.168.151.40:17080/xmwgw (QA Tomcat Legacy)</item>
-        <item>http://192.168.144.200:9080/xmwgw (Prod Tomcat Legacy)</item>
+        <item>http://192.168.151.40:16080/xmwgw (Dev Legacy)</item>
+        <item>http://192.168.151.40:17080/xmwgw (QA Legacy)</item>
+        <item>http://192.168.144.200:9080/xmwgw (Prod Legacy)</item>
     </array>
     <array name="choose_store">
         <item>DC</item>
@@ -59,12 +44,10 @@
         <item>0005</item>
         <item>0006</item>
     </array>
-
     <array name="delivery_rejection_reason">
         <item>Select Reason</item>
         <item>RTO (Return to origin)</item>
         <item>Customer refused to accept</item>
         <item>Other</item>
     </array>
-
 </resources>
