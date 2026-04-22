@@ -9,7 +9,6 @@
     <string name="title_activity_login">Sign in</string>
     <string name="scanner_activity">Scan</string>
 
-    <!-- Strings related to login -->
     <string name="prompt_email">User</string>
     <string name="prompt_password">Password </string>
     <string name="action_sign_in">Login</string>
@@ -18,9 +17,7 @@
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
-    </string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email completions."</string>
 
     <string name="dev">8080 (Prod)</string>
     <string name="qa">7080 (QA) </string>
@@ -29,22 +26,31 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
 
-    <!-- ============================================================ -->
-    <!-- HHT-Dev BRANCH - Points to SAP DEV system 192.168.144.174   -->
-    <!-- User: BATCHUSER / Client: 210                                 -->
-    <!-- Route: Android -> Azure middleware (?env=dev) -> SAP DEV     -->
-    <!-- DO NOT MERGE to main until DEV testing is complete           -->
-    <!-- ============================================================ -->
     <array name="ipAddress">
-        <!-- PRIMARY: Azure middleware -> SAP DEV 192.168.144.174 / Client 210 / BATCHUSER -->
-        <item>https://v2-hht-api.azurewebsites.net/api/hht?env=dev (SAP DEV - Azure)</item>
-        <!-- SECONDARY: Cloudflare edge -> SAP DEV -->
-        <item>https://hht-api.v2retail.net/api/hht?env=dev (SAP DEV - Cloud)</item>
-        <!-- Legacy on-prem DEV - internal network only -->
-        <item>http://192.168.151.40:16080/xmwgw (HanaDev Legacy)</item>
-        <item>http://103.29.220.152:1080/hanadev (HanaDev Public)</item>
-        <item>http://192.168.151.40:17080/xmwgw (HanaQA Legacy)</item>
+        <!--
+            URL FORMAT RULE (IPActivity appends /ValueXMW after selection):
+            NEVER use URLs with query strings (?param=value) here.
+            Use path-based routing only — e.g. /dev, /qa, /xmwgw
+            Stored URL = selected_url + "/ValueXMW"
+            Login POST  → stored_url  (ValueXMW endpoint)
+            RFC calls   → base_url + /noacljsonrfcadaptor?bapiname=...
+        -->
+
+        <!-- DEV: Cloudflare proxy → Azure → SAP DEV 192.168.144.174 / Client 210 -->
+        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
+
+        <!-- PROD: Cloudflare proxy → Azure → SAP PRD -->
+        <item>https://hht-api.v2retail.net/prod (V2 Cloud)</item>
+
+        <!-- QA: Cloudflare proxy → Azure → SAP QA -->
+        <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
+
+        <!-- Legacy on-prem (internal network only) -->
+        <item>http://192.168.151.40:16080/xmwgw (Dev Tomcat Legacy)</item>
+        <item>http://192.168.151.40:17080/xmwgw (QA Tomcat Legacy)</item>
+        <item>http://192.168.144.200:9080/xmwgw (Prod Tomcat Legacy)</item>
     </array>
+
     <array name="choose_store">
         <item>DC</item>
         <item>Store</item>
