@@ -3,7 +3,7 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_title"> V2 Store [DEV]</string>
-    <string name="nav_header_subtitle">Variety \u0026 Value — SAP DEV 192.168.144.174</string>
+    <string name="nav_header_subtitle">SAP DEV 192.168.144.174 · Client 210</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_login">Sign in — SAP DEV (192.168.144.174)</string>
@@ -26,19 +26,21 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
 
-    <!-- DEV APK ONLY: SAP DEV (192.168.144.174 / Client 210 / BATCHUSER) endpoints.
-         All PROD and QA URLs removed to prevent accidental cross-environment access.
+    <!-- DEV APK — SINGLE URL POLICY (2026-04-22)
+         Only one URL is allowed: the Cloudflare proxy that has been end-to-end
+         verified to route DIRECTLY to SAP DEV 192.168.144.174 Client 210 via
+         sap-api.v2retail.net/api/rfc/proxy. Azure middleware is bypassed
+         entirely because its DEFAULTS are production (SAP_HOST=auto, CLIENT=600,
+         SYSID=PRD) and we cannot rely on env=dev parameter propagation.
 
-         Option 1 (PREFERRED — direct): Dev Legacy on-prem middleware
-             http://192.168.151.40:16080/xmwgw → SAP DEV 192.168.144.174 Client 210
-             Bypasses Azure entirely. Only works on V2 corporate network.
-
-         Option 2 (FALLBACK — via cloud): Dev Cloud through Cloudflare proxy
-             https://hht-api.v2retail.net/dev → CF worker forces env=dev → Azure → SAP DEV
-             Works from anywhere with internet. -->
+         Verified chain (2026-04-22 11:25 UTC):
+           hht-api.v2retail.net/dev/health →
+             { "env": "dev",
+               "backend": "sap-api.v2retail.net (direct SAP DEV, no Azure)",
+               "sap": { "host": "192.168.144.174", "client": "210" } }
+    -->
     <array name="ipAddress">
-        <item>http://192.168.151.40:16080/xmwgw (Dev Legacy — direct SAP DEV)</item>
-        <item>https://hht-api.v2retail.net/dev (Dev Cloud — proxy to SAP DEV)</item>
+        <item>https://hht-api.v2retail.net/dev (SAP DEV — 192.168.144.174)</item>
     </array>
 
     <array name="choose_store">
