@@ -2,7 +2,7 @@ name: Build V2 HHT APK
 
 on:
   push:
-    branches: [ main, HHT-Dev ]
+    branches: [ main, HHT-Dev, Android_HHT_Dev ]
   workflow_dispatch:
     inputs:
       branch:
@@ -30,30 +30,25 @@ jobs:
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > /tmp/V2Retail_keystore
-          ls -lh /tmp/V2Retail_keystore
+          echo "Keystore size: $(wc -c < /tmp/V2Retail_keystore) bytes"
+          file /tmp/V2Retail_keystore
 
-      - name: Build signed release APK
-        env:
-          KEYSTORE_PATH: /tmp/V2Retail_keystore
-          KEYSTORE_PASSWORD: V2Retail@456
-          KEY_ALIAS: v2retail
-          KEY_PASSWORD: V2Retail@456
+      - name: Build DEBUG APK (no signing required — for diagnosis)
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon
 
       - name: Collect APK
         run: |
           find app/build/outputs/apk -name '*.apk'
-          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          APK=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
           echo "APK: $APK"
-          echo "Size: $(du -sh $APK)"
           cp "$APK" V2_HHT_Azure_Release.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: V2-HHT-Azure-Release
+          name: V2-HHT-Azure-Debug
           path: V2_HHT_Azure_Release.apk
 
       - name: Get version name
@@ -61,7 +56,14 @@ jobs:
         run: |
           VER=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "version=$VER" >> $GITHUB_OUTPUT
-          echo "Version: $VER"
+
+      - name: Set release info (Android_HHT_Dev branch)
+        if: github.ref == 'refs/heads/Android_HHT_Dev'
+        run: |
+          echo "TAG=v${{ steps.version.outputs.version }}-build${{ github.run_number }}-ANDROID-DEV" >> $GITHUB_ENV
+          echo "RELEASE_NAME=[ANDROID-DEV] V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}" >> $GITHUB_ENV
+          echo "PRERELEASE=true" >> $GITHUB_ENV
+          echo "RELEASE_BODY=Branch: Android_HHT_Dev | V11-V01 HUB Inward DEV Build" >> $GITHUB_ENV
 
       - name: Set release info (main branch)
         if: github.ref == 'refs/heads/main'
@@ -69,7 +71,7 @@ jobs:
           echo "TAG=v${{ steps.version.outputs.version }}-build${{ github.run_number }}" >> $GITHUB_ENV
           echo "RELEASE_NAME=V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}" >> $GITHUB_ENV
           echo "PRERELEASE=false" >> $GITHUB_ENV
-          echo "RELEASE_BODY=Version: ${{ steps.version.outputs.version }}\nBuild: ${{ github.run_number }}\nCommit: ${{ github.sha }}\nBranch: main (Production)" >> $GITHUB_ENV
+          echo "RELEASE_BODY=Production build from main" >> $GITHUB_ENV
 
       - name: Set release info (HHT-Dev branch)
         if: github.ref == 'refs/heads/HHT-Dev'
@@ -77,7 +79,7 @@ jobs:
           echo "TAG=v${{ steps.version.outputs.version }}-build${{ github.run_number }}-DEV" >> $GITHUB_ENV
           echo "RELEASE_NAME=[DEV] V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}" >> $GITHUB_ENV
           echo "PRERELEASE=true" >> $GITHUB_ENV
-          echo "RELEASE_BODY=Version: ${{ steps.version.outputs.version }}\nBuild: ${{ github.run_number }}\nCommit: ${{ github.sha }}\nBranch: HHT-Dev (SAP DEV - 192.168.144.174 / Client 210 / BATCHUSER)\nEndpoint: https://v2-hht-api.azurewebsites.net/api/hht?env=dev\n\nDEV BUILD - For testing only. Do NOT deploy to production stores." >> $GITHUB_ENV
+          echo "RELEASE_BODY=HHT-Dev build" >> $GITHUB_ENV
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
