@@ -416,10 +416,11 @@ public class LoginActivity extends AppCompatActivity {
                         if (responsebody != null && responsebody.has("EX_WERKS")) {
                             String authWerks = responsebody.optString("EX_WERKS", "");
                             if (!authWerks.isEmpty()) {
-                                data.write("WERKS", authWerks);
+                                data.write("WERKS", authWerks.trim());
                             }
                         }
                     } catch (Exception e) { e.printStackTrace(); }
+                    Log.d(TAG, "Legacy authority check → EX_GROUP=[" + group + "]");
                     routeUser(group, data.read("WERKS"), data);
                 },
                 error -> {
@@ -534,13 +535,15 @@ public class LoginActivity extends AppCompatActivity {
                                             moveTaskToBack(true);
                                             String group = responsebody.getString("EX_GROUP");
                                             String werks = responsebody.getString("EX_WERKS");
+                                            // Diagnostic — shows exact EX_GROUP SAP returned (e.g. "HUB ")
+                                            Log.d(TAG, "LOGIN response → EX_GROUP=[" + group + "] EX_WERKS=[" + werks + "]");
                                             int radioButtonID = locGrp.getCheckedRadioButtonId();
                                             RadioButton radioButton = locGrp.findViewById(radioButtonID);
                                             String loc = (String) radioButton.getText();
                                             SharedPreferencesData data = new SharedPreferencesData(con);
                                             data.write("USER", mUserName.getText().toString().trim().toUpperCase());
                                             data.write("LOC",loc);
-                                            data.write("WERKS", werks);
+                                            data.write("WERKS", werks == null ? "" : werks.trim());
                                             data.write("USERNAME", mUserName.getText().toString().trim());
                                             data.write("PASSWORD", mPasswordView.getText().toString().trim());
                                             if(isDC_user(group)) {
@@ -656,26 +659,27 @@ public class LoginActivity extends AppCompatActivity {
     }
 
 
+    // DB03 FIX 2026-04-22: SAP pads CHAR fields with trailing spaces (e.g. EX_GROUP="HUB ")
+    // Without .trim() these checks fail → HUB users wrongly routed to Home_Activity,
+    // hiding V11-V01 and all other HUB features.
     boolean isDC_user(String group) {
-        boolean retVal = false;
-        if(group!=null && group.equalsIgnoreCase("DC")) {
+        if(group != null && group.trim().equalsIgnoreCase("DC")) {
             return true;
         }
-        return retVal;
+        return false;
     }
 
     boolean isEcomm_user(String myWerks) {
-        if(myWerks!=null && myWerks.equalsIgnoreCase("DH25")) {
+        if(myWerks != null && myWerks.trim().equalsIgnoreCase("DH25")) {
             return true;
         }
         return false;
     }
 
     boolean isHub_user(String hub) {
-        if(hub!=null && hub.equalsIgnoreCase("HUB")) {
+        if(hub != null && hub.trim().equalsIgnoreCase("HUB")) {
             return true;
         }
         return false;
     }
 }
-
