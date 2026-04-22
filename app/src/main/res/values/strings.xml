@@ -1,18 +1,18 @@
 <resources>
-    <string name="app_name">V2RetailOps</string>
+    <string name="app_name">V2RetailOps [DEV]</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title"> V2 Store</string>
-    <string name="nav_header_subtitle">Variety \u0026 Value</string>
+    <string name="nav_header_title"> V2 Store [DEV]</string>
+    <string name="nav_header_subtitle">Variety \u0026 Value — SAP DEV 192.168.144.174</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_login">Sign in</string>
+    <string name="title_activity_login">Sign in — SAP DEV (192.168.144.174)</string>
     <string name="scanner_activity">Scan</string>
 
     <string name="prompt_email">User</string>
     <string name="prompt_password">Password </string>
-    <string name="action_sign_in">Login</string>
-    <string name="action_sign_in_short">Login in</string>
+    <string name="action_sign_in">Login [DEV]</string>
+    <string name="action_sign_in_short">Login [DEV]</string>
     <string name="error_invalid_email">This user name is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
@@ -26,29 +26,19 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
 
+    <!-- DEV APK ONLY: SAP DEV (192.168.144.174 / Client 210 / BATCHUSER) endpoints.
+         All PROD and QA URLs removed to prevent accidental cross-environment access.
+
+         Option 1 (PREFERRED — direct): Dev Legacy on-prem middleware
+             http://192.168.151.40:16080/xmwgw → SAP DEV 192.168.144.174 Client 210
+             Bypasses Azure entirely. Only works on V2 corporate network.
+
+         Option 2 (FALLBACK — via cloud): Dev Cloud through Cloudflare proxy
+             https://hht-api.v2retail.net/dev → CF worker forces env=dev → Azure → SAP DEV
+             Works from anywhere with internet. -->
     <array name="ipAddress">
-        <!--
-            URL FORMAT RULE (IPActivity appends /ValueXMW after selection):
-            NEVER use URLs with query strings (?param=value) here.
-            Use path-based routing only — e.g. /dev, /qa, /xmwgw
-            Stored URL = selected_url + "/ValueXMW"
-            Login POST  → stored_url  (ValueXMW endpoint)
-            RFC calls   → base_url + /noacljsonrfcadaptor?bapiname=...
-        -->
-
-        <!-- DEV: Cloudflare proxy → Azure → SAP DEV 192.168.144.174 / Client 210 -->
-        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
-
-        <!-- PROD: Cloudflare proxy → Azure → SAP PRD -->
-        <item>https://hht-api.v2retail.net/prod (V2 Cloud)</item>
-
-        <!-- QA: Cloudflare proxy → Azure → SAP QA -->
-        <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
-
-        <!-- Legacy on-prem (internal network only) -->
-        <item>http://192.168.151.40:16080/xmwgw (Dev Tomcat Legacy)</item>
-        <item>http://192.168.151.40:17080/xmwgw (QA Tomcat Legacy)</item>
-        <item>http://192.168.144.200:9080/xmwgw (Prod Tomcat Legacy)</item>
+        <item>http://192.168.151.40:16080/xmwgw (Dev Legacy — direct SAP DEV)</item>
+        <item>https://hht-api.v2retail.net/dev (Dev Cloud — proxy to SAP DEV)</item>
     </array>
 
     <array name="choose_store">
