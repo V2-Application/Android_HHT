@@ -148,6 +148,10 @@ public class Vars {
     public static String ZWM_STORE_IROD_TRAN_VALIDATE = "ZWM_STORE_IROD_TRAN_VALIDATE";
     public static String ZWM_STORE_IROD_GANDOLA_TAG = "ZWM_STORE_IROD_GANDOLA_TAG";
     public static String ZWM_PRINT_HU_TVS = "ZWM_PRINT_HU_TVS";
+    /** RFC: swap old HU → new HU (FragmentHUSwapPrint). */
+    public static String ZWM_HUSWAP = "ZWM_HUSWAP";
+    /** Process key for TSPLPrinter HU-swap label layout. */
+    public static String HU_SWAP_PROCESS = "HU_SWAP";
 
     public static String ZWM_STK_IROD_GANDOLA_0001 = "ZWM_STK_IROD_GANDOLA_0001";
     public static String ZWM_STORE_GRT_FROM_DISP_AREA = "ZWM_STORE_GRT_FROM_DISP_AREA";
@@ -182,6 +186,13 @@ public class Vars {
 
     public static String ZHUB_HU_VALIDATION_RFC = "ZHUB_HU_VALIDATION_RFC";
     public static String ZDIS_HU_DC_HUB_PRO_RFC = "ZDIS_HU_DC_HUB_PRO_RFC";
+
+    // ── HUB: HU Stock Review at Hub ─────────────────────────────────────────
+    // RFC: ZWM_HU_STOCK_REV_RFC
+    // IV_WERKS — Plant | IV_HU — HU number | IV_LGTYP — Storage Type
+    // ES_RETURN — BAPIRET2 return structure
+    // Added: 2026-04-21 | DEV BRANCH ONLY
+    public static String ZWM_HU_STOCK_REV_RFC = "ZWM_HU_STOCK_REV_RFC";
 
     public static String ZWM_PTL_GET_ZONE = "ZWM_PTL_GET_ZONE";
     public static String ZWM_GET_MSA_SECTION_LIST = "ZWM_GET_MSA_SECTION_LIST";
@@ -259,8 +270,4 @@ public class Vars {
     public static String ZWM_GET_STOCK_TAKE_ID = "ZWM_GET_STOCK_TAKE_ID";
     public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN";
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
-
-    // HU Swap Print process
-    public static String ZWM_HUSWAP        = "ZWM_HUSWAP";
-    public static String HU_SWAP_PROCESS   = "HU_SWAP_PRINT";
 }
