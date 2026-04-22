@@ -1,0 +1,34 @@
+name: Force Reset Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to reset (e.g. HHT-Dev)'
+        required: true
+        default: 'HHT-Dev'
+      target_sha:
+        description: 'Target commit SHA to reset to'
+        required: true
+        default: '2f9efe988080c43611a87bb09dbb120c9126d7f3'
+
+permissions:
+  contents: write
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Force reset branch to target SHA
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Force-pushing ${{ github.event.inputs.target_sha }} to ${{ github.event.inputs.branch }}"
+          git push origin +${{ github.event.inputs.target_sha }}:refs/heads/${{ github.event.inputs.branch }}
+          echo "Done. Branch ${{ github.event.inputs.branch }} is now at ${{ github.event.inputs.target_sha }}"
