@@ -12,7 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -40,6 +39,9 @@ import com.v2retail.dotvik.hub.HubProcessSelectionActivity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,21 +49,25 @@ import org.json.JSONObject;
  * FragmentHUStockReviewV11 — V11-V01 HU Stock Review at Hub
  *
  * RFC: ZWM_HU_STOCK_REV_RFC
- *   IV_WERKS  — Plant (read from SharedPreferences, NOT from disabled EditText)
+ *   IV_WERKS  — Plant (read from SharedPreferences)
  *   IV_HU     — Handling Unit (scanned/typed)
- *   IV_LGTYP  — Storage Type (pre-set to "V11")
+ *   IV_LGTYP  — Storage Type (always "V11", read-only)
  *   ES_RETURN — BAPIRET2 {TYPE, MESSAGE}
  *
- * Branch: Android_HHT_Dev | Fixed: 2026-04-22
+ * HU QTY behaviour:
+ *   HU QTY is a SESSION COUNTER — increments by +1 every time SAP returns TYPE="S".
+ *   It does NOT reflect any SAP-returned quantity field. Duplicate HU scans within
+ *   the same session (same value scanned twice in a row) are ignored to avoid
+ *   accidental double-counts from scanner echo.
  */
-public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickListener {
+public class FragmentHUStockReviewV11 extends Fragment {
 
     private static final String TAG   = "FragmentHUStockRevV11";
     private static final String DEFAULT_LGTYP = "V11";
 
     View    rootView;
     String  URL   = "";
-    String  WERKS = "";   // always read from SharedPrefs — NEVER from disabled EditText
+    String  WERKS = "";
     String  USER  = "";
     Context con;
     AlertBox      box;
@@ -70,11 +76,17 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
 
     EditText txt_werks;
     EditText txt_hu;
+    EditText txt_scanned_hu;
     EditText txt_lgtyp;
+    EditText txt_qty;
     TextView txt_result_type;
     TextView txt_result_message;
-    Button   btn_submit;
-    Button   btn_clear;
+
+    // ─── Session-scoped QTY state ────────────────────────────────────────────
+    private int qtyCount = 0;                         // incremented on each TYPE="S"
+    private String lastHu = "";                       // last HU that was sent for SAP
+    private boolean inFlight = false;                 // guard against rapid double-scan
+    private final Set<String> scannedHUs = new HashSet<>(); // optional dedupe within session
 
     public FragmentHUStockReviewV11() {}
 
@@ -101,33 +113,28 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         con  = getContext();
         box  = new AlertBox(con);
 
-        // Load device settings
         SharedPreferencesData data = new SharedPreferencesData(con);
         URL   = data.read("URL");
         WERKS = data.read("WERKS");
         USER  = data.read("USER");
 
-        // Bind views
         txt_werks          = rootView.findViewById(R.id.txt_hub_v11_v01_werks);
         txt_hu             = rootView.findViewById(R.id.txt_hub_v11_v01_hu);
+        txt_scanned_hu     = rootView.findViewById(R.id.txt_hub_v11_v01_scanned_hu);
         txt_lgtyp          = rootView.findViewById(R.id.txt_hub_v11_v01_lgtyp);
+        txt_qty            = rootView.findViewById(R.id.txt_hub_v11_v01_qty);
         txt_result_type    = rootView.findViewById(R.id.txt_hub_v11_v01_result_type);
         txt_result_message = rootView.findViewById(R.id.txt_hub_v11_v01_result_message);
-        btn_submit         = rootView.findViewById(R.id.btn_hub_v11_v01_submit);
-        btn_clear          = rootView.findViewById(R.id.btn_hub_v11_v01_clear);
 
-        btn_submit.setOnClickListener(this);
-        btn_clear.setOnClickListener(this);
-
-        // Show plant (display only)
         txt_werks.setText(WERKS);
-
-        // Set Type default — done before clearScreen so clearScreen doesn't wipe WERKS display
         txt_lgtyp.setText(DEFAULT_LGTYP);
+        txt_scanned_hu.setText("");
+
+        // Initialize QTY counter (session starts at 0)
+        qtyCount = 0;
+        renderQty();
 
         addInputEvents();
-
-        // Reset result panel and focus HU (clearScreen keeps WERKS + lgtyp intact)
         resetResultPanel();
         txt_hu.setText("");
         txt_hu.requestFocus();
@@ -135,35 +142,22 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         return rootView;
     }
 
-    @Override
-    public void onClick(View view) {
-        int id = view.getId();
-        if (id == R.id.btn_hub_v11_v01_submit) {
-            submitV11();
-        } else if (id == R.id.btn_hub_v11_v01_clear) {
-            clearScreen();
-        }
-    }
-
     // ─── Input events ────────────────────────────────────────────────────────
 
     private void addInputEvents() {
-        // HU: scanner auto-submit (Type = V11 already set, no need to pause)
+        // Auto-submit when scanner pastes value; also submit on IME Done / Enter.
         txt_hu.addTextChangedListener(new TextWatcher() {
             boolean fromScanner = false;
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Scanner pastes all chars at once from empty field
                 fromScanner = (before == 0 && start == 0 && count > 3);
             }
             @Override
             public void afterTextChanged(Editable s) {
                 if (fromScanner && s.toString().trim().length() > 0) {
                     new Handler().postDelayed(new Runnable() {
-                        @Override public void run() {
-                            if (btn_submit != null) btn_submit.performClick();
-                        }
+                        @Override public void run() { submitV11(); }
                     }, 200);
                 }
             }
@@ -172,24 +166,11 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         txt_hu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_NEXT
-                        || actionId == EditorInfo.IME_ACTION_DONE) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_NEXT
+                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                     UIFuncs.hideKeyboard(getActivity());
-                    txt_lgtyp.requestFocus();
-                    txt_lgtyp.selectAll();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        // Type: Enter triggers submit
-        txt_lgtyp.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    btn_submit.performClick();
+                    submitV11();
                     return true;
                 }
                 return false;
@@ -200,35 +181,49 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
     // ─── Submit ───────────────────────────────────────────────────────────────
 
     private void submitV11() {
-        // Read HU from field
         String hu = UIFuncs.toUpperTrim(txt_hu);
+        String lgtyp = DEFAULT_LGTYP;
 
-        // Read Type from field (may have been changed by user); default V11
-        String lgtyp = UIFuncs.toUpperTrim(txt_lgtyp);
-        if (lgtyp.isEmpty()) lgtyp = DEFAULT_LGTYP;
-
-        // Validate
         if (hu.isEmpty()) {
             showError("Required", "Please scan or enter HU number");
             txt_hu.requestFocus();
             return;
         }
 
-        // Use WERKS from instance variable — not from disabled EditText
         if (WERKS == null || WERKS.isEmpty()) {
             showError("Config Error", "Plant (WERKS) not set on device. Please log in again.");
             return;
         }
+
+        // Guard: ignore if a request is already in flight (rapid double-trigger)
+        if (inFlight) {
+            Log.d(TAG, "submitV11 ignored — request already in flight");
+            return;
+        }
+
+        // Optional dedupe: same HU scanned twice in a row = scanner echo, skip
+        if (hu.equals(lastHu)) {
+            Log.d(TAG, "submitV11 ignored — duplicate of last HU (" + hu + ")");
+            txt_hu.setText("");
+            txt_hu.requestFocus();
+            return;
+        }
+
+        // Echo scanned value to the read-only Scanned HU field
+        txt_scanned_hu.setText(hu);
+        lastHu = hu;
+        inFlight = true;
 
         Log.d(TAG, "submitV11 → WERKS=" + WERKS + " HU=" + hu + " LGTYP=" + lgtyp);
 
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname",  Vars.ZWM_HU_STOCK_REV_RFC);
-            args.put("IV_WERKS",  WERKS);   // from SharedPrefs, always reliable
+            args.put("IV_WERKS",  WERKS);
             args.put("IV_HU",     hu);
             args.put("IV_LGTYP",  lgtyp);
         } catch (JSONException e) {
+            inFlight = false;
             e.printStackTrace();
             box.getErrBox(e);
             return;
@@ -251,6 +246,7 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                 try {
                     submitRequest(rfc, args);
                 } catch (Exception e) {
+                    inFlight = false;
                     dismissDialog();
                     box.getErrBox(e);
                 }
@@ -259,7 +255,6 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
     }
 
     private void submitRequest(final String rfc, final JSONObject args) {
-        // Match exact URL pattern used by FragmentHUGRC (working reference)
         String url = URL.substring(0, URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
@@ -275,6 +270,7 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                     @Override
                     public void onResponse(JSONObject response) {
                         dismissDialog();
+                        inFlight = false;
                         Log.d(TAG, "Response → " + response);
                         if (response == null) {
                             UIFuncs.errorSound(con);
@@ -282,6 +278,9 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                         } else {
                             handleResponse(response);
                         }
+                        // Reset HU input for next scan
+                        txt_hu.setText("");
+                        txt_hu.requestFocus();
                     }
                 },
                 new Response.ErrorListener() {
@@ -289,6 +288,7 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                     public void onErrorResponse(VolleyError error) {
                         Log.e(TAG, "Volley error → " + error);
                         dismissDialog();
+                        inFlight = false;
                         String msg;
                         if      (error instanceof TimeoutError
                               || error instanceof NoConnectionError) msg = "Communication Error!";
@@ -298,6 +298,8 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                         else if (error instanceof ParseError)        msg = "Parse Error!";
                         else                                          msg = error.toString();
                         new AlertBox(getContext()).getBox("Error", msg);
+                        txt_hu.setText("");
+                        txt_hu.requestFocus();
                     }
                 }
         ) {
@@ -329,24 +331,27 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                     && response.get("ES_RETURN") instanceof JSONObject) {
 
                 JSONObject ret = response.getJSONObject("ES_RETURN");
-                String type    = ret.optString("TYPE",    "");
+                String type    = ret.optString("TYPE",    "").trim();
                 String message = ret.optString("MESSAGE", "No message returned");
 
                 txt_result_type.setText("TYPE: " + type);
                 txt_result_message.setText(message);
 
-                if ("E".equals(type)) {
+                if ("E".equalsIgnoreCase(type)) {
                     UIFuncs.errorSound(con);
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
-                } else if ("S".equals(type)) {
+                } else if ("S".equalsIgnoreCase(type)) {
+                    // ✅ SUCCESS — increment QTY counter
+                    incrementQty();
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_green_dark));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 } else {
+                    // Unknown TYPE (W / I / empty) — treat as non-success, don't increment
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.black));
                     txt_result_message.setTextColor(
@@ -364,15 +369,25 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+    // ─── QTY counter ─────────────────────────────────────────────────────────
 
-    private void clearScreen() {
-        txt_hu.setText("");
-        txt_lgtyp.setText(DEFAULT_LGTYP);  // reset Type to V11
-        // Keep txt_werks as-is — it shows WERKS from SharedPrefs
-        resetResultPanel();
-        txt_hu.requestFocus();
+    private void incrementQty() {
+        qtyCount++;
+        Log.d(TAG, "QTY incremented → " + qtyCount);
+        // Track HU for visibility only (dedupe already handled at submit-time)
+        if (lastHu != null && !lastHu.isEmpty()) {
+            scannedHUs.add(lastHu);
+        }
+        renderQty();
     }
+
+    private void renderQty() {
+        if (txt_qty != null) {
+            txt_qty.setText(String.valueOf(qtyCount));
+        }
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private void resetResultPanel() {
         txt_result_type.setText("");
