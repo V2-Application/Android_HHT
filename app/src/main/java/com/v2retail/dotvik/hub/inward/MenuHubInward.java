@@ -29,8 +29,9 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
     AlertBox box;
 
     Button hu_grc;
-    Button hu_stock_review; // HU Stock Review — ZWM_HU_STOCK_REV_RFC | DEV 2026-04-21
-    Button hu_v11_v01;      // V11-V01         — ZWM_HU_STOCK_REV_RFC, Type=V11 | DEV 2026-04-22
+    Button hu_stock_review;  // HU Stock Review — ZWM_HU_STOCK_REV_RFC | DEV 2026-04-21
+    Button hu_v11_v01;       // V11-V01         — ZWM_HU_STOCK_REV_RFC, Type=V11 | DEV 2026-04-22
+    Button hu_picking;       // HUB HU Picking  — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
 
     private MenuHubInward.OnFragmentInteractionListener mListener;
 
@@ -54,10 +55,12 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
         hu_grc          = rootView.findViewById(R.id.hub_inward_hu_grc);
         hu_stock_review = rootView.findViewById(R.id.hub_inward_hu_stock_review);
         hu_v11_v01      = rootView.findViewById(R.id.hub_inward_v11_v01);
+        hu_picking      = rootView.findViewById(R.id.hub_inward_hu_picking);
 
         hu_grc.setOnClickListener(this);
         hu_stock_review.setOnClickListener(this);
         hu_v11_v01.setOnClickListener(this);
+        hu_picking.setOnClickListener(this);
 
         return rootView;
     }
@@ -117,6 +120,10 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
             case R.id.hub_inward_v11_v01:
                 // V11-V01 — ZWM_HU_STOCK_REV_RFC with Type pre-set to V11 | DEV 2026-04-22
                 fragment = new FragmentHUStockReviewV11();
+                break;
+            case R.id.hub_inward_hu_picking:
+                // HUB HU Picking — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
+                fragment = new FragmentHubHUPicking();
                 break;
         }
         if (fragment != null) {
