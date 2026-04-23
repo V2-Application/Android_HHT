@@ -6,14 +6,31 @@ android {
         applicationId "com.v2retail.dotvik"
         minSdkVersion 25
         targetSdkVersion 31
-        versionCode 1180
+        versionCode 1181
         versionName "12.108"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
         aaptOptions {
             cruncherEnabled = false
         }
+
+        // ─── Feature flags ────────────────────────────────────────────────
+        // Environment-driven visibility for V11-V01 (HU Stock Review at Hub).
+        //   ENABLE_V11_V01 : master flag; true = visible to all HUB users in
+        //                    both dev & prod builds. Set to false to hide
+        //                    from production unless DEV host override kicks in.
+        //   SAP_DEV_HOST   : when the device's configured URL contains this
+        //                    string, V11-V01 is always shown regardless of
+        //                    ENABLE_V11_V01 (dev-machine override).
+        buildConfigField "boolean", "ENABLE_V11_V01", "true"
+        buildConfigField "String",  "SAP_DEV_HOST",  "\"192.168.144.174\""
     }
+
+    // AGP 8.x requires explicit opt-in for BuildConfig generation
+    buildFeatures {
+        buildConfig = true
+    }
+
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
             def versionName = variant.versionName.replace('.', '_')
