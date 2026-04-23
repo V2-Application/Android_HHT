@@ -118,11 +118,11 @@
             android:textColor="#555"
             android:layout_marginBottom="12dp"/>
 
-        <!-- QTY — read-only, auto-populated from SAP response after scan -->
+        <!-- HU QTY — read-only session counter; +1 per successful scan -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="QTY"
+            android:text="HU QTY"
             android:textStyle="bold"
             android:textColor="#333"
             android:textSize="13sp"
