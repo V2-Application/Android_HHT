@@ -24,7 +24,7 @@
             android:gravity="center"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Plant (read-only, auto-filled) -->
+        <!-- Plant (read-only, auto-filled from SharedPrefs) -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,6 +39,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
             android:background="#e0e0e0"
             android:padding="10dp"
             android:textSize="14sp"
@@ -46,7 +48,7 @@
             android:layout_marginBottom="12dp"
             android:hint="Auto-filled from device"/>
 
-        <!-- HU Number -->
+        <!-- HU Number — active scan input -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,13 +64,37 @@
             android:layout_height="wrap_content"
             android:hint="Scan or enter HU number"
             android:inputType="textCapCharacters|textNoSuggestions"
-            android:imeOptions="actionNext"
+            android:imeOptions="actionDone"
             android:background="@android:drawable/edit_text"
             android:padding="8dp"
             android:textSize="14sp"
             android:layout_marginBottom="12dp"/>
 
-        <!-- Type — pre-set to V11 (IV_LGTYP) -->
+        <!-- Scanned HU (read-only echo — fills in after HU is scanned/entered) -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scanned HU"
+            android:textStyle="bold"
+            android:textColor="#333"
+            android:textSize="13sp"
+            android:layout_marginBottom="2dp"/>
+
+        <EditText
+            android:id="@+id/txt_hub_v11_v01_scanned_hu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:background="#e0e0e0"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#555"
+            android:layout_marginBottom="12dp"
+            android:hint="—"/>
+
+        <!-- Type — read-only, pre-set to V11 (IV_LGTYP), greyed out like Plant -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -83,35 +109,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="V11"
-            android:inputType="textCapCharacters|textNoSuggestions"
-            android:imeOptions="actionDone"
-            android:background="@android:drawable/edit_text"
-            android:padding="8dp"
+            android:enabled="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:background="#e0e0e0"
+            android:padding="10dp"
             android:textSize="14sp"
+            android:textColor="#555"
             android:layout_marginBottom="20dp"/>
 
-        <!-- Submit Button -->
-        <Button
-            android:id="@+id/btn_hub_v11_v01_submit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Submit"
-            android:background="#e71821"
-            android:textColor="#ffffff"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
-
-        <Button
-            android:id="@+id/btn_hub_v11_v01_clear"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="CLEAR"
-            android:background="#757575"
-            android:textColor="#ffffff"
-            android:textStyle="bold"
-            android:layout_marginBottom="20dp"/>
-
-        <!-- Result Panel -->
+        <!-- Result Panel — shown after auto-submit returns -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
