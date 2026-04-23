@@ -285,8 +285,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_crate);
                     if (!value.isEmpty()) {
+                        // Accept crate (whether auto-expected or manually entered)
+                        // → move cursor to Art. No.
                         txt_cur_crate.setText(value);
                         UIFuncs.enableInput(con, txt_scan_article);
+                        txt_scan_article.requestFocus();
+                        Log.d(TAG, "Crate entered (editor action): " + value + " → focus Art.No.");
                         return true;
                     }
                 }
@@ -314,8 +318,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
+                    // Accept scanned crate (whether auto-expected or manually entered)
+                    // → move cursor to Art. No.
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
+                    txt_scan_article.requestFocus();
+                    Log.d(TAG, "Crate scanned: " + value + " → focus Art.No.");
                 }
             }
         });
@@ -400,6 +408,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.enableInput(con, txt_scan_binno);
+        // Initial focus is on BIN (Step 1)
+        txt_scan_binno.requestFocus();
     }
 
     private void getStockIDs(){
@@ -528,6 +538,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("Invalid Bin", "Invalid BIN, please check below table for allowed BINs");
             txt_scan_binno.requestFocus();
         }else{
+            Log.d(TAG, "BIN " + binno + " found. withCarate=" + withCarate);
             //Here we can check for with crate and without crate logic if needed
             setLastScanedItem(withCarate);
         }
@@ -589,6 +600,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     }
 
     private void setLastScanedItem(boolean withCarate){
+        // Reset all scan inputs before applying cursor-movement logic
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_binno);
@@ -602,10 +614,22 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_scan_article.setText("");
         txt_scan_sqty.setText("0");
 
-        if(!withCarate){
-            UIFuncs.enableInput(con, txt_scan_article);
-        }else{
+        // ─── Cursor movement logic after BIN scan ────────────────────────────
+        if(withCarate){
+            // ✅ Crate IS in list for this BIN → auto-focus Crate field.
+            // Article stays disabled until Crate is scanned.
             UIFuncs.enableInput(con, txt_scan_crate);
+            txt_scan_crate.requestFocus();
+            Log.d(TAG, "BIN has crate → cursor → Crate field");
+        }else{
+            // ❌ Crate NOT in list → auto-focus Art. No. directly.
+            // Also keep Crate enabled so user can manually enter a crate if needed
+            // (Step 3: Manual Crate Handling). Scanning a crate will then move
+            // cursor to Art. No. via the crate handlers.
+            UIFuncs.enableInput(con, txt_scan_crate);
+            UIFuncs.enableInput(con, txt_scan_article);
+            txt_scan_article.requestFocus();
+            Log.d(TAG, "BIN has no crate → cursor → Art.No. (Crate still available for manual entry)");
         }
 
         populateTableData();
@@ -766,6 +790,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.enableInput(con, txt_scan_binno);
+        // Back to Step 1 — focus BIN for next scan cycle
+        txt_scan_binno.requestFocus();
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
