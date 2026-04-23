@@ -39,7 +39,9 @@ import com.v2retail.dotvik.hub.HubProcessSelectionActivity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
-import org.json.JSONArray;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -51,13 +53,12 @@ import org.json.JSONObject;
  *   IV_HU     — Handling Unit (scanned/typed)
  *   IV_LGTYP  — Storage Type (always "V11", read-only)
  *   ES_RETURN — BAPIRET2 {TYPE, MESSAGE}
- *   QTY       — populated from one of the known SAP qty output fields
  *
- * UI Changes 2026-04-23:
- *  - Removed Submit + Clear buttons (auto-submits on scan/Enter)
- *  - Added "Scanned HU" read-only echo field below HU input
- *  - Type field read-only, fixed at "V11"
- *  - Added QTY read-only field, auto-populated from SAP response
+ * QTY behaviour (2026-04-23):
+ *   QTY is a SESSION COUNTER — increments by +1 every time SAP returns TYPE="S".
+ *   It does NOT reflect any SAP-returned quantity field. Duplicate HU scans within
+ *   the same session (same value scanned twice in a row) are ignored to avoid
+ *   accidental double-counts from scanner echo.
  */
 public class FragmentHUStockReviewV11 extends Fragment {
 
@@ -80,6 +81,12 @@ public class FragmentHUStockReviewV11 extends Fragment {
     EditText txt_qty;
     TextView txt_result_type;
     TextView txt_result_message;
+
+    // ─── Session-scoped QTY state ────────────────────────────────────────────
+    private int qtyCount = 0;                         // incremented on each TYPE="S"
+    private String lastHu = "";                       // last HU that was sent for SAP
+    private boolean inFlight = false;                 // guard against rapid double-scan
+    private final Set<String> scannedHUs = new HashSet<>(); // optional dedupe within session
 
     public FragmentHUStockReviewV11() {}
 
@@ -122,7 +129,10 @@ public class FragmentHUStockReviewV11 extends Fragment {
         txt_werks.setText(WERKS);
         txt_lgtyp.setText(DEFAULT_LGTYP);
         txt_scanned_hu.setText("");
-        txt_qty.setText("");
+
+        // Initialize QTY counter (session starts at 0)
+        qtyCount = 0;
+        renderQty();
 
         addInputEvents();
         resetResultPanel();
@@ -172,7 +182,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
 
     private void submitV11() {
         String hu = UIFuncs.toUpperTrim(txt_hu);
-        String lgtyp = DEFAULT_LGTYP; // always V11 — field is read-only
+        String lgtyp = DEFAULT_LGTYP;
 
         if (hu.isEmpty()) {
             showError("Required", "Please scan or enter HU number");
@@ -185,9 +195,24 @@ public class FragmentHUStockReviewV11 extends Fragment {
             return;
         }
 
-        // Echo scanned value to the read-only Scanned HU field; clear QTY until response
+        // Guard: ignore if a request is already in flight (rapid double-trigger)
+        if (inFlight) {
+            Log.d(TAG, "submitV11 ignored — request already in flight");
+            return;
+        }
+
+        // Optional dedupe: same HU scanned twice in a row = scanner echo, skip
+        if (hu.equals(lastHu)) {
+            Log.d(TAG, "submitV11 ignored — duplicate of last HU (" + hu + ")");
+            txt_hu.setText("");
+            txt_hu.requestFocus();
+            return;
+        }
+
+        // Echo scanned value to the read-only Scanned HU field
         txt_scanned_hu.setText(hu);
-        txt_qty.setText("");
+        lastHu = hu;
+        inFlight = true;
 
         Log.d(TAG, "submitV11 → WERKS=" + WERKS + " HU=" + hu + " LGTYP=" + lgtyp);
 
@@ -198,6 +223,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
             args.put("IV_HU",     hu);
             args.put("IV_LGTYP",  lgtyp);
         } catch (JSONException e) {
+            inFlight = false;
             e.printStackTrace();
             box.getErrBox(e);
             return;
@@ -220,6 +246,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
                 try {
                     submitRequest(rfc, args);
                 } catch (Exception e) {
+                    inFlight = false;
                     dismissDialog();
                     box.getErrBox(e);
                 }
@@ -243,6 +270,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
                     @Override
                     public void onResponse(JSONObject response) {
                         dismissDialog();
+                        inFlight = false;
                         Log.d(TAG, "Response → " + response);
                         if (response == null) {
                             UIFuncs.errorSound(con);
@@ -250,7 +278,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
                         } else {
                             handleResponse(response);
                         }
-                        // After a response, clear HU input so user can scan next one
+                        // Reset HU input for next scan
                         txt_hu.setText("");
                         txt_hu.requestFocus();
                     }
@@ -260,6 +288,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
                     public void onErrorResponse(VolleyError error) {
                         Log.e(TAG, "Volley error → " + error);
                         dismissDialog();
+                        inFlight = false;
                         String msg;
                         if      (error instanceof TimeoutError
                               || error instanceof NoConnectionError) msg = "Communication Error!";
@@ -298,32 +327,31 @@ public class FragmentHUStockReviewV11 extends Fragment {
             txt_result_type.setVisibility(View.VISIBLE);
             txt_result_message.setVisibility(View.VISIBLE);
 
-            // Populate QTY from whichever field the RFC returns
-            String qty = extractQty(response);
-            txt_qty.setText(qty == null ? "" : qty);
-
             if (response.has("ES_RETURN")
                     && response.get("ES_RETURN") instanceof JSONObject) {
 
                 JSONObject ret = response.getJSONObject("ES_RETURN");
-                String type    = ret.optString("TYPE",    "");
+                String type    = ret.optString("TYPE",    "").trim();
                 String message = ret.optString("MESSAGE", "No message returned");
 
                 txt_result_type.setText("TYPE: " + type);
                 txt_result_message.setText(message);
 
-                if ("E".equals(type)) {
+                if ("E".equalsIgnoreCase(type)) {
                     UIFuncs.errorSound(con);
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
-                } else if ("S".equals(type)) {
+                } else if ("S".equalsIgnoreCase(type)) {
+                    // ✅ SUCCESS — increment QTY counter
+                    incrementQty();
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_green_dark));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 } else {
+                    // Unknown TYPE (W / I / empty) — treat as non-success, don't increment
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.black));
                     txt_result_message.setTextColor(
@@ -341,87 +369,22 @@ public class FragmentHUStockReviewV11 extends Fragment {
         }
     }
 
-    /**
-     * Extract quantity from SAP response.
-     *
-     * The ZWM_HU_STOCK_REV_RFC may return quantity in several possible shapes.
-     * Checks in order:
-     *   1. Top-level scalar fields: EV_QTY, EV_QUANTITY, QTY, QUANTITY, EV_VSOLM, EV_MENGE
-     *   2. ES_STOCK / ES_HU_DATA nested object with QTY / VSOLM / MENGE
-     *   3. ET_STOCK / ET_ITEMS array — sum of VSOLM/QTY across all rows
-     */
-    private String extractQty(JSONObject response) {
-        // 1. Top-level scalar fields (in order of preference)
-        String[] scalarKeys = {
-                "EV_QTY", "EV_QUANTITY", "QTY", "QUANTITY",
-                "EV_VSOLM", "EV_MENGE", "VSOLM", "MENGE"
-        };
-        for (String key : scalarKeys) {
-            if (response.has(key)) {
-                String v = response.optString(key, "").trim();
-                if (!v.isEmpty() && !"0".equals(v) && !"0.000".equals(v)) {
-                    return v;
-                }
-                // If present but zero, still return it rather than fall through
-                if (!v.isEmpty()) return v;
-            }
-        }
+    // ─── QTY counter ─────────────────────────────────────────────────────────
 
-        // 2. Nested single-object responses
-        String[] nestedKeys = { "ES_STOCK", "ES_HU_DATA", "ES_HU", "ES_DATA" };
-        for (String nk : nestedKeys) {
-            if (response.has(nk)) {
-                try {
-                    Object o = response.get(nk);
-                    if (o instanceof JSONObject) {
-                        JSONObject inner = (JSONObject) o;
-                        for (String key : scalarKeys) {
-                            if (inner.has(key)) {
-                                String v = inner.optString(key, "").trim();
-                                if (!v.isEmpty()) return v;
-                            }
-                        }
-                    }
-                } catch (JSONException ignored) {}
-            }
+    private void incrementQty() {
+        qtyCount++;
+        Log.d(TAG, "QTY incremented → " + qtyCount);
+        // Track HU for visibility only (dedupe already handled at submit-time)
+        if (lastHu != null && !lastHu.isEmpty()) {
+            scannedHUs.add(lastHu);
         }
+        renderQty();
+    }
 
-        // 3. Array responses — sum the quantities
-        String[] arrayKeys = { "ET_STOCK", "ET_ITEMS", "ET_HU_ITEMS", "ET_DATA" };
-        for (String ak : arrayKeys) {
-            if (response.has(ak)) {
-                try {
-                    Object o = response.get(ak);
-                    if (o instanceof JSONArray) {
-                        JSONArray arr = (JSONArray) o;
-                        double total = 0;
-                        boolean found = false;
-                        for (int i = 0; i < arr.length(); i++) {
-                            JSONObject row = arr.optJSONObject(i);
-                            if (row == null) continue;
-                            for (String key : scalarKeys) {
-                                if (row.has(key)) {
-                                    try {
-                                        total += Double.parseDouble(row.optString(key, "0"));
-                                        found = true;
-                                        break;
-                                    } catch (NumberFormatException ignored) {}
-                                }
-                            }
-                        }
-                        if (found) {
-                            // Trim trailing zeros for cleaner display
-                            if (total == Math.floor(total)) {
-                                return String.valueOf((long) total);
-                            }
-                            return String.valueOf(total);
-                        }
-                    }
-                } catch (JSONException ignored) {}
-            }
+    private void renderQty() {
+        if (txt_qty != null) {
+            txt_qty.setText(String.valueOf(qtyCount));
         }
-
-        return null;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
