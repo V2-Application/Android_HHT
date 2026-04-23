@@ -42,5 +42,15 @@
             android:background="#e71821"
             android:text="V11-V01" />
 
+        <!-- HUB HU Picking — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23 -->
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/hub_inward_hu_picking"
+            android:background="#e71821"
+            android:text="HUB HU Picking" />
+
     </LinearLayout>
 </FrameLayout>
