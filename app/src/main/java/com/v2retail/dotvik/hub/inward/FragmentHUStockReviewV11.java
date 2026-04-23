@@ -39,6 +39,7 @@ import com.v2retail.dotvik.hub.HubProcessSelectionActivity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -50,11 +51,13 @@ import org.json.JSONObject;
  *   IV_HU     — Handling Unit (scanned/typed)
  *   IV_LGTYP  — Storage Type (always "V11", read-only)
  *   ES_RETURN — BAPIRET2 {TYPE, MESSAGE}
+ *   QTY       — populated from one of the known SAP qty output fields
  *
  * UI Changes 2026-04-23:
  *  - Removed Submit + Clear buttons (auto-submits on scan/Enter)
  *  - Added "Scanned HU" read-only echo field below HU input
- *  - Type field is read-only (greyed out) — fixed at "V11"
+ *  - Type field read-only, fixed at "V11"
+ *  - Added QTY read-only field, auto-populated from SAP response
  */
 public class FragmentHUStockReviewV11 extends Fragment {
 
@@ -74,6 +77,7 @@ public class FragmentHUStockReviewV11 extends Fragment {
     EditText txt_hu;
     EditText txt_scanned_hu;
     EditText txt_lgtyp;
+    EditText txt_qty;
     TextView txt_result_type;
     TextView txt_result_message;
 
@@ -111,12 +115,14 @@ public class FragmentHUStockReviewV11 extends Fragment {
         txt_hu             = rootView.findViewById(R.id.txt_hub_v11_v01_hu);
         txt_scanned_hu     = rootView.findViewById(R.id.txt_hub_v11_v01_scanned_hu);
         txt_lgtyp          = rootView.findViewById(R.id.txt_hub_v11_v01_lgtyp);
+        txt_qty            = rootView.findViewById(R.id.txt_hub_v11_v01_qty);
         txt_result_type    = rootView.findViewById(R.id.txt_hub_v11_v01_result_type);
         txt_result_message = rootView.findViewById(R.id.txt_hub_v11_v01_result_message);
 
         txt_werks.setText(WERKS);
         txt_lgtyp.setText(DEFAULT_LGTYP);
         txt_scanned_hu.setText("");
+        txt_qty.setText("");
 
         addInputEvents();
         resetResultPanel();
@@ -179,8 +185,9 @@ public class FragmentHUStockReviewV11 extends Fragment {
             return;
         }
 
-        // Echo scanned value to the read-only Scanned HU field
+        // Echo scanned value to the read-only Scanned HU field; clear QTY until response
         txt_scanned_hu.setText(hu);
+        txt_qty.setText("");
 
         Log.d(TAG, "submitV11 → WERKS=" + WERKS + " HU=" + hu + " LGTYP=" + lgtyp);
 
@@ -291,6 +298,10 @@ public class FragmentHUStockReviewV11 extends Fragment {
             txt_result_type.setVisibility(View.VISIBLE);
             txt_result_message.setVisibility(View.VISIBLE);
 
+            // Populate QTY from whichever field the RFC returns
+            String qty = extractQty(response);
+            txt_qty.setText(qty == null ? "" : qty);
+
             if (response.has("ES_RETURN")
                     && response.get("ES_RETURN") instanceof JSONObject) {
 
@@ -328,6 +339,89 @@ public class FragmentHUStockReviewV11 extends Fragment {
             e.printStackTrace();
             box.getErrBox(e);
         }
+    }
+
+    /**
+     * Extract quantity from SAP response.
+     *
+     * The ZWM_HU_STOCK_REV_RFC may return quantity in several possible shapes.
+     * Checks in order:
+     *   1. Top-level scalar fields: EV_QTY, EV_QUANTITY, QTY, QUANTITY, EV_VSOLM, EV_MENGE
+     *   2. ES_STOCK / ES_HU_DATA nested object with QTY / VSOLM / MENGE
+     *   3. ET_STOCK / ET_ITEMS array — sum of VSOLM/QTY across all rows
+     */
+    private String extractQty(JSONObject response) {
+        // 1. Top-level scalar fields (in order of preference)
+        String[] scalarKeys = {
+                "EV_QTY", "EV_QUANTITY", "QTY", "QUANTITY",
+                "EV_VSOLM", "EV_MENGE", "VSOLM", "MENGE"
+        };
+        for (String key : scalarKeys) {
+            if (response.has(key)) {
+                String v = response.optString(key, "").trim();
+                if (!v.isEmpty() && !"0".equals(v) && !"0.000".equals(v)) {
+                    return v;
+                }
+                // If present but zero, still return it rather than fall through
+                if (!v.isEmpty()) return v;
+            }
+        }
+
+        // 2. Nested single-object responses
+        String[] nestedKeys = { "ES_STOCK", "ES_HU_DATA", "ES_HU", "ES_DATA" };
+        for (String nk : nestedKeys) {
+            if (response.has(nk)) {
+                try {
+                    Object o = response.get(nk);
+                    if (o instanceof JSONObject) {
+                        JSONObject inner = (JSONObject) o;
+                        for (String key : scalarKeys) {
+                            if (inner.has(key)) {
+                                String v = inner.optString(key, "").trim();
+                                if (!v.isEmpty()) return v;
+                            }
+                        }
+                    }
+                } catch (JSONException ignored) {}
+            }
+        }
+
+        // 3. Array responses — sum the quantities
+        String[] arrayKeys = { "ET_STOCK", "ET_ITEMS", "ET_HU_ITEMS", "ET_DATA" };
+        for (String ak : arrayKeys) {
+            if (response.has(ak)) {
+                try {
+                    Object o = response.get(ak);
+                    if (o instanceof JSONArray) {
+                        JSONArray arr = (JSONArray) o;
+                        double total = 0;
+                        boolean found = false;
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject row = arr.optJSONObject(i);
+                            if (row == null) continue;
+                            for (String key : scalarKeys) {
+                                if (row.has(key)) {
+                                    try {
+                                        total += Double.parseDouble(row.optString(key, "0"));
+                                        found = true;
+                                        break;
+                                    } catch (NumberFormatException ignored) {}
+                                }
+                            }
+                        }
+                        if (found) {
+                            // Trim trailing zeros for cleaner display
+                            if (total == Math.floor(total)) {
+                                return String.valueOf((long) total);
+                            }
+                            return String.valueOf(total);
+                        }
+                    }
+                } catch (JSONException ignored) {}
+            }
+        }
+
+        return null;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
