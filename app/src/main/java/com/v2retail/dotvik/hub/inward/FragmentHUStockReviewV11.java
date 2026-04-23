@@ -12,7 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -47,21 +46,24 @@ import org.json.JSONObject;
  * FragmentHUStockReviewV11 — V11-V01 HU Stock Review at Hub
  *
  * RFC: ZWM_HU_STOCK_REV_RFC
- *   IV_WERKS  — Plant (read from SharedPreferences, NOT from disabled EditText)
+ *   IV_WERKS  — Plant (read from SharedPreferences)
  *   IV_HU     — Handling Unit (scanned/typed)
- *   IV_LGTYP  — Storage Type (pre-set to "V11")
+ *   IV_LGTYP  — Storage Type (always "V11", read-only)
  *   ES_RETURN — BAPIRET2 {TYPE, MESSAGE}
  *
- * Branch: Android_HHT_Dev | Fixed: 2026-04-22
+ * UI Changes 2026-04-23:
+ *  - Removed Submit + Clear buttons (auto-submits on scan/Enter)
+ *  - Added "Scanned HU" read-only echo field below HU input
+ *  - Type field is read-only (greyed out) — fixed at "V11"
  */
-public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickListener {
+public class FragmentHUStockReviewV11 extends Fragment {
 
     private static final String TAG   = "FragmentHUStockRevV11";
     private static final String DEFAULT_LGTYP = "V11";
 
     View    rootView;
     String  URL   = "";
-    String  WERKS = "";   // always read from SharedPrefs — NEVER from disabled EditText
+    String  WERKS = "";
     String  USER  = "";
     Context con;
     AlertBox      box;
@@ -70,11 +72,10 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
 
     EditText txt_werks;
     EditText txt_hu;
+    EditText txt_scanned_hu;
     EditText txt_lgtyp;
     TextView txt_result_type;
     TextView txt_result_message;
-    Button   btn_submit;
-    Button   btn_clear;
 
     public FragmentHUStockReviewV11() {}
 
@@ -101,33 +102,23 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         con  = getContext();
         box  = new AlertBox(con);
 
-        // Load device settings
         SharedPreferencesData data = new SharedPreferencesData(con);
         URL   = data.read("URL");
         WERKS = data.read("WERKS");
         USER  = data.read("USER");
 
-        // Bind views
         txt_werks          = rootView.findViewById(R.id.txt_hub_v11_v01_werks);
         txt_hu             = rootView.findViewById(R.id.txt_hub_v11_v01_hu);
+        txt_scanned_hu     = rootView.findViewById(R.id.txt_hub_v11_v01_scanned_hu);
         txt_lgtyp          = rootView.findViewById(R.id.txt_hub_v11_v01_lgtyp);
         txt_result_type    = rootView.findViewById(R.id.txt_hub_v11_v01_result_type);
         txt_result_message = rootView.findViewById(R.id.txt_hub_v11_v01_result_message);
-        btn_submit         = rootView.findViewById(R.id.btn_hub_v11_v01_submit);
-        btn_clear          = rootView.findViewById(R.id.btn_hub_v11_v01_clear);
 
-        btn_submit.setOnClickListener(this);
-        btn_clear.setOnClickListener(this);
-
-        // Show plant (display only)
         txt_werks.setText(WERKS);
-
-        // Set Type default — done before clearScreen so clearScreen doesn't wipe WERKS display
         txt_lgtyp.setText(DEFAULT_LGTYP);
+        txt_scanned_hu.setText("");
 
         addInputEvents();
-
-        // Reset result panel and focus HU (clearScreen keeps WERKS + lgtyp intact)
         resetResultPanel();
         txt_hu.setText("");
         txt_hu.requestFocus();
@@ -135,35 +126,22 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         return rootView;
     }
 
-    @Override
-    public void onClick(View view) {
-        int id = view.getId();
-        if (id == R.id.btn_hub_v11_v01_submit) {
-            submitV11();
-        } else if (id == R.id.btn_hub_v11_v01_clear) {
-            clearScreen();
-        }
-    }
-
     // ─── Input events ────────────────────────────────────────────────────────
 
     private void addInputEvents() {
-        // HU: scanner auto-submit (Type = V11 already set, no need to pause)
+        // Auto-submit when scanner pastes value; also submit on IME Done / Enter.
         txt_hu.addTextChangedListener(new TextWatcher() {
             boolean fromScanner = false;
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Scanner pastes all chars at once from empty field
                 fromScanner = (before == 0 && start == 0 && count > 3);
             }
             @Override
             public void afterTextChanged(Editable s) {
                 if (fromScanner && s.toString().trim().length() > 0) {
                     new Handler().postDelayed(new Runnable() {
-                        @Override public void run() {
-                            if (btn_submit != null) btn_submit.performClick();
-                        }
+                        @Override public void run() { submitV11(); }
                     }, 200);
                 }
             }
@@ -172,24 +150,11 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
         txt_hu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_NEXT
-                        || actionId == EditorInfo.IME_ACTION_DONE) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_NEXT
+                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                     UIFuncs.hideKeyboard(getActivity());
-                    txt_lgtyp.requestFocus();
-                    txt_lgtyp.selectAll();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        // Type: Enter triggers submit
-        txt_lgtyp.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    btn_submit.performClick();
+                    submitV11();
                     return true;
                 }
                 return false;
@@ -200,32 +165,29 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
     // ─── Submit ───────────────────────────────────────────────────────────────
 
     private void submitV11() {
-        // Read HU from field
         String hu = UIFuncs.toUpperTrim(txt_hu);
+        String lgtyp = DEFAULT_LGTYP; // always V11 — field is read-only
 
-        // Read Type from field (may have been changed by user); default V11
-        String lgtyp = UIFuncs.toUpperTrim(txt_lgtyp);
-        if (lgtyp.isEmpty()) lgtyp = DEFAULT_LGTYP;
-
-        // Validate
         if (hu.isEmpty()) {
             showError("Required", "Please scan or enter HU number");
             txt_hu.requestFocus();
             return;
         }
 
-        // Use WERKS from instance variable — not from disabled EditText
         if (WERKS == null || WERKS.isEmpty()) {
             showError("Config Error", "Plant (WERKS) not set on device. Please log in again.");
             return;
         }
+
+        // Echo scanned value to the read-only Scanned HU field
+        txt_scanned_hu.setText(hu);
 
         Log.d(TAG, "submitV11 → WERKS=" + WERKS + " HU=" + hu + " LGTYP=" + lgtyp);
 
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname",  Vars.ZWM_HU_STOCK_REV_RFC);
-            args.put("IV_WERKS",  WERKS);   // from SharedPrefs, always reliable
+            args.put("IV_WERKS",  WERKS);
             args.put("IV_HU",     hu);
             args.put("IV_LGTYP",  lgtyp);
         } catch (JSONException e) {
@@ -259,7 +221,6 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
     }
 
     private void submitRequest(final String rfc, final JSONObject args) {
-        // Match exact URL pattern used by FragmentHUGRC (working reference)
         String url = URL.substring(0, URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
@@ -282,6 +243,9 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                         } else {
                             handleResponse(response);
                         }
+                        // After a response, clear HU input so user can scan next one
+                        txt_hu.setText("");
+                        txt_hu.requestFocus();
                     }
                 },
                 new Response.ErrorListener() {
@@ -298,6 +262,8 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
                         else if (error instanceof ParseError)        msg = "Parse Error!";
                         else                                          msg = error.toString();
                         new AlertBox(getContext()).getBox("Error", msg);
+                        txt_hu.setText("");
+                        txt_hu.requestFocus();
                     }
                 }
         ) {
@@ -365,14 +331,6 @@ public class FragmentHUStockReviewV11 extends Fragment implements View.OnClickLi
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
-
-    private void clearScreen() {
-        txt_hu.setText("");
-        txt_lgtyp.setText(DEFAULT_LGTYP);  // reset Type to V11
-        // Keep txt_werks as-is — it shows WERKS from SharedPrefs
-        resetResultPanel();
-        txt_hu.requestFocus();
-    }
 
     private void resetResultPanel() {
         txt_result_type.setText("");
