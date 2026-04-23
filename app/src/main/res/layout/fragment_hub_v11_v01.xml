@@ -116,7 +116,31 @@
             android:padding="10dp"
             android:textSize="14sp"
             android:textColor="#555"
-            android:layout_marginBottom="20dp"/>
+            android:layout_marginBottom="12dp"/>
+
+        <!-- QTY — read-only, auto-populated from SAP response after scan -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="QTY"
+            android:textStyle="bold"
+            android:textColor="#333"
+            android:textSize="13sp"
+            android:layout_marginBottom="2dp"/>
+
+        <EditText
+            android:id="@+id/txt_hub_v11_v01_qty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:background="#e0e0e0"
+            android:padding="10dp"
+            android:textSize="14sp"
+            android:textColor="#555"
+            android:layout_marginBottom="20dp"
+            android:hint="—"/>
 
         <!-- Result Panel — shown after auto-submit returns -->
         <LinearLayout
