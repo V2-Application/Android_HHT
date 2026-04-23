@@ -32,6 +32,7 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
     Button hu_stock_review;  // HU Stock Review — ZWM_HU_STOCK_REV_RFC | DEV 2026-04-21
     Button hu_v11_v01;       // V11-V01         — ZWM_HU_STOCK_REV_RFC, Type=V11 | DEV 2026-04-22
     Button hu_picking;       // HUB HU Picking  — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
+    Button hu_putway;        // HUB HU Putway   — ZWM_HUB_HU_PUTWAY_RFC  | DEV 2026-04-23
 
     private MenuHubInward.OnFragmentInteractionListener mListener;
 
@@ -56,11 +57,13 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
         hu_stock_review = rootView.findViewById(R.id.hub_inward_hu_stock_review);
         hu_v11_v01      = rootView.findViewById(R.id.hub_inward_v11_v01);
         hu_picking      = rootView.findViewById(R.id.hub_inward_hu_picking);
+        hu_putway       = rootView.findViewById(R.id.hub_inward_hu_putway);
 
         hu_grc.setOnClickListener(this);
         hu_stock_review.setOnClickListener(this);
         hu_v11_v01.setOnClickListener(this);
         hu_picking.setOnClickListener(this);
+        hu_putway.setOnClickListener(this);
 
         return rootView;
     }
@@ -124,6 +127,10 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
             case R.id.hub_inward_hu_picking:
                 // HUB HU Picking — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
                 fragment = new FragmentHubHUPicking();
+                break;
+            case R.id.hub_inward_hu_putway:
+                // HUB HU Putway — ZWM_HUB_HU_PUTWAY_RFC | DEV 2026-04-23
+                fragment = new FragmentHubHUPutway();
                 break;
         }
         if (fragment != null) {
