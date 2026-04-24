@@ -51,13 +51,10 @@ import org.json.JSONObject;
  *   IV_BIN    — Source bin (scanned/typed, triggers submit)
  *   ES_RETURN — BAPIRET2 {TYPE, MESSAGE}
  *
- * Flow:
- *   1. Plant pre-filled from login.
- *   2. User scans/enters Store → cursor auto-advances to BIN.
- *   3. User scans/enters BIN → request auto-submitted.
- *   4. ES_RETURN shown colour-coded (E=red, S=green, W/I=black).
- *   5. On success, BIN is cleared for the next pick; Store is retained so
- *      consecutive picks to the same store don't require re-scanning.
+ * Post-response field handling:
+ *   SUCCESS (TYPE=S / W / I) → clear BIN only, retain Store for batch picks
+ *   ERROR   (TYPE=E / missing ES_RETURN / network / parse fail) →
+ *           clear ALL scannable fields, focus back to Store
  */
 public class FragmentHubHUPicking extends Fragment {
 
@@ -266,6 +263,7 @@ public class FragmentHubHUPicking extends Fragment {
                     inFlight = false;
                     dismissDialog();
                     box.getErrBox(e);
+                    clearAllInputs();
                 }
             }
         }, 500);
@@ -290,14 +288,15 @@ public class FragmentHubHUPicking extends Fragment {
                         inFlight = false;
                         Log.d(TAG, "Response → " + response);
                         if (response == null) {
+                            // Null response treated as error — clear everything
                             UIFuncs.errorSound(con);
-                            box.getBox("Error", "No response from server");
+                            new AlertBox(getContext()).getBox("Error", "No response from server");
+                            clearAllInputs();
                         } else {
+                            // handleResponse now owns the post-response field clearing,
+                            // so onResponse stays lean.
                             handleResponse(response);
                         }
-                        // Clear BIN for next scan; retain Store for same-destination pick
-                        txt_bin.setText("");
-                        txt_bin.requestFocus();
                     }
                 },
                 new Response.ErrorListener() {
@@ -315,8 +314,8 @@ public class FragmentHubHUPicking extends Fragment {
                         else if (error instanceof ParseError)        msg = "Parse Error!";
                         else                                          msg = error.toString();
                         new AlertBox(getContext()).getBox("Error", msg);
-                        txt_bin.setText("");
-                        txt_bin.requestFocus();
+                        // Network-level error → clear everything
+                        clearAllInputs();
                     }
                 }
         ) {
@@ -339,7 +338,18 @@ public class FragmentHubHUPicking extends Fragment {
 
     // ─── Response handler ────────────────────────────────────────────────────
 
+    /**
+     * Processes the RFC response and drives post-response UI state.
+     *
+     * Outcomes:
+     *   • TYPE=E, missing ES_RETURN, or JSON parse failure → treated as error;
+     *     calls {@link #clearAllInputs()} to wipe every scannable field.
+     *   • TYPE=S / W / I / other → treated as success; calls
+     *     {@link #clearForNextScan()} to clear BIN only and retain Store.
+     */
     private void handleResponse(JSONObject response) {
+        boolean isError = false;
+
         try {
             txt_result_type.setVisibility(View.VISIBLE);
             txt_result_message.setVisibility(View.VISIBLE);
@@ -355,6 +365,7 @@ public class FragmentHubHUPicking extends Fragment {
                 txt_result_message.setText(message);
 
                 if ("E".equalsIgnoreCase(type)) {
+                    isError = true;
                     UIFuncs.errorSound(con);
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
@@ -366,22 +377,52 @@ public class FragmentHubHUPicking extends Fragment {
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 } else {
-                    // Unknown TYPE (W / I / empty) — neutral
+                    // Unknown TYPE (W / I / empty) — neutral, treated as success
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.black));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 }
             } else {
+                // Missing ES_RETURN → treat as error so user restarts the flow
+                isError = true;
                 txt_result_type.setText("");
                 txt_result_message.setText("No return data from SAP");
                 txt_result_message.setTextColor(
                         getResources().getColor(android.R.color.darker_gray));
             }
         } catch (JSONException e) {
+            isError = true;
             e.printStackTrace();
             box.getErrBox(e);
         }
+
+        if (isError) {
+            clearAllInputs();
+        } else {
+            clearForNextScan();
+        }
+    }
+
+    // ─── Post-response clearing helpers ──────────────────────────────────────
+
+    /**
+     * Error recovery — wipe every scannable field. Plant stays
+     * (it's auto-filled from login). Focus returns to Store.
+     */
+    private void clearAllInputs() {
+        txt_store.setText("");
+        txt_bin.setText("");
+        txt_store.requestFocus();
+    }
+
+    /**
+     * Success path — clear BIN only; retain Store so consecutive picks
+     * to the same destination don't require re-scanning.
+     */
+    private void clearForNextScan() {
+        txt_bin.setText("");
+        txt_bin.requestFocus();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
