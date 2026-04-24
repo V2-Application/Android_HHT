@@ -52,15 +52,13 @@ import org.json.JSONObject;
  *   IV_LGTYP     — Storage Type (scanned/typed, triggers submit)
  *   ES_RETURN    — BAPIRET2 {TYPE, MESSAGE}
  *
- * Flow:
- *   1. Plant pre-filled from login.
- *   2. User scans/enters Crate HU → cursor auto-advances to BIN.
- *   3. User scans/enters BIN → cursor auto-advances to Storage Type.
- *   4. User scans/enters Storage Type → request auto-submitted.
- *   5. ES_RETURN shown colour-coded (E=red, S=green, W/I=black).
- *   6. On success, Crate HU is cleared for the next item; BIN + Storage Type
- *      are retained so batch putaway to the same destination doesn't require
- *      re-scanning location every time.
+ * Post-response field handling:
+ *   SUCCESS (TYPE=S / W / I) → clear Crate HU only, retain BIN + Storage Type
+ *                              so batch putaway to the same destination does
+ *                              not require re-scanning location.
+ *   ERROR   (TYPE=E / missing ES_RETURN / network / parse fail) →
+ *           clear ALL scannable fields (Crate HU, BIN, Storage Type) and
+ *           focus back to Crate HU.
  */
 public class FragmentHubHUPutway extends Fragment {
 
@@ -290,6 +288,7 @@ public class FragmentHubHUPutway extends Fragment {
                     inFlight = false;
                     dismissDialog();
                     box.getErrBox(e);
+                    clearAllInputs();
                 }
             }
         }, 500);
@@ -314,16 +313,14 @@ public class FragmentHubHUPutway extends Fragment {
                         inFlight = false;
                         Log.d(TAG, "Response → " + response);
                         if (response == null) {
+                            // Null response treated as error — clear everything
                             UIFuncs.errorSound(con);
-                            box.getBox("Error", "No response from server");
+                            new AlertBox(getContext()).getBox("Error", "No response from server");
+                            clearAllInputs();
                         } else {
+                            // handleResponse now owns the post-response field clearing
                             handleResponse(response);
                         }
-                        // Clear Crate HU for next item; retain BIN + Storage Type
-                        // so a batch of HUs going to the same location doesn't
-                        // require re-scanning destination every time.
-                        txt_crate_hu.setText("");
-                        txt_crate_hu.requestFocus();
                     }
                 },
                 new Response.ErrorListener() {
@@ -341,8 +338,8 @@ public class FragmentHubHUPutway extends Fragment {
                         else if (error instanceof ParseError)        msg = "Parse Error!";
                         else                                          msg = error.toString();
                         new AlertBox(getContext()).getBox("Error", msg);
-                        txt_crate_hu.setText("");
-                        txt_crate_hu.requestFocus();
+                        // Network-level error → clear everything
+                        clearAllInputs();
                     }
                 }
         ) {
@@ -365,7 +362,18 @@ public class FragmentHubHUPutway extends Fragment {
 
     // ─── Response handler ────────────────────────────────────────────────────
 
+    /**
+     * Processes the RFC response and drives post-response UI state.
+     *
+     * Outcomes:
+     *   • TYPE=E, missing ES_RETURN, or JSON parse failure → treated as error;
+     *     calls {@link #clearAllInputs()} to wipe every scannable field.
+     *   • TYPE=S / W / I / other → success; calls {@link #clearForNextScan()}
+     *     to clear Crate HU only and retain BIN + Storage Type.
+     */
     private void handleResponse(JSONObject response) {
+        boolean isError = false;
+
         try {
             txt_result_type.setVisibility(View.VISIBLE);
             txt_result_message.setVisibility(View.VISIBLE);
@@ -381,6 +389,7 @@ public class FragmentHubHUPutway extends Fragment {
                 txt_result_message.setText(message);
 
                 if ("E".equalsIgnoreCase(type)) {
+                    isError = true;
                     UIFuncs.errorSound(con);
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.holo_red_dark));
@@ -392,22 +401,54 @@ public class FragmentHubHUPutway extends Fragment {
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 } else {
-                    // Unknown TYPE (W / I / empty) — neutral
+                    // Unknown TYPE (W / I / empty) — neutral, treated as success
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.black));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 }
             } else {
+                // Missing ES_RETURN → treat as error so user restarts the flow
+                isError = true;
                 txt_result_type.setText("");
                 txt_result_message.setText("No return data from SAP");
                 txt_result_message.setTextColor(
                         getResources().getColor(android.R.color.darker_gray));
             }
         } catch (JSONException e) {
+            isError = true;
             e.printStackTrace();
             box.getErrBox(e);
         }
+
+        if (isError) {
+            clearAllInputs();
+        } else {
+            clearForNextScan();
+        }
+    }
+
+    // ─── Post-response clearing helpers ──────────────────────────────────────
+
+    /**
+     * Error recovery — wipe every scannable field. Plant stays
+     * (it's auto-filled from login). Focus returns to Crate HU.
+     */
+    private void clearAllInputs() {
+        txt_crate_hu.setText("");
+        txt_bin.setText("");
+        txt_lgtyp.setText("");
+        txt_crate_hu.requestFocus();
+    }
+
+    /**
+     * Success path — clear Crate HU only; retain BIN + Storage Type
+     * so a batch of HUs going to the same location doesn't require
+     * re-scanning destination every time.
+     */
+    private void clearForNextScan() {
+        txt_crate_hu.setText("");
+        txt_crate_hu.requestFocus();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
