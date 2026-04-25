@@ -2,6 +2,7 @@ package com.v2retail.dotvik.hub.inward;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
@@ -12,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -43,26 +45,35 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * FragmentHubHUPutway — HUB HU Putway process
+ * FragmentHubHUPutway — HUB HU Putway (batch mode)
  *
  * RFC: ZWM_HUB_HU_PUTWAY_RFC
- *   IV_WERKS     — Plant (from SharedPreferences "WERKS", read-only)
- *   IV_CRATE_HU  — Crate or HU being put away (scanned/typed)
- *   IV_BIN       — Destination bin (scanned/typed)
- *   IV_LGTYP     — Storage Type (scanned/typed, triggers submit)
+ *   IV_WERKS     — Plant (auto-filled, read-only)
+ *   IV_LGTYP     — Storage Type, hard-default "V01" (read-only)
+ *   IV_BIN       — Destination BIN, scanned once, locks after success
+ *   IV_CRATE_HU  — Crate / HU being put away — repeats per scan
  *   ES_RETURN    — BAPIRET2 {TYPE, MESSAGE}
  *
- * Post-response field handling:
- *   SUCCESS (TYPE=S / W / I) → clear Crate HU only, retain BIN + Storage Type
- *                              so batch putaway to the same destination does
- *                              not require re-scanning location.
- *   ERROR   (TYPE=E / missing ES_RETURN / network / parse fail) →
- *           clear ALL scannable fields (Crate HU, BIN, Storage Type) and
- *           focus back to Crate HU.
+ * Flow:
+ *   1. Plant + Storage Type pre-filled. Cursor on BIN.
+ *   2. User scans BIN → BIN locks, cursor jumps to Crate HU.
+ *   3. User scans Crate HU → RFC fired with all 4 params.
+ *      • SUCCESS (TYPE != "E") → QT++, clear Crate HU, refocus Crate HU.
+ *      • ERROR  (TYPE == "E"  or network) → red message, clear Crate HU,
+ *        QT NOT incremented. BIN stays locked so user can retry to same dest.
+ *   4. User repeats step 3 until done.
+ *   5. Reset button → wipes BIN + Crate HU + QT, unlocks BIN, focus BIN.
+ *   6. Back button → pops fragment.
+ *
+ * Refactored 2026-04-25 from old 4-scan flow (was: Plant/Crate HU/BIN/Storage
+ * Type all scannable). The previous form is preserved in git history.
  */
-public class FragmentHubHUPutway extends Fragment {
+public class FragmentHubHUPutway extends Fragment implements View.OnClickListener {
 
     private static final String TAG = "FragmentHubHUPutway";
+
+    /** Default value for Storage Type field — visible to user, sent as IV_LGTYP. */
+    private static final String DEFAULT_LGTYP = "V01";
 
     View rootView;
     String URL   = "";
@@ -74,13 +85,22 @@ public class FragmentHubHUPutway extends Fragment {
     FragmentManager fm;
 
     EditText txt_werks;
-    EditText txt_crate_hu;
-    EditText txt_bin;
     EditText txt_lgtyp;
+    EditText txt_bin;
+    EditText txt_crate_hu;
+    EditText txt_qt;
     TextView txt_result_type;
     TextView txt_result_message;
+    Button   btn_reset;
+    Button   btn_back;
 
-    // Guard against rapid double-trigger from scanner echo
+    /** Locked BIN value once scanned. Empty until first BIN scan succeeds. */
+    private String activeBin = "";
+
+    /** Running counter — number of successful Crate HU putway calls. */
+    private int qty = 0;
+
+    /** Re-entrancy guard against scanner-echo double-trigger. */
     private boolean inFlight = false;
 
     public FragmentHubHUPutway() {}
@@ -114,19 +134,23 @@ public class FragmentHubHUPutway extends Fragment {
         USER  = data.read("USER");
 
         txt_werks          = rootView.findViewById(R.id.txt_hub_putway_werks);
-        txt_crate_hu       = rootView.findViewById(R.id.txt_hub_putway_crate_hu);
-        txt_bin            = rootView.findViewById(R.id.txt_hub_putway_bin);
         txt_lgtyp          = rootView.findViewById(R.id.txt_hub_putway_lgtyp);
+        txt_bin            = rootView.findViewById(R.id.txt_hub_putway_bin);
+        txt_crate_hu       = rootView.findViewById(R.id.txt_hub_putway_crate_hu);
+        txt_qt             = rootView.findViewById(R.id.txt_hub_putway_qt);
         txt_result_type    = rootView.findViewById(R.id.txt_hub_putway_result_type);
         txt_result_message = rootView.findViewById(R.id.txt_hub_putway_result_message);
+        btn_reset          = rootView.findViewById(R.id.btn_hub_putway_reset);
+        btn_back           = rootView.findViewById(R.id.btn_hub_putway_back);
 
         txt_werks.setText(WERKS);
+        txt_lgtyp.setText(DEFAULT_LGTYP);  // already in XML; set defensively
+
+        btn_reset.setOnClickListener(this);
+        btn_back.setOnClickListener(this);
 
         addInputEvents();
-        resetResultPanel();
-
-        // Initial cursor on Crate HU (Plant is auto-filled)
-        txt_crate_hu.requestFocus();
+        resetState();          // initial UI: BIN enabled, Crate HU disabled, QT=0
 
         return rootView;
     }
@@ -134,14 +158,8 @@ public class FragmentHubHUPutway extends Fragment {
     // ─── Input events ────────────────────────────────────────────────────────
 
     private void addInputEvents() {
-        // CRATE HU: scanner paste or Enter/Next → advance to BIN
-        attachAdvanceOnScan(txt_crate_hu, txt_bin, "Crate HU");
-
-        // BIN: scanner paste or Enter/Next → advance to Storage Type
-        attachAdvanceOnScan(txt_bin, txt_lgtyp, "BIN");
-
-        // STORAGE TYPE (last field): scanner paste or Enter/Done → submit
-        txt_lgtyp.addTextChangedListener(new TextWatcher() {
+        // BIN: scanner paste OR Enter/Done — lock and advance to Crate HU
+        txt_bin.addTextChangedListener(new TextWatcher() {
             boolean fromScanner = false;
             @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
             @Override
@@ -152,62 +170,50 @@ public class FragmentHubHUPutway extends Fragment {
             public void afterTextChanged(Editable s) {
                 if (fromScanner && s.toString().trim().length() > 0) {
                     new Handler().postDelayed(new Runnable() {
-                        @Override public void run() { submitPutway(); }
-                    }, 200);
-                }
-            }
-        });
-
-        txt_lgtyp.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE
-                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    submitPutway();
-                    return true;
-                }
-                return false;
-            }
-        });
-    }
-
-    /**
-     * Shared helper: when `from` gets a scanner-paste or Enter/Next, move focus
-     * to `next`. Used for the intermediate fields (Crate HU → BIN → Storage).
-     */
-    private void attachAdvanceOnScan(final EditText from, final EditText next,
-                                     final String label) {
-        from.addTextChangedListener(new TextWatcher() {
-            boolean fromScanner = false;
-            @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                fromScanner = (before == 0 && start == 0 && count > 1);
-            }
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (fromScanner && s.toString().trim().length() > 0) {
-                    new Handler().postDelayed(new Runnable() {
-                        @Override public void run() { next.requestFocus(); }
+                        @Override public void run() { acceptBinScan(); }
                     }, 150);
                 }
             }
         });
 
-        from.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        txt_bin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_NEXT
-                        || actionId == EditorInfo.IME_ACTION_DONE
+                if (actionId == EditorInfo.IME_ACTION_DONE
                         || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    String val = UIFuncs.toUpperTrim(from);
-                    if (val.isEmpty()) {
-                        showError("Required", "Please scan or enter " + label);
-                        from.requestFocus();
-                        return true;
-                    }
-                    next.requestFocus();
+                    UIFuncs.hideKeyboard(getActivity());
+                    acceptBinScan();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        // CRATE HU: scanner paste OR Enter/Done — submit RFC for that HU
+        txt_crate_hu.addTextChangedListener(new TextWatcher() {
+            boolean fromScanner = false;
+            @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                fromScanner = (before == 0 && start == 0 && count > 1);
+            }
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (fromScanner && s.toString().trim().length() > 0) {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override public void run() { submitCrateHu(); }
+                    }, 200);
+                }
+            }
+        });
+
+        txt_crate_hu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    submitCrateHu();
                     return true;
                 }
                 return false;
@@ -215,52 +221,94 @@ public class FragmentHubHUPutway extends Fragment {
         });
     }
 
-    // ─── Submit ───────────────────────────────────────────────────────────────
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+        if (id == R.id.btn_hub_putway_reset) {
+            resetState();
+        } else if (id == R.id.btn_hub_putway_back) {
+            UIFuncs.hideKeyboard(getActivity());
+            if (fm != null) {
+                fm.popBackStack();
+            }
+        }
+    }
 
-    private void submitPutway() {
-        String crateHu = UIFuncs.toUpperTrim(txt_crate_hu);
-        String bin     = UIFuncs.toUpperTrim(txt_bin);
-        String lgtyp   = UIFuncs.toUpperTrim(txt_lgtyp);
+    // ─── BIN handling ────────────────────────────────────────────────────────
+
+    /** Validate BIN locally, lock the field, advance focus to Crate HU. */
+    private void acceptBinScan() {
+        String bin = UIFuncs.toUpperTrim(txt_bin);
+        if (bin.isEmpty()) {
+            showError("Required", "Please scan or enter BIN");
+            txt_bin.requestFocus();
+            return;
+        }
+        txt_bin.setText(bin);
+        activeBin = bin;
+        lockBinField();
+
+        UIFuncs.enableInput(con, txt_crate_hu);
+        txt_crate_hu.requestFocus();
+        Log.d(TAG, "BIN locked → " + activeBin + "; ready for Crate HU scans");
+    }
+
+    private void lockBinField() {
+        txt_bin.setFocusable(false);
+        txt_bin.setClickable(false);
+        txt_bin.setCursorVisible(false);
+        txt_bin.setBackgroundColor(Color.parseColor("#EEEEEE"));
+        txt_bin.setTextColor(Color.parseColor("#555555"));
+    }
+
+    private void unlockBinField() {
+        txt_bin.setFocusableInTouchMode(true);
+        txt_bin.setFocusable(true);
+        txt_bin.setClickable(true);
+        txt_bin.setCursorVisible(true);
+        txt_bin.setBackgroundResource(android.R.drawable.edit_text);
+        txt_bin.setTextColor(Color.BLACK);
+    }
+
+    // ─── Submit Crate HU ─────────────────────────────────────────────────────
+
+    private void submitCrateHu() {
+        String crate = UIFuncs.toUpperTrim(txt_crate_hu);
 
         if (WERKS == null || WERKS.isEmpty()) {
             showError("Config Error",
                     "Plant (WERKS) not set on device. Please log in again.");
             return;
         }
-        if (crateHu.isEmpty()) {
+        if (activeBin.isEmpty()) {
+            showError("Required", "Please scan BIN first");
+            txt_bin.requestFocus();
+            return;
+        }
+        if (crate.isEmpty()) {
             showError("Required", "Please scan or enter Crate HU");
             txt_crate_hu.requestFocus();
             return;
         }
-        if (bin.isEmpty()) {
-            showError("Required", "Please scan or enter BIN");
-            txt_bin.requestFocus();
-            return;
-        }
-        if (lgtyp.isEmpty()) {
-            showError("Required", "Please scan or enter Storage Type");
-            txt_lgtyp.requestFocus();
-            return;
-        }
 
         if (inFlight) {
-            Log.d(TAG, "submitPutway ignored — request already in flight");
+            Log.d(TAG, "submitCrateHu ignored — request already in flight");
             return;
         }
         inFlight = true;
 
-        Log.d(TAG, "submitPutway → WERKS=" + WERKS
-                + " CRATE_HU=" + crateHu
-                + " BIN=" + bin
-                + " LGTYP=" + lgtyp);
+        Log.d(TAG, "submitCrateHu → WERKS=" + WERKS
+                + " LGTYP=" + DEFAULT_LGTYP
+                + " BIN=" + activeBin
+                + " CRATE_HU=" + crate);
 
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname",    Vars.ZWM_HUB_HU_PUTWAY_RFC);
             args.put("IV_WERKS",    WERKS);
-            args.put("IV_CRATE_HU", crateHu);
-            args.put("IV_BIN",      bin);
-            args.put("IV_LGTYP",    lgtyp);
+            args.put("IV_CRATE_HU", crate);
+            args.put("IV_BIN",      activeBin);
+            args.put("IV_LGTYP",    DEFAULT_LGTYP);
         } catch (JSONException e) {
             inFlight = false;
             e.printStackTrace();
@@ -271,7 +319,7 @@ public class FragmentHubHUPutway extends Fragment {
         showProcessingAndSubmit(Vars.ZWM_HUB_HU_PUTWAY_RFC, args);
     }
 
-    // ─── Network ──────────────────────────────────────────────────────────────
+    // ─── Network ─────────────────────────────────────────────────────────────
 
     private void showProcessingAndSubmit(final String rfc, final JSONObject args) {
         dialog = new ProgressDialog(getContext());
@@ -288,10 +336,10 @@ public class FragmentHubHUPutway extends Fragment {
                     inFlight = false;
                     dismissDialog();
                     box.getErrBox(e);
-                    clearAllInputs();
+                    clearCrateForRetry();
                 }
             }
-        }, 500);
+        }, 400);
     }
 
     private void submitRequest(final String rfc, final JSONObject args) {
@@ -313,12 +361,10 @@ public class FragmentHubHUPutway extends Fragment {
                         inFlight = false;
                         Log.d(TAG, "Response → " + response);
                         if (response == null) {
-                            // Null response treated as error — clear everything
                             UIFuncs.errorSound(con);
                             new AlertBox(getContext()).getBox("Error", "No response from server");
-                            clearAllInputs();
+                            clearCrateForRetry();
                         } else {
-                            // handleResponse now owns the post-response field clearing
                             handleResponse(response);
                         }
                     }
@@ -338,8 +384,7 @@ public class FragmentHubHUPutway extends Fragment {
                         else if (error instanceof ParseError)        msg = "Parse Error!";
                         else                                          msg = error.toString();
                         new AlertBox(getContext()).getBox("Error", msg);
-                        // Network-level error → clear everything
-                        clearAllInputs();
+                        clearCrateForRetry();
                     }
                 }
         ) {
@@ -360,16 +405,12 @@ public class FragmentHubHUPutway extends Fragment {
         queue.add(req);
     }
 
-    // ─── Response handler ────────────────────────────────────────────────────
+    // ─── Response handling ───────────────────────────────────────────────────
 
     /**
-     * Processes the RFC response and drives post-response UI state.
-     *
-     * Outcomes:
-     *   • TYPE=E, missing ES_RETURN, or JSON parse failure → treated as error;
-     *     calls {@link #clearAllInputs()} to wipe every scannable field.
-     *   • TYPE=S / W / I / other → success; calls {@link #clearForNextScan()}
-     *     to clear Crate HU only and retain BIN + Storage Type.
+     * Apply the SAP response. Increments QT only on TYPE != "E".
+     * BIN stays locked in either case — user keeps batching to same destination.
+     * On error, only Crate HU is cleared so user can retry or scan a different HU.
      */
     private void handleResponse(JSONObject response) {
         boolean isError = false;
@@ -401,14 +442,13 @@ public class FragmentHubHUPutway extends Fragment {
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 } else {
-                    // Unknown TYPE (W / I / empty) — neutral, treated as success
+                    // Unknown TYPE (W / I / blank) — neutral, treated as success
                     txt_result_type.setTextColor(
                             getResources().getColor(android.R.color.black));
                     txt_result_message.setTextColor(
                             getResources().getColor(android.R.color.black));
                 }
             } else {
-                // Missing ES_RETURN → treat as error so user restarts the flow
                 isError = true;
                 txt_result_type.setText("");
                 txt_result_message.setText("No return data from SAP");
@@ -421,44 +461,48 @@ public class FragmentHubHUPutway extends Fragment {
             box.getErrBox(e);
         }
 
-        if (isError) {
-            clearAllInputs();
-        } else {
-            clearForNextScan();
+        if (!isError) {
+            qty++;
+            txt_qt.setText(String.valueOf(qty));
+            Log.d(TAG, "Putway success — QT now " + qty);
         }
+        clearCrateForRetry();
     }
 
-    // ─── Post-response clearing helpers ──────────────────────────────────────
+    // ─── State helpers ───────────────────────────────────────────────────────
+
+    /** Clears just Crate HU (used after every submit, success or fail). */
+    private void clearCrateForRetry() {
+        txt_crate_hu.setText("");
+        txt_crate_hu.requestFocus();
+    }
 
     /**
-     * Error recovery — wipe every scannable field. Plant stays
-     * (it's auto-filled from login). Focus returns to Crate HU.
+     * Reset button + initial state.
+     * Wipes BIN + Crate HU + QT, re-enables BIN field, refocuses BIN.
+     * Plant + Storage Type stay (constant per session).
      */
-    private void clearAllInputs() {
-        txt_crate_hu.setText("");
+    private void resetState() {
+        activeBin = "";
+        qty = 0;
+
         txt_bin.setText("");
-        txt_lgtyp.setText("");
-        txt_crate_hu.requestFocus();
-    }
-
-    /**
-     * Success path — clear Crate HU only; retain BIN + Storage Type
-     * so a batch of HUs going to the same location doesn't require
-     * re-scanning destination every time.
-     */
-    private void clearForNextScan() {
         txt_crate_hu.setText("");
-        txt_crate_hu.requestFocus();
-    }
+        txt_qt.setText("0");
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
+        unlockBinField();
+        UIFuncs.disableInput(con, txt_crate_hu);
 
-    private void resetResultPanel() {
         txt_result_type.setText("");
         txt_result_message.setText("");
         txt_result_type.setVisibility(View.GONE);
         txt_result_message.setVisibility(View.GONE);
+
+        txt_bin.requestFocus();
+        Log.d(TAG, "State reset — BIN unlocked, QT=0");
     }
+
+    // ─── Generic helpers ─────────────────────────────────────────────────────
 
     private void showError(String title, String msg) {
         UIFuncs.errorSound(con);
