@@ -52,7 +52,7 @@
             android:background="#e71821"
             android:text="HUB HU Picking" />
 
-        <!-- HUB HU Putway — ZWM_HUB_HU_PUTWAY_RFC | DEV 2026-04-23 -->
+        <!-- HUB HU Putway — ZWM_HUB_HU_PUTWAY_RFC, batch mode (BIN locks, Crate HU repeats, QT counter) | DEV 2026-04-25 -->
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,16 +61,6 @@
             android:id="@+id/hub_inward_hu_putway"
             android:background="#e71821"
             android:text="HUB HU Putway" />
-
-        <!-- HUB HU Putaway (batch) — ZWM_HUB_HU_PUTWAY_RFC, LGTYP=V01 | DEV 2026-04-25 -->
-        <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:id="@+id/hub_inward_hu_putaway"
-            android:background="#e71821"
-            android:text="HUB HU Putaway" />
 
     </LinearLayout>
 </FrameLayout>
