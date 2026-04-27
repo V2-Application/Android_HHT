@@ -63,6 +63,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -195,6 +196,27 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.errorSound(con);
         AlertBox box = new AlertBox(getContext());
         box.getBox(title, message);
+    }
+
+    /** Middleware may send EX_RETURN as one object or as a BAPIRET2 table (JSON array). */
+    private static JSONObject parseExReturn(JSONObject responsebody) throws JSONException {
+        if (responsebody == null || !responsebody.has("EX_RETURN")) {
+            return null;
+        }
+        Object raw = responsebody.get("EX_RETURN");
+        if (raw instanceof JSONObject) {
+            return (JSONObject) raw;
+        }
+        if (raw instanceof JSONArray) {
+            JSONArray arr = (JSONArray) raw;
+            if (arr.length() > 0) {
+                Object first = arr.get(0);
+                if (first instanceof JSONObject) {
+                    return (JSONObject) first;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -574,6 +596,38 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             setLastScanedItem(withCarate);
         }
     }
+    /** SAP may populate ARTICLE or BARCODE in EX_DATA — both must map to a stable material key. */
+    private static String effectiveMaterialFromScanResponse(LiveArticleQty data) {
+        if (data == null) {
+            return "";
+        }
+        String a = data.getArticle();
+        if (a != null && !a.trim().isEmpty()) {
+            return a.trim();
+        }
+        String b = data.getBarcode();
+        if (b != null && !b.trim().isEmpty()) {
+            return b.trim();
+        }
+        return "";
+    }
+
+    /** Crate for RFC: prefer scan field, else current row (pre-filled from bin pick). */
+    private String resolvedCrateForRfc() {
+        String fromScan = UIFuncs.toUpperTrim(txt_scan_crate);
+        if (!fromScan.isEmpty()) {
+            return fromScan;
+        }
+        String fromCur = UIFuncs.toUpperTrim(txt_cur_crate);
+        if (!fromCur.isEmpty()) {
+            return fromCur;
+        }
+        if (currentData != null && currentData.getCrate() != null && !currentData.getCrate().isEmpty()) {
+            return currentData.getCrate().trim().toUpperCase();
+        }
+        return "";
+    }
+
     private void validateArticle(String article){
         JSONObject args = new JSONObject();
         try {
@@ -581,7 +635,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
             args.put("IM_STOCK_TAKE_ID", tv_stock_take_id.getText());
-            args.put("IM_CRATE", UIFuncs.toUpperTrim(txt_scan_crate));
+            args.put("IM_CRATE", resolvedCrateForRfc());
             args.put("IM_BIN", UIFuncs.toUpperTrim(txt_cur_binno));
             args.put("IM_BARCODE", article);
             showProcessingAndSubmit(Vars.ZWM_LIVE_STOCK_SCANNING, REQUEST_LIVE_SCAN, args);
@@ -603,14 +657,28 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
             LiveArticleQty data = new Gson().fromJson(EX_DATA.toString(), LiveArticleQty.class);
 
+            String materialKey = effectiveMaterialFromScanResponse(data);
+            if (materialKey.isEmpty()) {
+                showError("Scan Error", "Server did not return article/barcode for this scan.");
+                return;
+            }
+
             LiveScanData existing;
-            if(scanData.containsKey(data.getArticle())){
-                existing = scanData.get(data.getArticle());
+            if(scanData.containsKey(materialKey)){
+                existing = scanData.get(materialKey);
             }else{
                 existing = LiveScanData.copyProperties(currentData);
-                existing.setMaterial(data.getArticle());
-                existing.setCrate(UIFuncs.toUpperTrim(txt_scan_crate));
-                scanData.put(data.getArticle(), existing);
+                existing.setMaterial(materialKey);
+                String crateForRow = resolvedCrateForRfc();
+                if (!crateForRow.isEmpty()) {
+                    existing.setCrate(crateForRow);
+                }
+                String stId = tv_stock_take_id.getText() != null
+                        ? tv_stock_take_id.getText().toString().trim() : "";
+                if (!stId.isEmpty()) {
+                    existing.setStockTakeId(stId);
+                }
+                scanData.put(materialKey, existing);
             }
             LiveScanData.updateScanQty(existing, data.getQty());
 
@@ -618,7 +686,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             double dataQty = Util.convertStringToDouble(data.getQty());
             scanQty = scanQty + dataQty;
 
-            txt_cur_article.setText(UIFuncs.removeLeadingZeros(data.getArticle()));
+            txt_cur_article.setText(UIFuncs.removeLeadingZeros(materialKey));
             txt_cur_sqty.setText(Util.formatDouble(scanQty));
             txt_scan_sqty.setText(Util.formatDouble(dataQty));
         }catch (Exception e) {
@@ -759,10 +827,19 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private JSONArray getScanDataToSubmit(){
         try {
             JSONArray arrScanData = new JSONArray();
+            String stIdHeader = tv_stock_take_id.getText() != null
+                    ? tv_stock_take_id.getText().toString().trim() : "";
+            if (stIdHeader.isEmpty()) {
+                showError("Submit Error", "Stock take ID is missing — cannot save to SAP.");
+                return null;
+            }
             for (Map.Entry<String, LiveScanData> dataEntry : scanData.entrySet()) {
                 LiveScanData data = dataEntry.getValue();
                 String scanDataJsonString = new Gson().toJson(data);
                 JSONObject itDataJson = new JSONObject(scanDataJsonString);
+                // ZWM_STK_ADJ_MSA_BIN expects ST_TAKE_ID per line; IT_DATA from ZWM_GET_STOCK_BIN
+                // often omits it, which caused silent SAP rejects before posting.
+                itDataJson.put("ST_TAKE_ID", stIdHeader);
                 arrScanData.put(itDataJson);
             }
             if (arrScanData.length() == 0) {
@@ -886,42 +963,48 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     return;
                 } else {
                     try {
-                        if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
-                            JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
-                            if (returnobj != null) {
-                                String type = returnobj.getString("TYPE");
-                                if (type != null) {
-                                    if (type.equals("E")) {
-                                        UIFuncs.errorSound(getContext());
+                        JSONObject returnobj = parseExReturn(responsebody);
+                        if (returnobj != null) {
+                            String type = returnobj.getString("TYPE");
+                            if (type != null) {
+                                if (type.equals("E")) {
+                                    UIFuncs.errorSound(getContext());
+                                    AlertBox box = new AlertBox(getContext());
+                                    box.getBox("Err", returnobj.getString("MESSAGE"));
+                                } else {
+                                    if (request == REQUEST_GET_STOCK_ID) {
+                                        populateStockIDs(responsebody);
+                                        return;
+                                    }
+                                    if (request == REQUEST_VALIDATE_STOCK_ID) {
+                                        setData(responsebody);
+                                        return;
+                                    }
+                                    if (request == REQUEST_LIVE_SCAN) {
+                                        updateScanStats(responsebody);
+                                        return;
+                                    }
+                                    if (request == REQUEST_SAVE) {
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"));
-                                    } else {
-                                        if (request == REQUEST_GET_STOCK_ID) {
-                                            populateStockIDs(responsebody);
-                                            return;
-                                        }
-                                        if (request == REQUEST_VALIDATE_STOCK_ID) {
-                                            setData(responsebody);
-                                            return;
-                                        }
-                                        if (request == REQUEST_LIVE_SCAN) {
-                                            updateScanStats(responsebody);
-                                            return;
-                                        }
-                                        if (request == REQUEST_SAVE) {
-                                            AlertBox box = new AlertBox(getContext());
-                                            box.getBox("Success", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    afterSave();
-                                                }
-                                            });
-                                            return;
-                                        }
+                                        String msg = returnobj.has("MESSAGE")
+                                                ? returnobj.getString("MESSAGE") : "Saved.";
+                                        box.getBox("Success", msg, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                afterSave();
+                                            }
+                                        });
+                                        return;
                                     }
                                 }
-                                return;
                             }
+                            return;
+                        }
+                        if (request == REQUEST_SAVE) {
+                            Log.w(TAG, "Save response missing usable EX_RETURN: " + responsebody);
+                            UIFuncs.errorSound(getContext());
+                            AlertBox box = new AlertBox(getContext());
+                            box.getBox("Err", "Unexpected server response after submit. Data may not be saved — contact support if this persists.");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -938,7 +1021,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
             @Override
             public byte[] getBody() {
-                return params.toString().getBytes();
+                return params.toString().getBytes(StandardCharsets.UTF_8);
             }
 
             @Override

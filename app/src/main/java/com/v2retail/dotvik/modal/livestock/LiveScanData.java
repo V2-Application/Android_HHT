@@ -29,6 +29,11 @@ public class LiveScanData  implements Serializable {
         target.setBin(binData.getBin());
         target.setPlant(binData.getPlant());
         target.setStockTakeId(binData.getStockTakeId());
+        // Crate from pick list row — ZWM_GET_STOCK_BIN often omits ST_TAKE_ID but
+        // still returns BIN/CRATE/PLANT; crate must reach ET_SAVE for SAP posting.
+        if (binData.getCrate() != null) {
+            target.setCrate(binData.getCrate());
+        }
         return target;
     }
 
