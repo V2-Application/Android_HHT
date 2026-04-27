@@ -102,13 +102,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     List<String> stockIds = new ArrayList<String>();
     ArrayAdapter<String> stockAdapter;
 
-    // 2026-04-27 BUGFIX (promoted from HHT-Dev #907):
-    // Changed from Map<String,LiveStockBinCrate> keyed by BIN to plain
-    // List<LiveStockBinCrate>. The previous map collapsed multiple crates
-    // that shared the same BIN into a single entry — SAP backend can
-    // legitimately return several crates per BIN (each crate is its own row
-    // in the live stock take), and the UI was showing fewer records than SAP.
-    List<LiveStockBinCrate> liveStockList = new ArrayList<>();
+    Map<String, LiveStockBinCrate> liveStockList = new LinkedHashMap<>();
     Map<String, LiveScanData> scanData = new HashMap<>();
     LiveStockBinCrate currentData = null;
 
@@ -291,12 +285,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_crate);
                     if (!value.isEmpty()) {
-                        // Accept crate (whether auto-expected or manually entered)
-                        // → move cursor to Art. No.
                         txt_cur_crate.setText(value);
                         UIFuncs.enableInput(con, txt_scan_article);
-                        txt_scan_article.requestFocus();
-                        Log.d(TAG, "Crate entered (editor action): " + value + " → focus Art.No.");
                         return true;
                     }
                 }
@@ -324,12 +314,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
-                    // Accept scanned crate (whether auto-expected or manually entered)
-                    // → move cursor to Art. No.
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
-                    txt_scan_article.requestFocus();
-                    Log.d(TAG, "Crate scanned: " + value + " → focus Art.No.");
                 }
             }
         });
@@ -376,7 +362,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
     private void clear(boolean clearAll) {
         scanData = new HashMap<>();
-        liveStockList = new ArrayList<>();
+        liveStockList = new HashMap<>();
         totalScanned = 0;
         step2();
         if(clearAll){
@@ -414,8 +400,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.enableInput(con, txt_scan_binno);
-        // Initial focus is on BIN (Step 1)
-        txt_scan_binno.requestFocus();
     }
 
     private void getStockIDs(){
@@ -463,8 +447,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             stockIds.add("Select");
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int length = IT_DATA_ARRAY.length();
-            // V2 RFC adaptor convention: row 0 of IT_DATA is metadata/column-names
-            // (matches Stock_Take_Process_Fragment and other DC fragments).
             for(int i = 1; i < length; i++){
                 stockIds.add(IT_DATA_ARRAY.getJSONObject(i).getString("ST_TAKE_ID"));
             }
@@ -492,19 +474,15 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
     private void setData(JSONObject responsebody){
         try {
-            // 2026-04-27 BUGFIX: store every row from SAP (incl. multiple crates
-            // per BIN). Was a Map keyed on BIN which silently dropped duplicates.
-            liveStockList = new ArrayList<>();
+            liveStockList = new LinkedHashMap<>();
             scanData = new HashMap<>();
             totalScanned = 0;
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int length = IT_DATA_ARRAY.length();
-            // V2 RFC adaptor convention: skip row 0 (metadata).
             for(int i = 1; i < length; i++){
                 LiveStockBinCrate data = new Gson().fromJson(IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
-                liveStockList.add(data);
+                liveStockList.put(data.getBin(), data);
             }
-            Log.d(TAG, "setData: loaded " + liveStockList.size() + " rows from SAP");
             if(liveStockList.size() > 0){
                 step2();
                 tv_stock_take_id.setText(dd_stock_id_list.getSelectedItem().toString());
@@ -531,10 +509,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private void validateBinNo(String binno){
         boolean binFound = false;
         boolean withCarate = false;
-        // Iterate the list — accepts the first un-picked row matching this BIN.
-        // When a BIN has multiple crates, each successive scan picks up the next
-        // un-picked row, so all crates can be counted.
-        for (LiveStockBinCrate data : liveStockList) {
+        for (Map.Entry<String, LiveStockBinCrate> dataEntry: liveStockList.entrySet()) {
+            LiveStockBinCrate data = dataEntry.getValue();
             if(data.getBin().equalsIgnoreCase(binno) && !data.isPicked()){
                 data.setPicked(true);
                 currentData = LiveStockBinCrate.newInstance(data);
@@ -552,7 +528,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("Invalid Bin", "Invalid BIN, please check below table for allowed BINs");
             txt_scan_binno.requestFocus();
         }else{
-            Log.d(TAG, "BIN " + binno + " found. withCarate=" + withCarate);
             //Here we can check for with crate and without crate logic if needed
             setLastScanedItem(withCarate);
         }
@@ -614,7 +589,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     }
 
     private void setLastScanedItem(boolean withCarate){
-        // Reset all scan inputs before applying cursor-movement logic
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_binno);
@@ -628,22 +602,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_scan_article.setText("");
         txt_scan_sqty.setText("0");
 
-        // ─── Cursor movement logic after BIN scan ────────────────────────────
-        if(withCarate){
-            // Crate IS in list for this BIN → auto-focus Crate field.
-            // Article stays disabled until Crate is scanned.
-            UIFuncs.enableInput(con, txt_scan_crate);
-            txt_scan_crate.requestFocus();
-            Log.d(TAG, "BIN has crate → cursor → Crate field");
-        }else{
-            // Crate NOT in list → auto-focus Art. No. directly.
-            // Also keep Crate enabled so user can manually enter a crate if needed
-            // (Step 3: Manual Crate Handling). Scanning a crate will then move
-            // cursor to Art. No. via the crate handlers.
-            UIFuncs.enableInput(con, txt_scan_crate);
+        if(!withCarate){
             UIFuncs.enableInput(con, txt_scan_article);
-            txt_scan_article.requestFocus();
-            Log.d(TAG, "BIN has no crate → cursor → Art.No. (Crate still available for manual entry)");
+        }else{
+            UIFuncs.enableInput(con, txt_scan_crate);
         }
 
         populateTableData();
@@ -703,9 +665,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         tr.addView(headerExHuNo);
         tableItems.addView(tr, trParams);
 
-        //Create Data Rows in Table — iterate the list (was Map.entrySet)
+        //Create Data Rows in Table
         int rowNum = 1;
-        for (LiveStockBinCrate data : liveStockList) {
+        for (Map.Entry<String, LiveStockBinCrate> stockEntry : liveStockList.entrySet()) {
+            LiveStockBinCrate data = stockEntry.getValue();
             if(!data.isPicked()){
                 TextView tvBin = new TextView(getContext());
                 tvBin.setText(data.getBin());
@@ -767,17 +730,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("bapiname", Vars.ZWM_STK_ADJ_MSA_BIN);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
-                // 2026-04-27 BUGFIX: was sending USER as IM_STOCK_TAKE_ID (copy-paste
-                // error) which made SAP look up a stock take ID matching the user
-                // name and silently fail. Now sending the actual selected ID from
-                // the header (same value used for IM_STOCK_TAKE_ID in validateArticle).
-                args.put("IM_STOCK_TAKE_ID", tv_stock_take_id.getText().toString());
+                args.put("IM_STOCK_TAKE_ID", USER);
                 args.put("IM_CRATE", UIFuncs.toUpperTrim(txt_cur_crate));
                 args.put("IM_BIN", UIFuncs.toUpperTrim(txt_cur_binno));
                 args.put("IM_DESKTOP", UIFuncs.toUpperTrim(txt_cur_crate).isEmpty() ? "" : "X");
                 args.put("ET_SAVE", dataToSave);
-                Log.d(TAG, "saveData → IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
-                        + " rows=" + dataToSave.length());
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -809,8 +766,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.enableInput(con, txt_scan_binno);
-        // Back to Step 1 — focus BIN for next scan cycle
-        txt_scan_binno.requestFocus();
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
