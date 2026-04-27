@@ -462,8 +462,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             stockIds.add("Select");
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int length = IT_DATA_ARRAY.length();
-            // V2 RFC adaptor convention: row 0 of IT_DATA is metadata/column-names
-            // (matches Stock_Take_Process_Fragment and other DC fragments).
+            // NOTE: this RFC (ZWM_GET_STOCK_TAKE_ID) is left as-is — historical
+            // pattern in app starts at i=1. If users report missing stock-take
+            // IDs in the dropdown, this loop should also be reviewed.
             for(int i = 1; i < length; i++){
                 stockIds.add(IT_DATA_ARRAY.getJSONObject(i).getString("ST_TAKE_ID"));
             }
@@ -493,18 +494,28 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         try {
             // 2026-04-26 BUGFIX: store every row from SAP (incl. multiple crates
             // per BIN). Was a Map keyed on BIN which silently dropped duplicates.
+            //
+            // 2026-04-27 BUGFIX: load from i=0 (was i=1). ZWM_GET_STOCK_BIN does
+            // NOT prefix IT_DATA with a metadata header row — every entry is real
+            // data. Confirmed by SE37 test: IM_USER=250, IM_WERKS=DH24,
+            // IM_ST_ID=0000010163 -> IT_DATA: 3 entries, all data, EX_RETURN OK.
+            // The previous i=1 loop was silently dropping the first BIN of every
+            // stock-take (e.g. A0-0201-E1 / BBLU-01229 was missing from the UI).
+            // The middleware only injects a placeholder metadata-style row in the
+            // ERROR path, and the error path is handled separately in
+            // submitRequest() via EX_RETURN.TYPE='E' before setData() is called,
+            // so by the time we get here every row is real data.
             liveStockList = new ArrayList<>();
             scanData = new HashMap<>();
             totalScanned = 0;
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int rawLength = IT_DATA_ARRAY.length();
 
-            // Logcat-only diagnostics (not visible in UI). Tag: MSA-DIAG.
+            // Logcat-only diagnostics. Tag: MSA-DIAG.
             Log.d(TAG, "MSA-DIAG raw IT_DATA length=" + rawLength);
             Log.d(TAG, "MSA-DIAG raw IT_DATA = " + IT_DATA_ARRAY.toString());
 
-            // V2 RFC adaptor convention: skip row 0 (metadata).
-            for(int i = 1; i < rawLength; i++){
+            for(int i = 0; i < rawLength; i++){
                 LiveStockBinCrate data = new Gson().fromJson(IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
                 Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin() + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
