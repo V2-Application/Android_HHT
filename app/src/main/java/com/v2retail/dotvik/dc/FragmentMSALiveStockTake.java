@@ -31,6 +31,7 @@ import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkError;
@@ -78,6 +79,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private static final int REQUEST_SAVE = 1503;
 
     private static final String TAG = FragmentMSALiveStockTake.class.getName();
+
+    // Build marker — visible in action-bar title and in diagnostic Toasts so we
+    // can confirm at a glance which APK is on the device. Bump on every rebuild.
+    private static final String BUILD_MARKER = "B911-DEV";
 
     View rootView;
     String URL="";
@@ -130,7 +135,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     @Override
     public void onResume() {
         super.onResume();
-        ((Process_Selection_Activity) getActivity()).setActionBarTitle("MSA Live Stock Take");
+        // Build marker in title proves which APK is loaded
+        ((Process_Selection_Activity) getActivity()).setActionBarTitle("MSA Live Stock Take [" + BUILD_MARKER + "]");
     }
 
     @Override
@@ -497,13 +503,30 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             scanData = new HashMap<>();
             totalScanned = 0;
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
-            int length = IT_DATA_ARRAY.length();
+            int rawLength = IT_DATA_ARRAY.length();
+
+            // ─── DIAGNOSTIC: dump the raw JSON to logcat so we can see exactly
+            //     what the middleware/SAP returned. Look for "MSA-DIAG" tag.
+            Log.d(TAG, "MSA-DIAG [" + BUILD_MARKER + "] raw IT_DATA length=" + rawLength);
+            Log.d(TAG, "MSA-DIAG [" + BUILD_MARKER + "] raw IT_DATA = " + IT_DATA_ARRAY.toString());
+
             // V2 RFC adaptor convention: skip row 0 (metadata).
-            for(int i = 1; i < length; i++){
+            for(int i = 1; i < rawLength; i++){
                 LiveStockBinCrate data = new Gson().fromJson(IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
+                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin() + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
             }
-            Log.d(TAG, "setData: loaded " + liveStockList.size() + " rows from SAP");
+            Log.d(TAG, "MSA-DIAG [" + BUILD_MARKER + "] liveStockList.size=" + liveStockList.size());
+
+            // ─── DIAGNOSTIC TOAST: shown on screen so user can see the row counts
+            //     without needing logcat. If user does NOT see this toast, they
+            //     are NOT running build " + BUILD_MARKER + ".
+            String diagMsg = "[" + BUILD_MARKER + "] SAP returned " + rawLength
+                    + " raw rows.  Loaded " + liveStockList.size()
+                    + " into list (after metadata skip).  TQ will show "
+                    + liveStockList.size() + ".";
+            Toast.makeText(getContext(), diagMsg, Toast.LENGTH_LONG).show();
+
             if(liveStockList.size() > 0){
                 step2();
                 tv_stock_take_id.setText(dd_stock_id_list.getSelectedItem().toString());
@@ -629,20 +652,20 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
         // ─── Cursor movement logic after BIN scan ────────────────────────────
         if(withCarate){
-            // ✅ Crate IS in list for this BIN → auto-focus Crate field.
+            // Crate IS in list for this BIN → auto-focus Crate field.
             // Article stays disabled until Crate is scanned.
             UIFuncs.enableInput(con, txt_scan_crate);
             txt_scan_crate.requestFocus();
-            Log.d(TAG, "BIN has crate → cursor → Crate field");
+            Log.d(TAG, "BIN has crate -> cursor -> Crate field");
         }else{
-            // ❌ Crate NOT in list → auto-focus Art. No. directly.
+            // Crate NOT in list → auto-focus Art. No. directly.
             // Also keep Crate enabled so user can manually enter a crate if needed
             // (Step 3: Manual Crate Handling). Scanning a crate will then move
             // cursor to Art. No. via the crate handlers.
             UIFuncs.enableInput(con, txt_scan_crate);
             UIFuncs.enableInput(con, txt_scan_article);
             txt_scan_article.requestFocus();
-            Log.d(TAG, "BIN has no crate → cursor → Art.No. (Crate still available for manual entry)");
+            Log.d(TAG, "BIN has no crate -> cursor -> Art.No. (Crate still available for manual entry)");
         }
 
         populateTableData();
@@ -775,7 +798,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("IM_BIN", UIFuncs.toUpperTrim(txt_cur_binno));
                 args.put("IM_DESKTOP", UIFuncs.toUpperTrim(txt_cur_crate).isEmpty() ? "" : "X");
                 args.put("ET_SAVE", dataToSave);
-                Log.d(TAG, "saveData → IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
+                Log.d(TAG, "saveData -> IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
                         + " rows=" + dataToSave.length());
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
             } catch (JSONException e) {
