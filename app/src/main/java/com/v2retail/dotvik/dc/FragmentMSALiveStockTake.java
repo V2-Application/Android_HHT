@@ -49,6 +49,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -198,23 +199,86 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         box.getBox(title, message);
     }
 
-    /** Middleware may send EX_RETURN as one object or as a BAPIRET2 table (JSON array). */
-    private static JSONObject parseExReturn(JSONObject responsebody) throws JSONException {
+    private static final class BapiOutcome {
+        final boolean success;
+        final String message;
+
+        BapiOutcome(boolean success, String message) {
+            this.success = success;
+            this.message = message != null ? message : "";
+        }
+    }
+
+    private static BapiOutcome evaluateBapiReturn(JSONObject responsebody) throws JSONException {
         if (responsebody == null || !responsebody.has("EX_RETURN")) {
             return null;
         }
         Object raw = responsebody.get("EX_RETURN");
-        if (raw instanceof JSONObject) {
-            return (JSONObject) raw;
-        }
+        JSONArray rows = new JSONArray();
         if (raw instanceof JSONArray) {
-            JSONArray arr = (JSONArray) raw;
-            if (arr.length() > 0) {
-                Object first = arr.get(0);
-                if (first instanceof JSONObject) {
-                    return (JSONObject) first;
-                }
+            rows = (JSONArray) raw;
+        } else if (raw instanceof JSONObject) {
+            rows.put(raw);
+        } else {
+            return null;
+        }
+        if (rows.length() == 0) {
+            return null;
+        }
+        StringBuilder errors = new StringBuilder();
+        for (int i = 0; i < rows.length(); i++) {
+            Object o = rows.get(i);
+            if (!(o instanceof JSONObject)) {
+                continue;
             }
+            JSONObject row = (JSONObject) o;
+            String t = row.optString("TYPE", "");
+            if ("E".equals(t) || "A".equals(t)) {
+                String m = row.optString("MESSAGE", "Error");
+                if (errors.length() > 0) {
+                    errors.append('\n');
+                }
+                errors.append(m);
+            }
+        }
+        if (errors.length() > 0) {
+            return new BapiOutcome(false, errors.toString());
+        }
+        StringBuilder infos = new StringBuilder();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            String t = row.optString("TYPE", "");
+            String m = row.optString("MESSAGE", "").trim();
+            if (m.isEmpty()) {
+                continue;
+            }
+            if ("S".equals(t) || "W".equals(t) || "I".equals(t)) {
+                if (infos.length() > 0) {
+                    infos.append('\n');
+                }
+                infos.append(m);
+            }
+        }
+        String msg = infos.length() > 0 ? infos.toString() : "OK";
+        return new BapiOutcome(true, msg);
+    }
+
+    private static BapiOutcome outcomeFromExMessage(JSONObject responsebody) {
+        if (responsebody == null || !responsebody.has("EX_MESSAGE")) {
+            return null;
+        }
+        try {
+            Object raw = responsebody.get("EX_MESSAGE");
+            if (raw instanceof JSONObject) {
+                JSONObject o = (JSONObject) raw;
+                String type = o.optString("TYPE", "");
+                String m = o.optString("MESSAGE", "").trim();
+                if ("E".equals(type) || "A".equals(type)) {
+                    return new BapiOutcome(false, m.isEmpty() ? "Error" : m);
+                }
+                return new BapiOutcome(true, m.isEmpty() ? "Saved." : m);
+            }
+        } catch (JSONException ignored) {
         }
         return null;
     }
@@ -243,7 +307,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 if(!scanData.isEmpty()){
                     saveData();
                 }else{
-                    box.getBox("No Data", "Nothing to save, please scan some data");
+                    box.getBox("No Data", "Nothing to save. Scan a BIN from the list, then crate (if required), then article/barcode until the server confirms the scan. Then tap SUBMIT.");
                 }
                 break;
         }
@@ -601,6 +665,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if (data == null) {
             return "";
         }
+        String m = data.getMatnr();
+        if (m != null && !m.trim().isEmpty()) {
+            return m.trim();
+        }
         String a = data.getArticle();
         if (a != null && !a.trim().isEmpty()) {
             return a.trim();
@@ -658,6 +726,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             LiveArticleQty data = new Gson().fromJson(EX_DATA.toString(), LiveArticleQty.class);
 
             String materialKey = effectiveMaterialFromScanResponse(data);
+            if (materialKey.isEmpty() && EX_DATA.has("MATNR") && !EX_DATA.isNull("MATNR")) {
+                materialKey = EX_DATA.getString("MATNR").trim();
+            }
+            if (materialKey.isEmpty() && EX_DATA.has("ARTICLE") && !EX_DATA.isNull("ARTICLE")) {
+                materialKey = EX_DATA.getString("ARTICLE").trim();
+            }
             if (materialKey.isEmpty()) {
                 showError("Scan Error", "Server did not return article/barcode for this scan.");
                 return;
@@ -837,9 +911,24 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 LiveScanData data = dataEntry.getValue();
                 String scanDataJsonString = new Gson().toJson(data);
                 JSONObject itDataJson = new JSONObject(scanDataJsonString);
-                // ZWM_STK_ADJ_MSA_BIN expects ST_TAKE_ID per line; IT_DATA from ZWM_GET_STOCK_BIN
-                // often omits it, which caused silent SAP rejects before posting.
                 itDataJson.put("ST_TAKE_ID", stIdHeader);
+                itDataJson.put("STOCK_TAKE", stIdHeader);
+                if (itDataJson.has("MATERIAL") && !itDataJson.isNull("MATERIAL")) {
+                    String mat = itDataJson.getString("MATERIAL").trim();
+                    if (!mat.isEmpty()) {
+                        itDataJson.put("MATNR", mat);
+                    }
+                }
+                String plant = itDataJson.optString("PLANT", "").trim();
+                if (plant.isEmpty() && WERKS != null && !WERKS.isEmpty()) {
+                    itDataJson.put("PLANT", WERKS);
+                }
+                String sq = itDataJson.optString("SCAN_QTY", "").trim();
+                if (sq.isEmpty()) {
+                    itDataJson.put("SCAN_QTY", "0");
+                    sq = "0";
+                }
+                itDataJson.put("MENGE", sq);
                 arrScanData.put(itDataJson);
             }
             if (arrScanData.length() == 0) {
@@ -853,6 +942,46 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         return null;
     }
 
+    private void putSaveHeaderFromSaveRows(JSONObject args, JSONArray rows) throws JSONException {
+        if (rows == null || rows.length() == 0) {
+            args.put("IM_BIN", UIFuncs.toUpperTrim(txt_cur_binno));
+            args.put("IM_CRATE", UIFuncs.toUpperTrim(txt_cur_crate));
+            args.put("IM_DESKTOP", UIFuncs.toUpperTrim(txt_cur_crate).isEmpty() ? "" : "X");
+            return;
+        }
+        if (rows.length() == 1) {
+            JSONObject r = rows.getJSONObject(0);
+            String bin = r.optString("BIN", "").trim().toUpperCase();
+            String cr = r.optString("CRATE", "").trim().toUpperCase();
+            args.put("IM_BIN", bin);
+            args.put("IM_CRATE", cr);
+            args.put("IM_DESKTOP", cr.isEmpty() ? "" : "X");
+            return;
+        }
+        String firstBin = rows.getJSONObject(0).optString("BIN", "").trim();
+        String firstCrate = rows.getJSONObject(0).optString("CRATE", "").trim();
+        boolean allSameBin = true;
+        boolean allSameCrate = true;
+        for (int i = 1; i < rows.length(); i++) {
+            JSONObject r = rows.getJSONObject(i);
+            if (!firstBin.equalsIgnoreCase(r.optString("BIN", "").trim())) {
+                allSameBin = false;
+            }
+            if (!firstCrate.equalsIgnoreCase(r.optString("CRATE", "").trim())) {
+                allSameCrate = false;
+            }
+        }
+        if (allSameBin && allSameCrate) {
+            args.put("IM_BIN", firstBin.toUpperCase());
+            args.put("IM_CRATE", firstCrate.toUpperCase());
+            args.put("IM_DESKTOP", firstCrate.isEmpty() ? "" : "X");
+        } else {
+            args.put("IM_BIN", "");
+            args.put("IM_CRATE", "");
+            args.put("IM_DESKTOP", "");
+        }
+    }
+
     private void saveData() {
         JSONObject args = new JSONObject();
         JSONArray dataToSave = getScanDataToSubmit();
@@ -861,15 +990,14 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("bapiname", Vars.ZWM_STK_ADJ_MSA_BIN);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
-                // 2026-04-26 BUGFIX: was sending USER as IM_STOCK_TAKE_ID (copy-paste
-                // error) which made SAP look up a stock take ID matching the user
-                // name and silently fail. Now sending the actual selected ID from
-                // the header (same value used for IM_STOCK_TAKE_ID in validateArticle).
-                args.put("IM_STOCK_TAKE_ID", tv_stock_take_id.getText().toString());
-                args.put("IM_CRATE", UIFuncs.toUpperTrim(txt_cur_crate));
-                args.put("IM_BIN", UIFuncs.toUpperTrim(txt_cur_binno));
-                args.put("IM_DESKTOP", UIFuncs.toUpperTrim(txt_cur_crate).isEmpty() ? "" : "X");
-                args.put("ET_SAVE", dataToSave);
+                String stId = tv_stock_take_id.getText().toString();
+                args.put("IM_STOCK_TAKE_ID", stId);
+                args.put("IM_ST_ID", stId);
+                putSaveHeaderFromSaveRows(args, dataToSave);
+                JSONArray tablePayload = new JSONArray(dataToSave.toString());
+                args.put("IT_SAVE", tablePayload);
+                args.put("ET_SAVE", tablePayload);
+                args.put("IT_DATA", tablePayload);
                 Log.d(TAG, "saveData -> IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
                         + " rows=" + dataToSave.length());
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
@@ -934,11 +1062,20 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest = null;
-        String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
-        url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+        String url = GatewayUrls.noAclJsonRfcUrl(this.URL, rfc);
+        if (url.isEmpty()) {
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Server URL is missing. Log in again from IP selection.");
+            return;
+        }
 
         final JSONObject params = args;
 
+        Log.d(TAG, "RFC URL -> " + url);
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
@@ -963,45 +1100,62 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     return;
                 } else {
                     try {
-                        JSONObject returnobj = parseExReturn(responsebody);
-                        if (returnobj != null) {
-                            String type = returnobj.getString("TYPE");
-                            if (type != null) {
-                                if (type.equals("E")) {
-                                    UIFuncs.errorSound(getContext());
-                                    AlertBox box = new AlertBox(getContext());
-                                    box.getBox("Err", returnobj.getString("MESSAGE"));
-                                } else {
-                                    if (request == REQUEST_GET_STOCK_ID) {
-                                        populateStockIDs(responsebody);
-                                        return;
-                                    }
-                                    if (request == REQUEST_VALIDATE_STOCK_ID) {
-                                        setData(responsebody);
-                                        return;
-                                    }
-                                    if (request == REQUEST_LIVE_SCAN) {
-                                        updateScanStats(responsebody);
-                                        return;
-                                    }
-                                    if (request == REQUEST_SAVE) {
-                                        AlertBox box = new AlertBox(getContext());
-                                        String msg = returnobj.has("MESSAGE")
-                                                ? returnobj.getString("MESSAGE") : "Saved.";
-                                        box.getBox("Success", msg, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                afterSave();
-                                            }
-                                        });
-                                        return;
-                                    }
+                        BapiOutcome outcome = evaluateBapiReturn(responsebody);
+                        if (outcome == null && request == REQUEST_SAVE) {
+                            outcome = outcomeFromExMessage(responsebody);
+                        }
+                        if (outcome != null) {
+                            if (!outcome.success) {
+                                UIFuncs.errorSound(getContext());
+                                AlertBox box = new AlertBox(getContext());
+                                box.getBox("Err", outcome.message);
+                                if (request == REQUEST_SAVE) {
+                                    Log.w(TAG, "MSA save SAP error: " + outcome.message);
                                 }
+                                return;
+                            }
+                            if (request == REQUEST_GET_STOCK_ID) {
+                                populateStockIDs(responsebody);
+                                return;
+                            }
+                            if (request == REQUEST_VALIDATE_STOCK_ID) {
+                                setData(responsebody);
+                                return;
+                            }
+                            if (request == REQUEST_LIVE_SCAN) {
+                                updateScanStats(responsebody);
+                                return;
+                            }
+                            if (request == REQUEST_SAVE) {
+                                Log.i(TAG, "MSA save response message: " + outcome.message);
+                                Log.d(TAG, "MSA save full response: " + responsebody.toString());
+                                AlertBox box = new AlertBox(getContext());
+                                box.getBox("Success", outcome.message, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        afterSave();
+                                    }
+                                });
+                                return;
                             }
                             return;
                         }
+                        if (outcome == null) {
+                            if (request == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) {
+                                populateStockIDs(responsebody);
+                                return;
+                            }
+                            if (request == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) {
+                                setData(responsebody);
+                                return;
+                            }
+                            if (request == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) {
+                                updateScanStats(responsebody);
+                                return;
+                            }
+                        }
                         if (request == REQUEST_SAVE) {
-                            Log.w(TAG, "Save response missing usable EX_RETURN: " + responsebody);
+                            Log.w(TAG, "Save response missing EX_RETURN / EX_MESSAGE: " + responsebody);
                             UIFuncs.errorSound(getContext());
                             AlertBox box = new AlertBox(getContext());
                             box.getBox("Err", "Unexpected server response after submit. Data may not be saved — contact support if this persists.");
