@@ -26,21 +26,14 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
 
-    <!-- DEV APK — SINGLE URL POLICY (2026-04-22)
-         Only one URL is allowed: the Cloudflare proxy that has been end-to-end
-         verified to route DIRECTLY to SAP DEV 192.168.144.174 Client 210 via
-         sap-api.v2retail.net/api/rfc/proxy. Azure middleware is bypassed
-         entirely because its DEFAULTS are production (SAP_HOST=auto, CLIENT=600,
-         SYSID=PRD) and we cannot rely on env=dev parameter propagation.
-
+    <!-- DEV APK — URL LIST
          Verified chain (2026-04-22 11:25 UTC):
-           hht-api.v2retail.net/dev/health →
-             { "env": "dev",
-               "backend": "sap-api.v2retail.net (direct SAP DEV, no Azure)",
-               "sap": { "host": "192.168.144.174", "client": "210" } }
+           hht-api.v2retail.net/dev → SAP DEV 192.168.144.174 Client 210
+           hht-api.v2retail.net/qa  → SAP QA
     -->
     <array name="ipAddress">
         <item>https://hht-api.v2retail.net/dev (SAP DEV — 192.168.144.174)</item>
+        <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
     </array>
 
     <array name="choose_store">
