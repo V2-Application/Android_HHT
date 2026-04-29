@@ -24,11 +24,13 @@ public class LiveScanData  implements Serializable {
         if(binData == null){
             return null;
         }
-
         LiveScanData target = new LiveScanData();
         target.setBin(binData.getBin());
         target.setPlant(binData.getPlant());
         target.setStockTakeId(binData.getStockTakeId());
+        if (binData.getCrate() != null) {
+            target.setCrate(binData.getCrate());
+        }
         return target;
     }
 
@@ -38,51 +40,16 @@ public class LiveScanData  implements Serializable {
         current.setScanQty(Util.formatDouble(scanQty + artQty));
     }
 
-    public String getMaterial() {
-        return material;
-    }
-
-    public void setMaterial(String material) {
-        this.material = material;
-    }
-
-    public String getPlant() {
-        return plant;
-    }
-
-    public void setPlant(String plant) {
-        this.plant = plant;
-    }
-
-    public String getBin() {
-        return bin;
-    }
-
-    public void setBin(String bin) {
-        this.bin = bin;
-    }
-
-    public String getCrate() {
-        return crate;
-    }
-
-    public void setCrate(String crate) {
-        this.crate = crate;
-    }
-
-    public String getStockTakeId() {
-        return stockTakeId;
-    }
-
-    public void setStockTakeId(String stockTakeId) {
-        this.stockTakeId = stockTakeId;
-    }
-
-    public String getScanQty() {
-        return scanQty;
-    }
-
-    public void setScanQty(String scanQty) {
-        this.scanQty = scanQty;
-    }
+    public String getMaterial() { return material; }
+    public void setMaterial(String material) { this.material = material; }
+    public String getPlant() { return plant; }
+    public void setPlant(String plant) { this.plant = plant; }
+    public String getBin() { return bin; }
+    public void setBin(String bin) { this.bin = bin; }
+    public String getCrate() { return crate; }
+    public void setCrate(String crate) { this.crate = crate; }
+    public String getStockTakeId() { return stockTakeId; }
+    public void setStockTakeId(String stockTakeId) { this.stockTakeId = stockTakeId; }
+    public String getScanQty() { return scanQty; }
+    public void setScanQty(String scanQty) { this.scanQty = scanQty; }
 }
