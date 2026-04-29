@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Form section background — used by HUB HU Picking / Putway.
+  2026-04-24: stroke removed per user request. White fill only, rounded
+  corners preserved (harmless on white background). The inner EditText
+  borders still give each input its own visual frame.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFFFFF" />
+    <corners android:radius="6dp" />
+</shape>
