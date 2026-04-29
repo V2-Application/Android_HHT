@@ -194,6 +194,25 @@ public class Vars {
     // Added: 2026-04-21 | DEV BRANCH ONLY
     public static String ZWM_HU_STOCK_REV_RFC = "ZWM_HU_STOCK_REV_RFC";
 
+    // ── HUB: HU Picking at Hub ──────────────────────────────────────────────
+    // RFC: ZWM_HUB_HU_PICKING_RFC
+    // IV_WERKS — Plant (from SharedPreferences)
+    // IV_STORE — Destination store (scanned)
+    // IV_BIN — Source bin (scanned)
+    // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
+    // Added: 2026-04-23 | DEV BRANCH
+    public static String ZWM_HUB_HU_PICKING_RFC = "ZWM_HUB_HU_PICKING_RFC";
+
+    // ── HUB: HU Putway at Hub ───────────────────────────────────────────────
+    // RFC: ZWM_HUB_HU_PUTWAY_RFC
+    // IV_WERKS — Plant (from SharedPreferences)
+    // IV_CRATE_HU — Crate/HU being put away (scanned)
+    // IV_BIN — Destination bin (scanned)
+    // IV_LGTYP — Storage Type (scanned/entered)
+    // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
+    // Added: 2026-04-23 | DEV BRANCH
+    public static String ZWM_HUB_HU_PUTWAY_RFC = "ZWM_HUB_HU_PUTWAY_RFC";
+
     public static String ZWM_PTL_GET_ZONE = "ZWM_PTL_GET_ZONE";
     public static String ZWM_GET_MSA_SECTION_LIST = "ZWM_GET_MSA_SECTION_LIST";
     public static String ZGRT_PICK_GET_TO_LIST_PTL = "ZGRT_PICK_GET_TO_LIST_PTL";
