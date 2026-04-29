@@ -13,7 +13,20 @@ android {
         aaptOptions {
             cruncherEnabled = false
         }
+
+        // ─── Feature flags ───────────────────────────────────────────────
+        // ENABLE_V11_V01 : master flag; true = visible to all HUB users
+        // SAP_DEV_HOST   : when device URL contains this string, V11-V01
+        //                  is always shown regardless of ENABLE_V11_V01
+        buildConfigField "boolean", "ENABLE_V11_V01", "true"
+        buildConfigField "String", "SAP_DEV_HOST", "\"192.168.144.174\""
     }
+
+    // AGP 8.x requires explicit opt-in for BuildConfig generation
+    buildFeatures {
+        buildConfig = true
+    }
+
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
             def versionName = variant.versionName.replace('.', '_')
