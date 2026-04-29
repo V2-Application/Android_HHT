@@ -146,21 +146,21 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
         tv_stock_take_id = rootView.findViewById(R.id.tv_msa_live_stock_take_stock_id);
         tv_plant = rootView.findViewById(R.id.tv_msa_live_stock_take_plant);
-        
+
         txt_tq = rootView.findViewById(R.id.txt_msa_live_stock_take_tq);
         txt_sq = rootView.findViewById(R.id.txt_msa_live_stock_take_sq);
         txt_pq = rootView.findViewById(R.id.txt_msa_live_stock_take_rq);
-        
+
         txt_cur_binno = rootView.findViewById(R.id.txt_msa_live_stock_take_curr_bin);
         txt_cur_crate = rootView.findViewById(R.id.txt_msa_live_stock_take_curr_crate);
         txt_cur_article = rootView.findViewById(R.id.txt_msa_live_stock_take_curr_article);
         txt_cur_sqty = rootView.findViewById(R.id.txt_msa_live_stock_take_curr_sqty);
-        
+
         txt_scan_binno = rootView.findViewById(R.id.txt_msa_live_stock_take_scan_bin);
         txt_scan_crate = rootView.findViewById(R.id.txt_msa_live_stock_take_scan_crate);
         txt_scan_article = rootView.findViewById(R.id.txt_msa_live_stock_take_scan_article);
         txt_scan_sqty = rootView.findViewById(R.id.txt_msa_live_stock_take_scan_sqty);
-        
+
         llNextScreen = rootView.findViewById(R.id.ll_msa_live_stock_take_next_screen);
         llStockTake = rootView.findViewById(R.id.ll_msa_live_stock_take_stock_take);
 
@@ -186,7 +186,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         return rootView;
     }
 
-
     private void showError(String title, String message) {
         UIFuncs.errorSound(con);
         AlertBox box = new AlertBox(getContext());
@@ -196,7 +195,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private static final class BapiOutcome {
         final boolean success;
         final String message;
-
         BapiOutcome(boolean success, String message) {
             this.success = success;
             this.message = message != null ? message : "";
@@ -204,109 +202,85 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     }
 
     private static BapiOutcome evaluateBapiReturn(JSONObject responsebody) throws JSONException {
-        if (responsebody == null || !responsebody.has("EX_RETURN")) {
-            return null;
-        }
+        if (responsebody == null || !responsebody.has("EX_RETURN")) return null;
         Object raw = responsebody.get("EX_RETURN");
         JSONArray rows = new JSONArray();
-        if (raw instanceof JSONArray) {
-            rows = (JSONArray) raw;
-        } else if (raw instanceof JSONObject) {
-            rows.put(raw);
-        } else {
-            return null;
-        }
-        if (rows.length() == 0) {
-            return null;
-        }
+        if (raw instanceof JSONArray) rows = (JSONArray) raw;
+        else if (raw instanceof JSONObject) rows.put(raw);
+        else return null;
+        if (rows.length() == 0) return null;
         StringBuilder errors = new StringBuilder();
         for (int i = 0; i < rows.length(); i++) {
             Object o = rows.get(i);
-            if (!(o instanceof JSONObject)) {
-                continue;
-            }
+            if (!(o instanceof JSONObject)) continue;
             JSONObject row = (JSONObject) o;
             String t = row.optString("TYPE", "");
             if ("E".equals(t) || "A".equals(t)) {
                 String m = row.optString("MESSAGE", "Error");
-                if (errors.length() > 0) {
-                    errors.append('\n');
-                }
+                if (errors.length() > 0) errors.append('\n');
                 errors.append(m);
             }
         }
-        if (errors.length() > 0) {
-            return new BapiOutcome(false, errors.toString());
-        }
+        if (errors.length() > 0) return new BapiOutcome(false, errors.toString());
         StringBuilder infos = new StringBuilder();
         for (int i = 0; i < rows.length(); i++) {
             JSONObject row = rows.getJSONObject(i);
             String t = row.optString("TYPE", "");
             String m = row.optString("MESSAGE", "").trim();
-            if (m.isEmpty()) {
-                continue;
-            }
+            if (m.isEmpty()) continue;
             if ("S".equals(t) || "W".equals(t) || "I".equals(t)) {
-                if (infos.length() > 0) {
-                    infos.append('\n');
-                }
+                if (infos.length() > 0) infos.append('\n');
                 infos.append(m);
             }
         }
-        String msg = infos.length() > 0 ? infos.toString() : "OK";
-        return new BapiOutcome(true, msg);
+        return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "OK");
     }
 
     private static BapiOutcome outcomeFromExMessage(JSONObject responsebody) {
-        if (responsebody == null || !responsebody.has("EX_MESSAGE")) {
-            return null;
-        }
+        if (responsebody == null || !responsebody.has("EX_MESSAGE")) return null;
         try {
             Object raw = responsebody.get("EX_MESSAGE");
             if (raw instanceof JSONObject) {
                 JSONObject o = (JSONObject) raw;
                 String type = o.optString("TYPE", "");
                 String m = o.optString("MESSAGE", "").trim();
-                if ("E".equals(type) || "A".equals(type)) {
-                    return new BapiOutcome(false, m.isEmpty() ? "Error" : m);
-                }
+                if ("E".equals(type) || "A".equals(type)) return new BapiOutcome(false, m.isEmpty() ? "Error" : m);
                 return new BapiOutcome(true, m.isEmpty() ? "Saved." : m);
             }
-        } catch (JSONException ignored) {
-        }
+        } catch (JSONException ignored) {}
         return null;
     }
 
     /**
      * Called after a wrong Crate or Article scan error is dismissed.
-     * Clears the article scan field and returns focus to Crate so the
-     * user can re-scan the correct crate or article without extra taps.
+     * Clears BOTH the Crate and Article scan fields, then returns
+     * focus to Crate so the user can re-scan without extra taps.
      */
     private void resetAfterScanError() {
+        txt_scan_crate.setText("");
         txt_scan_article.setText("");
         UIFuncs.enableInput(con, txt_scan_crate);
         UIFuncs.enableInput(con, txt_scan_article);
         txt_scan_crate.requestFocus();
-        Log.d(TAG, "resetAfterScanError: article cleared, focus -> Crate");
+        Log.d(TAG, "resetAfterScanError: crate + article cleared, focus -> Crate");
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_msa_live_stock_take_back:
-                    box.getBox("Alert", "Do you want to go back. Any unsaved progress will be lost", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            clear(true);
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                        }
+                box.getBox("Alert", "Do you want to go back. Any unsaved progress will be lost",
+                    new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface dialog, int which) { clear(true); }
+                    },
+                    new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface dialog, int which) {}
                     });
                 break;
             case R.id.btn_msa_live_stock_take_next:
-                if(dd_stock_id_list.getSelectedItem() != null && !dd_stock_id_list.getSelectedItem().toString().isEmpty()  && !dd_stock_id_list.getSelectedItem().toString().equalsIgnoreCase("Select")) {
+                if(dd_stock_id_list.getSelectedItem() != null
+                        && !dd_stock_id_list.getSelectedItem().toString().isEmpty()
+                        && !dd_stock_id_list.getSelectedItem().toString().equalsIgnoreCase("Select")) {
                     validateStockTakeId(dd_stock_id_list.getSelectedItem().toString());
                 }
                 break;
@@ -326,93 +300,58 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if (spinnerTouched) {
                     btn_next.setVisibility(View.GONE);
-                    if(dd_stock_id_list.getSelectedItem() != null && !dd_stock_id_list.getSelectedItem().toString().isEmpty()  && !dd_stock_id_list.getSelectedItem().toString().equalsIgnoreCase("Select")) {
+                    if(dd_stock_id_list.getSelectedItem() != null
+                            && !dd_stock_id_list.getSelectedItem().toString().isEmpty()
+                            && !dd_stock_id_list.getSelectedItem().toString().equalsIgnoreCase("Select")) {
                         btn_next.setVisibility(View.VISIBLE);
                     }
                     spinnerTouched = false;
                 }
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
+            @Override public void onNothingSelected(AdapterView<?> adapterView) {}
         });
-        txt_scan_binno.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    String value = UIFuncs.toUpperTrim(txt_scan_binno);
-                    if (!value.isEmpty()) {
-                        validateBinNo(value);
-                        return true;
-                    }
-                }
-                return false;
+
+        txt_scan_binno.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                UIFuncs.hideKeyboard(getActivity());
+                String value = UIFuncs.toUpperTrim(txt_scan_binno);
+                if (!value.isEmpty()) { validateBinNo(value); return true; }
             }
+            return false;
         });
         txt_scan_binno.addTextChangedListener(new TextWatcher() {
             boolean scannerReading = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
-                if (!value.isEmpty() && scannerReading) {
-                    validateBinNo(value);
-                }
+                if (!value.isEmpty() && scannerReading) validateBinNo(value);
             }
         });
-        txt_scan_crate.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    String value = UIFuncs.toUpperTrim(txt_scan_crate);
-                    if (!value.isEmpty()) {
-                        txt_cur_crate.setText(value);
-                        UIFuncs.enableInput(con, txt_scan_article);
-                        txt_scan_article.requestFocus();
-                        Log.d(TAG, "Crate entered (editor action): " + value + " -> focus Art.No.");
-                        return true;
-                    }
+
+        txt_scan_crate.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                UIFuncs.hideKeyboard(getActivity());
+                String value = UIFuncs.toUpperTrim(txt_scan_crate);
+                if (!value.isEmpty()) {
+                    txt_cur_crate.setText(value);
+                    UIFuncs.enableInput(con, txt_scan_article);
+                    txt_scan_article.requestFocus();
+                    Log.d(TAG, "Crate entered (editor action): " + value + " -> focus Art.No.");
+                    return true;
                 }
-                return false;
             }
+            return false;
         });
         txt_scan_crate.addTextChangedListener(new TextWatcher() {
             boolean scannerReading = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
                     txt_cur_crate.setText(value);
@@ -422,43 +361,24 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 }
             }
         });
-        txt_scan_article.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    UIFuncs.hideKeyboard(getActivity());
-                    String value = UIFuncs.toUpperTrim(txt_scan_article);
-                    if (!value.isEmpty()) {
-                        validateArticle(value);
-                        return true;
-                    }
-                }
-                return false;
+
+        txt_scan_article.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                UIFuncs.hideKeyboard(getActivity());
+                String value = UIFuncs.toUpperTrim(txt_scan_article);
+                if (!value.isEmpty()) { validateArticle(value); return true; }
             }
+            return false;
         });
         txt_scan_article.addTextChangedListener(new TextWatcher() {
             boolean scannerReading = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
-                if (!value.isEmpty() && scannerReading) {
-                    validateArticle(value);
-                }
+                if (!value.isEmpty() && scannerReading) validateArticle(value);
             }
         });
     }
@@ -484,17 +404,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private void step2(){
         tv_stock_take_id.setText("");
         tv_plant.setText(WERKS);
-        txt_tq.setText("");
-        txt_sq.setText("");
-        txt_pq.setText("");
-        txt_cur_crate.setText("");
-        txt_cur_binno.setText("");
-        txt_cur_article.setText("");
-        txt_cur_sqty.setText("");
-        txt_scan_binno.setText("");
-        txt_scan_crate.setText("");
-        txt_scan_article.setText("");
-        txt_scan_sqty.setText("");
+        txt_tq.setText(""); txt_sq.setText(""); txt_pq.setText("");
+        txt_cur_crate.setText(""); txt_cur_binno.setText("");
+        txt_cur_article.setText(""); txt_cur_sqty.setText("");
+        txt_scan_binno.setText(""); txt_scan_crate.setText("");
+        txt_scan_article.setText(""); txt_scan_sqty.setText("");
         tableItems.removeAllViews();
         llNextScreen.setVisibility(View.VISIBLE);
         llStockTake.setVisibility(View.GONE);
@@ -514,11 +428,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IM_USER", USER);
             showProcessingAndSubmit(Vars.ZWM_GET_STOCK_TAKE_ID, REQUEST_GET_STOCK_ID, args);
         } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
+            e.printStackTrace(); UIFuncs.errorSound(con);
             if (dialog != null) { dialog.dismiss(); dialog = null; }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
@@ -531,11 +443,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IM_ST_ID", stockTakeId);
             showProcessingAndSubmit(Vars.ZWM_GET_STOCK_BIN, REQUEST_VALIDATE_STOCK_ID, args);
         } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
+            e.printStackTrace(); UIFuncs.errorSound(con);
             if (dialog != null) { dialog.dismiss(); dialog = null; }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
@@ -555,18 +465,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 dd_stock_id_list.setSelection(0);
                 dd_stock_id_list.requestFocus();
             }else{
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("No Data", "Not Stock Take IDs Found.", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        clear(true);
-                    }
-                });
+                new AlertBox(getContext()).getBox("No Data", "Not Stock Take IDs Found.",
+                    (d, w) -> clear(true));
             }
         }catch (Exception e) {
             e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
@@ -577,16 +481,15 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             totalScanned = 0;
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int rawLength = IT_DATA_ARRAY.length();
-
             Log.d(TAG, "MSA-DIAG raw IT_DATA length=" + rawLength);
-
             for(int i = 0; i < rawLength; i++){
-                LiveStockBinCrate data = new Gson().fromJson(IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
+                LiveStockBinCrate data = new Gson().fromJson(
+                        IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
-                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin() + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
+                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin()
+                        + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
             }
             Log.d(TAG, "MSA-DIAG liveStockList.size=" + liveStockList.size());
-
             if(liveStockList.size() > 0){
                 step2();
                 tv_stock_take_id.setText(dd_stock_id_list.getSelectedItem().toString());
@@ -595,18 +498,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 txt_tq.setText(UIFuncs.toUpperTrim(txt_tq));
                 populateTableData();
             }else{
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("No Data", "Picklist is empty.", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        clear(true);
-                    }
-                });
+                new AlertBox(getContext()).getBox("No Data", "Picklist is empty.", (d, w) -> clear(true));
             }
         }catch (Exception e) {
             e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
@@ -618,10 +514,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 data.setPicked(true);
                 currentData = LiveStockBinCrate.newInstance(data);
                 binFound = true;
-                if(data.getCrate() != null && !data.getCrate().isEmpty()){
-                    withCarate = true;
-                }
-                totalScanned = totalScanned + 1;
+                if(data.getCrate() != null && !data.getCrate().isEmpty()) withCarate = true;
+                totalScanned++;
                 break;
             }
         }
@@ -652,9 +546,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if (!fromScan.isEmpty()) return fromScan;
         String fromCur = UIFuncs.toUpperTrim(txt_cur_crate);
         if (!fromCur.isEmpty()) return fromCur;
-        if (currentData != null && currentData.getCrate() != null && !currentData.getCrate().isEmpty()) {
+        if (currentData != null && currentData.getCrate() != null && !currentData.getCrate().isEmpty())
             return currentData.getCrate().trim().toUpperCase();
-        }
         return "";
     }
 
@@ -670,11 +563,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IM_BARCODE", article);
             showProcessingAndSubmit(Vars.ZWM_LIVE_STOCK_SCANNING, REQUEST_LIVE_SCAN, args);
         } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
+            e.printStackTrace(); UIFuncs.errorSound(con);
             if (dialog != null) { dialog.dismiss(); dialog = null; }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
@@ -682,19 +573,15 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         try {
             JSONObject EX_DATA = responsebody.getJSONObject("EX_DATA");
             LiveArticleQty data = new Gson().fromJson(EX_DATA.toString(), LiveArticleQty.class);
-
             String materialKey = effectiveMaterialFromScanResponse(data);
-            if (materialKey.isEmpty() && EX_DATA.has("MATNR") && !EX_DATA.isNull("MATNR")) {
+            if (materialKey.isEmpty() && EX_DATA.has("MATNR") && !EX_DATA.isNull("MATNR"))
                 materialKey = EX_DATA.getString("MATNR").trim();
-            }
-            if (materialKey.isEmpty() && EX_DATA.has("ARTICLE") && !EX_DATA.isNull("ARTICLE")) {
+            if (materialKey.isEmpty() && EX_DATA.has("ARTICLE") && !EX_DATA.isNull("ARTICLE"))
                 materialKey = EX_DATA.getString("ARTICLE").trim();
-            }
             if (materialKey.isEmpty()) {
                 showError("Scan Error", "Server did not return article/barcode for this scan.");
                 return;
             }
-
             LiveScanData existing;
             if(scanData.containsKey(materialKey)){
                 existing = scanData.get(materialKey);
@@ -709,18 +596,15 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 scanData.put(materialKey, existing);
             }
             LiveScanData.updateScanQty(existing, data.getQty());
-
             double scanQty = Util.convertStringToDouble(txt_cur_sqty.getText().toString());
             double dataQty = Util.convertStringToDouble(data.getQty());
-            scanQty = scanQty + dataQty;
-
+            scanQty += dataQty;
             txt_cur_article.setText(UIFuncs.removeLeadingZeros(materialKey));
             txt_cur_sqty.setText(Util.formatDouble(scanQty));
             txt_scan_sqty.setText(Util.formatDouble(dataQty));
         }catch (Exception e) {
             e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            new AlertBox(getContext()).getErrBox(e);
         }
         txt_scan_article.setText("");
         txt_scan_article.requestFocus();
@@ -735,7 +619,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_cur_crate.setText(currentData.getCrate());
         txt_cur_article.setText("");
         txt_cur_sqty.setText("0");
-
         txt_scan_crate.setText("");
         txt_scan_article.setText("");
         txt_scan_sqty.setText("0");
@@ -752,7 +635,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
 
         populateTableData();
-
         txt_tq.setText(liveStockList.size() + "");
         txt_sq.setText(totalScanned + "");
         txt_pq.setText((liveStockList.size() - totalScanned) + "");
@@ -767,20 +649,17 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         TextView headerExHuNo = new TextView(getContext());
 
         headerBin.setLayoutParams(new TableRow.LayoutParams(350, TableRow.LayoutParams.WRAP_CONTENT));
-        headerBin.setGravity(Gravity.CENTER);
-        headerBin.setPadding(0,5,0,5);
+        headerBin.setGravity(Gravity.CENTER); headerBin.setPadding(0,5,0,5);
         headerBin.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
         headerBin.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
         headerBin.setText("Bin");
 
-        headerHuNo.setGravity(Gravity.CENTER);
-        headerHuNo.setPadding(0,5,0,5);
+        headerHuNo.setGravity(Gravity.CENTER); headerHuNo.setPadding(0,5,0,5);
         headerHuNo.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
         headerHuNo.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
         headerHuNo.setText("Crate");
 
-        headerExHuNo.setGravity(Gravity.CENTER);
-        headerExHuNo.setPadding(0,5,0,5);
+        headerExHuNo.setGravity(Gravity.CENTER); headerExHuNo.setPadding(0,5,0,5);
         headerExHuNo.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
         headerExHuNo.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
         headerExHuNo.setText("Plant");
@@ -790,41 +669,28 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         TableLayout.LayoutParams trParams = new TableLayout.LayoutParams(
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT);
         trParams.setMargins(0,0,0,0);
-        tr.setPadding(0,0,0,0);
-        tr.setLayoutParams(trParams);
-        tr.addView(headerBin);
-        tr.addView(headerHuNo);
-        tr.addView(headerExHuNo);
+        tr.setPadding(0,0,0,0); tr.setLayoutParams(trParams);
+        tr.addView(headerBin); tr.addView(headerHuNo); tr.addView(headerExHuNo);
         tableItems.addView(tr, trParams);
 
         int rowNum = 1;
         for (LiveStockBinCrate data : liveStockList) {
             if(!data.isPicked()){
                 TextView tvBin = new TextView(getContext());
-                tvBin.setText(data.getBin());
-                tvBin.setTextSize(textSize);
-                tvBin.setPadding(5,2,0,2);
+                tvBin.setText(data.getBin()); tvBin.setTextSize(textSize); tvBin.setPadding(5,2,0,2);
                 tvBin.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
                 TextView tvHu = new TextView(getContext());
-                tvHu.setText(data.getCrate());
-                tvHu.setTextSize(textSize);
-                tvHu.setPadding(5,2,0,2);
+                tvHu.setText(data.getCrate()); tvHu.setTextSize(textSize); tvHu.setPadding(5,2,0,2);
                 tvHu.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
                 TextView tvExHu = new TextView(getContext());
-                tvExHu.setText(data.getPlant());
-                tvExHu.setTextSize(textSize);
-                tvExHu.setPadding(5,2,0,2);
+                tvExHu.setText(data.getPlant()); tvExHu.setTextSize(textSize); tvExHu.setPadding(5,2,0,2);
                 tvExHu.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
                 tr = new TableRow(getContext());
-                tr.setId(rowNum);
-                tr.setPadding(0,0,0,0);
-                tr.setLayoutParams(trParams);
-                tr.addView(tvBin);
-                tr.addView(tvHu);
-                tr.addView(tvExHu);
+                tr.setId(rowNum); tr.setPadding(0,0,0,0); tr.setLayoutParams(trParams);
+                tr.addView(tvBin); tr.addView(tvHu); tr.addView(tvExHu);
                 tr.setTag(data);
                 tableItems.addView(tr, trParams);
                 rowNum++;
@@ -843,8 +709,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             }
             for (Map.Entry<String, LiveScanData> dataEntry : scanData.entrySet()) {
                 LiveScanData data = dataEntry.getValue();
-                String scanDataJsonString = new Gson().toJson(data);
-                JSONObject itDataJson = new JSONObject(scanDataJsonString);
+                JSONObject itDataJson = new JSONObject(new Gson().toJson(data));
                 itDataJson.put("ST_TAKE_ID", stIdHeader);
                 itDataJson.put("STOCK_TAKE", stIdHeader);
                 if (itDataJson.has("MATERIAL") && !itDataJson.isNull("MATERIAL")) {
@@ -852,9 +717,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     if (!mat.isEmpty()) itDataJson.put("MATNR", mat);
                 }
                 String plant = itDataJson.optString("PLANT", "").trim();
-                if (plant.isEmpty() && WERKS != null && !WERKS.isEmpty()) {
-                    itDataJson.put("PLANT", WERKS);
-                }
+                if (plant.isEmpty() && WERKS != null && !WERKS.isEmpty()) itDataJson.put("PLANT", WERKS);
                 String sq = itDataJson.optString("SCAN_QTY", "").trim();
                 if (sq.isEmpty()) { itDataJson.put("SCAN_QTY", "0"); sq = "0"; }
                 itDataJson.put("MENGE", sq);
@@ -865,9 +728,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             } else {
                 return arrScanData;
             }
-        }catch (Exception exce){
-            box.getErrBox(exce);
-        }
+        }catch (Exception exce){ box.getErrBox(exce); }
         return null;
     }
 
@@ -882,8 +743,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             JSONObject r = rows.getJSONObject(0);
             String bin = r.optString("BIN", "").trim().toUpperCase();
             String cr = r.optString("CRATE", "").trim().toUpperCase();
-            args.put("IM_BIN", bin);
-            args.put("IM_CRATE", cr);
+            args.put("IM_BIN", bin); args.put("IM_CRATE", cr);
             args.put("IM_DESKTOP", cr.isEmpty() ? "" : "X");
             return;
         }
@@ -896,13 +756,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             if (!firstCrate.equalsIgnoreCase(r.optString("CRATE", "").trim())) allSameCrate = false;
         }
         if (allSameBin && allSameCrate) {
-            args.put("IM_BIN", firstBin.toUpperCase());
-            args.put("IM_CRATE", firstCrate.toUpperCase());
+            args.put("IM_BIN", firstBin.toUpperCase()); args.put("IM_CRATE", firstCrate.toUpperCase());
             args.put("IM_DESKTOP", firstCrate.isEmpty() ? "" : "X");
         } else {
-            args.put("IM_BIN", "");
-            args.put("IM_CRATE", "");
-            args.put("IM_DESKTOP", "");
+            args.put("IM_BIN", ""); args.put("IM_CRATE", ""); args.put("IM_DESKTOP", "");
         }
     }
 
@@ -926,11 +783,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         + " rows=" + dataToSave.length());
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
             } catch (JSONException e) {
-                e.printStackTrace();
-                UIFuncs.errorSound(con);
+                e.printStackTrace(); UIFuncs.errorSound(con);
                 if (dialog != null) { dialog.dismiss(); dialog = null; }
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
+                new AlertBox(getContext()).getErrBox(e);
             }
         }
     }
@@ -938,17 +793,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private void afterSave(){
         scanData = new HashMap<>();
         currentData = null;
-
-        txt_cur_crate.setText("");
-        txt_cur_binno.setText("");
-        txt_cur_article.setText("");
-        txt_cur_sqty.setText("0");
-
-        txt_scan_binno.setText("");
-        txt_scan_crate.setText("");
-        txt_scan_article.setText("");
-        txt_scan_sqty.setText("0");
-
+        txt_cur_crate.setText(""); txt_cur_binno.setText("");
+        txt_cur_article.setText(""); txt_cur_sqty.setText("0");
+        txt_scan_binno.setText(""); txt_scan_crate.setText("");
+        txt_scan_article.setText(""); txt_scan_sqty.setText("0");
         UIFuncs.disableInput(con, txt_scan_crate);
         UIFuncs.disableInput(con, txt_scan_article);
         UIFuncs.enableInput(con, txt_scan_binno);
@@ -960,26 +808,17 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
-
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    submitRequest(rfc, request, args);
-                } catch (Exception e) {
-                    dialog.dismiss();
-                    AlertBox box = new AlertBox(getContext());
-                    box.getErrBox(e);
-                }
+        new Handler().postDelayed(() -> {
+            try {
+                submitRequest(rfc, request, args);
+            } catch (Exception e) {
+                dialog.dismiss();
+                new AlertBox(getContext()).getErrBox(e);
             }
         }, 1000);
     }
 
     private void submitRequest(String rfc, int request, JSONObject args) {
-
-        final RequestQueue mRequestQueue;
-        JsonObjectRequest mJsonRequest = null;
         String url = GatewayUrls.noAclJsonRfcUrl(this.URL, rfc);
         if (url.isEmpty()) {
             if (dialog != null) { dialog.dismiss(); dialog = null; }
@@ -987,169 +826,104 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("Err", "Server URL is missing. Log in again from IP selection.");
             return;
         }
-
         final JSONObject params = args;
-
         Log.d(TAG, "RFC URL -> " + url);
         Log.d(TAG, "payload ->" + params.toString());
 
-        mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
-
-            @Override
-            public void onResponse(JSONObject responsebody) {
+        RequestQueue mRequestQueue = ApplicationController.getInstance().getRequestQueue();
+        JsonObjectRequest mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+            responsebody -> {
                 if (dialog != null) { dialog.dismiss(); dialog = null; }
                 Log.d(TAG, "response ->" + responsebody);
-
                 if (responsebody == null) {
                     UIFuncs.errorSound(con);
-                    AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "No response from Server");
-                } else if (responsebody.equals("") || responsebody.equals("null") || responsebody.equals("{}")) {
-                    UIFuncs.errorSound(con);
-                    AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "Unable to Connect Server/ Empty Response");
+                    new AlertBox(getContext()).getBox("Err", "No response from Server");
                     return;
-                } else {
-                    try {
-                        BapiOutcome outcome = evaluateBapiReturn(responsebody);
-                        if (outcome == null && request == REQUEST_SAVE) {
-                            outcome = outcomeFromExMessage(responsebody);
-                        }
-                        if (outcome != null) {
-                            if (!outcome.success) {
-                                UIFuncs.errorSound(getContext());
-                                AlertBox box = new AlertBox(getContext());
-                                if (request == REQUEST_LIVE_SCAN) {
-                                    // Wrong Crate or Article No. — clear scan field,
-                                    // return focus to Crate so user can re-scan.
-                                    box.getBox("Err", outcome.message, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            resetAfterScanError();
-                                        }
-                                    });
-                                } else {
-                                    box.getBox("Err", outcome.message);
-                                }
-                                if (request == REQUEST_SAVE) {
-                                    Log.w(TAG, "MSA save SAP error: " + outcome.message);
-                                }
-                                return;
-                            }
-                            if (request == REQUEST_GET_STOCK_ID) {
-                                populateStockIDs(responsebody);
-                                return;
-                            }
-                            if (request == REQUEST_VALIDATE_STOCK_ID) {
-                                setData(responsebody);
-                                return;
-                            }
+                }
+                if (responsebody.equals("") || responsebody.equals("null") || responsebody.equals("{}")) {
+                    UIFuncs.errorSound(con);
+                    new AlertBox(getContext()).getBox("Err", "Unable to Connect Server/ Empty Response");
+                    return;
+                }
+                try {
+                    BapiOutcome outcome = evaluateBapiReturn(responsebody);
+                    if (outcome == null && request == REQUEST_SAVE) outcome = outcomeFromExMessage(responsebody);
+
+                    if (outcome != null) {
+                        if (!outcome.success) {
+                            UIFuncs.errorSound(getContext());
+                            AlertBox errBox = new AlertBox(getContext());
                             if (request == REQUEST_LIVE_SCAN) {
-                                updateScanStats(responsebody);
-                                return;
+                                // Wrong Crate or Article No. — clear BOTH fields,
+                                // return focus to Crate so user can re-scan immediately.
+                                errBox.getBox("Err", outcome.message,
+                                    (d, w) -> resetAfterScanError());
+                            } else {
+                                errBox.getBox("Err", outcome.message);
                             }
-                            if (request == REQUEST_SAVE) {
-                                Log.i(TAG, "MSA save response message: " + outcome.message);
-                                Log.d(TAG, "MSA save full response: " + responsebody.toString());
-                                AlertBox box = new AlertBox(getContext());
-                                box.getBox("Success", outcome.message, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        afterSave();
-                                    }
-                                });
-                                return;
-                            }
+                            if (request == REQUEST_SAVE) Log.w(TAG, "MSA save SAP error: " + outcome.message);
                             return;
                         }
-                        if (outcome == null) {
-                            if (request == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) {
-                                populateStockIDs(responsebody);
-                                return;
-                            }
-                            if (request == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) {
-                                setData(responsebody);
-                                return;
-                            }
-                            if (request == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) {
-                                updateScanStats(responsebody);
-                                return;
-                            }
-                        }
+                        if (request == REQUEST_GET_STOCK_ID) { populateStockIDs(responsebody); return; }
+                        if (request == REQUEST_VALIDATE_STOCK_ID) { setData(responsebody); return; }
+                        if (request == REQUEST_LIVE_SCAN) { updateScanStats(responsebody); return; }
                         if (request == REQUEST_SAVE) {
-                            Log.w(TAG, "Save response missing EX_RETURN / EX_MESSAGE: " + responsebody);
-                            UIFuncs.errorSound(getContext());
-                            AlertBox box = new AlertBox(getContext());
-                            box.getBox("Err", "Unexpected server response after submit. Data may not be saved — contact support if this persists.");
+                            Log.i(TAG, "MSA save response: " + outcome.message);
+                            new AlertBox(getContext()).getBox("Success", outcome.message, (d, w) -> afterSave());
+                            return;
                         }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        AlertBox box = new AlertBox(getContext());
-                        box.getErrBox(e);
+                        return;
                     }
+                    // outcome == null fallback
+                    if (request == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
+                    if (request == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
+                    if (request == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
+                    if (request == REQUEST_SAVE) {
+                        Log.w(TAG, "Save response missing EX_RETURN/EX_MESSAGE: " + responsebody);
+                        UIFuncs.errorSound(getContext());
+                        new AlertBox(getContext()).getBox("Err", "Unexpected server response after submit. Data may not be saved.");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    new AlertBox(getContext()).getErrBox(e);
                 }
-            }
-        }, volleyErrorListener()) {
-            @Override
-            public String getBodyContentType() {
-                return "application/json";
-            }
-
-            @Override
-            public byte[] getBody() {
-                return params.toString().getBytes(StandardCharsets.UTF_8);
-            }
-
-            @Override
-            protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+            }, volleyErrorListener()) {
+            @Override public String getBodyContentType() { return "application/json"; }
+            @Override public byte[] getBody() { return params.toString().getBytes(StandardCharsets.UTF_8); }
+            @Override protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
                 Response<JSONObject> res = super.parseNetworkResponse(response);
                 Log.d(TAG, "Network response -> " + res.toString());
                 return res;
             }
         };
         mJsonRequest.setRetryPolicy(new RetryPolicy() {
-            @Override
-            public int getCurrentTimeout() { return 50000; }
-            @Override
-            public int getCurrentRetryCount() { return 1; }
-            @Override
-            public void retry(VolleyError error) throws VolleyError {}
+            @Override public int getCurrentTimeout() { return 50000; }
+            @Override public int getCurrentRetryCount() { return 1; }
+            @Override public void retry(VolleyError error) throws VolleyError {}
         });
         mRequestQueue.add(mJsonRequest);
         Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         try {
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
-        } catch (AuthFailureError authFailureError) {
-            authFailureError.printStackTrace();
+        } catch (AuthFailureError e) {
+            e.printStackTrace();
             if (dialog != null) { dialog.dismiss(); dialog = null; }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(authFailureError);
+            new AlertBox(getContext()).getErrBox(e);
         }
     }
 
     Response.ErrorListener volleyErrorListener() {
-        return new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.i(TAG, "Error :" + error.toString());
-                String err = "";
-                if (error instanceof TimeoutError || error instanceof NoConnectionError) {
-                    err = "Communication Error!";
-                } else if (error instanceof AuthFailureError) {
-                    err = "Authentication Error!";
-                } else if (error instanceof ServerError) {
-                    err = "Server Side Error!";
-                } else if (error instanceof NetworkError) {
-                    err = "Network Error!";
-                } else if (error instanceof ParseError) {
-                    err = "Parse Error!";
-                } else err = error.toString();
-
-                if (dialog != null) { dialog.dismiss(); dialog = null; }
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("Err", err);
-            }
+        return error -> {
+            Log.i(TAG, "Error :" + error.toString());
+            String err;
+            if (error instanceof TimeoutError || error instanceof NoConnectionError) err = "Communication Error!";
+            else if (error instanceof AuthFailureError) err = "Authentication Error!";
+            else if (error instanceof ServerError) err = "Server Side Error!";
+            else if (error instanceof NetworkError) err = "Network Error!";
+            else if (error instanceof ParseError) err = "Parse Error!";
+            else err = error.toString();
+            if (dialog != null) { dialog.dismiss(); dialog = null; }
+            new AlertBox(getContext()).getBox("Err", err);
         };
     }
 }
