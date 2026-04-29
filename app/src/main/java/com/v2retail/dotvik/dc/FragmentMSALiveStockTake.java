@@ -104,7 +104,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     List<String> stockIds = new ArrayList<String>();
     ArrayAdapter<String> stockAdapter;
 
-    // v12.109: List instead of Map — preserves multiple crates per BIN
     List<LiveStockBinCrate> liveStockList = new ArrayList<>();
     Map<String, LiveScanData> scanData = new HashMap<>();
     LiveStockBinCrate currentData = null;
@@ -253,8 +252,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     }
 
     /**
-     * v12.109: After wrong Crate or Article scan error, clear BOTH scan
-     * fields and return focus to Crate for immediate re-scan.
+     * Called after a wrong Crate or Article scan error is dismissed.
+     * Clears BOTH the Crate and Article scan fields, then returns
+     * focus to Crate so the user can re-scan without extra taps.
      */
     private void resetAfterScanError() {
         txt_scan_crate.setText("");
@@ -339,6 +339,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
                     txt_scan_article.requestFocus();
+                    Log.d(TAG, "Crate entered (editor action): " + value + " -> focus Art.No.");
                     return true;
                 }
             }
@@ -356,6 +357,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
                     txt_scan_article.requestFocus();
+                    Log.d(TAG, "Crate scanned: " + value + " -> focus Art.No.");
                 }
             }
         });
@@ -463,7 +465,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 dd_stock_id_list.setSelection(0);
                 dd_stock_id_list.requestFocus();
             }else{
-                new AlertBox(getContext()).getBox("No Data", "Not Stock Take IDs Found.", (d, w) -> clear(true));
+                new AlertBox(getContext()).getBox("No Data", "Not Stock Take IDs Found.",
+                    (d, w) -> clear(true));
             }
         }catch (Exception e) {
             e.printStackTrace();
@@ -479,12 +482,14 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int rawLength = IT_DATA_ARRAY.length();
             Log.d(TAG, "MSA-DIAG raw IT_DATA length=" + rawLength);
-            // v12.109 FIX: loop from i=0 — ZWM_GET_STOCK_BIN has NO header row
             for(int i = 0; i < rawLength; i++){
                 LiveStockBinCrate data = new Gson().fromJson(
                         IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
+                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin()
+                        + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
             }
+            Log.d(TAG, "MSA-DIAG liveStockList.size=" + liveStockList.size());
             if(liveStockList.size() > 0){
                 step2();
                 tv_stock_take_id.setText(dd_stock_id_list.getSelectedItem().toString());
@@ -520,6 +525,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("Invalid Bin", "Invalid BIN, please check below table for allowed BINs");
             txt_scan_binno.requestFocus();
         }else{
+            Log.d(TAG, "BIN " + binno + " found. withCarate=" + withCarate);
             setLastScanedItem(withCarate);
         }
     }
@@ -620,10 +626,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if(withCarate){
             UIFuncs.enableInput(con, txt_scan_crate);
             txt_scan_crate.requestFocus();
+            Log.d(TAG, "BIN has crate -> cursor -> Crate field");
         }else{
             UIFuncs.enableInput(con, txt_scan_crate);
             UIFuncs.enableInput(con, txt_scan_article);
             txt_scan_article.requestFocus();
+            Log.d(TAG, "BIN has no crate -> cursor -> Art.No.");
         }
 
         populateTableData();
@@ -716,7 +724,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 arrScanData.put(itDataJson);
             }
             if (arrScanData.length() == 0) {
-                showError("Empty Request", "Nothing to submit, please scan some articles");
+                showError("Empty Request", "Noting to submit, please scan some articles");
             } else {
                 return arrScanData;
             }
@@ -763,7 +771,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("bapiname", Vars.ZWM_STK_ADJ_MSA_BIN);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
-                // v12.109 FIX: was sending USER (login ID), now sends real stock take ID
                 String stId = tv_stock_take_id.getText().toString();
                 args.put("IM_STOCK_TAKE_ID", stId);
                 args.put("IM_ST_ID", stId);
@@ -772,6 +779,8 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("IT_SAVE", tablePayload);
                 args.put("ET_SAVE", tablePayload);
                 args.put("IT_DATA", tablePayload);
+                Log.d(TAG, "saveData -> IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
+                        + " rows=" + dataToSave.length());
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
             } catch (JSONException e) {
                 e.printStackTrace(); UIFuncs.errorSound(con);
@@ -845,25 +854,32 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                             UIFuncs.errorSound(getContext());
                             AlertBox errBox = new AlertBox(getContext());
                             if (request == REQUEST_LIVE_SCAN) {
-                                errBox.getBox("Err", outcome.message, (d, w) -> resetAfterScanError());
+                                // Wrong Crate or Article No. — clear BOTH fields,
+                                // return focus to Crate so user can re-scan immediately.
+                                errBox.getBox("Err", outcome.message,
+                                    (d, w) -> resetAfterScanError());
                             } else {
                                 errBox.getBox("Err", outcome.message);
                             }
+                            if (request == REQUEST_SAVE) Log.w(TAG, "MSA save SAP error: " + outcome.message);
                             return;
                         }
                         if (request == REQUEST_GET_STOCK_ID) { populateStockIDs(responsebody); return; }
                         if (request == REQUEST_VALIDATE_STOCK_ID) { setData(responsebody); return; }
                         if (request == REQUEST_LIVE_SCAN) { updateScanStats(responsebody); return; }
                         if (request == REQUEST_SAVE) {
+                            Log.i(TAG, "MSA save response: " + outcome.message);
                             new AlertBox(getContext()).getBox("Success", outcome.message, (d, w) -> afterSave());
                             return;
                         }
                         return;
                     }
+                    // outcome == null fallback
                     if (request == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
                     if (request == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
                     if (request == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
                     if (request == REQUEST_SAVE) {
+                        Log.w(TAG, "Save response missing EX_RETURN/EX_MESSAGE: " + responsebody);
                         UIFuncs.errorSound(getContext());
                         new AlertBox(getContext()).getBox("Err", "Unexpected server response after submit. Data may not be saved.");
                     }
@@ -875,7 +891,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             @Override public String getBodyContentType() { return "application/json"; }
             @Override public byte[] getBody() { return params.toString().getBytes(StandardCharsets.UTF_8); }
             @Override protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
-                return super.parseNetworkResponse(response);
+                Response<JSONObject> res = super.parseNetworkResponse(response);
+                Log.d(TAG, "Network response -> " + res.toString());
+                return res;
             }
         };
         mJsonRequest.setRetryPolicy(new RetryPolicy() {
@@ -884,6 +902,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             @Override public void retry(VolleyError error) throws VolleyError {}
         });
         mRequestQueue.add(mJsonRequest);
+        Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         try {
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
         } catch (AuthFailureError e) {
