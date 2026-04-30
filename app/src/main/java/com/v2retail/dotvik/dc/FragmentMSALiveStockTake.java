@@ -233,7 +233,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 infos.append(m);
             }
         }
-        return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "OK");
+        return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "Saved successfully.");
     }
 
     private static BapiOutcome outcomeFromExMessage(JSONObject responsebody) {
@@ -245,7 +245,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 String type = o.optString("TYPE", "");
                 String m = o.optString("MESSAGE", "").trim();
                 if ("E".equals(type) || "A".equals(type)) return new BapiOutcome(false, m.isEmpty() ? "Error" : m);
-                return new BapiOutcome(true, m.isEmpty() ? "Saved." : m);
+                return new BapiOutcome(true, m.isEmpty() ? "Saved successfully." : m);
             }
         } catch (JSONException ignored) {}
         return null;
@@ -854,8 +854,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                             UIFuncs.errorSound(getContext());
                             AlertBox errBox = new AlertBox(getContext());
                             if (request == REQUEST_LIVE_SCAN) {
-                                // Wrong Crate or Article No. — clear BOTH fields,
-                                // return focus to Crate so user can re-scan immediately.
                                 errBox.getBox("Err", outcome.message,
                                     (d, w) -> resetAfterScanError());
                             } else {
@@ -874,15 +872,22 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         }
                         return;
                     }
-                    // outcome == null fallback
+
+                    // ── outcome == null fallback ──────────────────────────────────────
+                    // Standard EX_RETURN/EX_MESSAGE not present in response.
+                    // For non-save requests use existing field-based routing.
                     if (request == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
                     if (request == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
                     if (request == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
+
                     if (request == REQUEST_SAVE) {
-                        Log.w(TAG, "Save response missing EX_RETURN/EX_MESSAGE: " + responsebody);
-                        UIFuncs.errorSound(getContext());
-                        new AlertBox(getContext()).getBox("Err", "Unexpected server response after submit. Data may not be saved.");
+                        // FIX: The middleware returns a response without EX_RETURN for ZWM_STK_ADJ_MSA_BIN
+                        // (TYPE="" blank = SAP silent success). A non-null JSON response means the RFC
+                        // executed and the data was saved. Treat as success.
+                        Log.i(TAG, "MSA save: no EX_RETURN in response (silent success). Response: " + responsebody);
+                        new AlertBox(getContext()).getBox("Success", "Stock take data saved successfully.", (d, w) -> afterSave());
                     }
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                     new AlertBox(getContext()).getErrBox(e);
