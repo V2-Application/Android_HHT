@@ -6,22 +6,18 @@ android {
         applicationId "com.v2retail.dotvik"
         minSdkVersion 25
         targetSdkVersion 31
-        versionCode 1210
-        versionName "12.111"
+        versionCode 1211
+        versionName "12.112"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
         aaptOptions {
             cruncherEnabled = false
         }
 
-        // ─── Feature flags ───────────────────────────────────────────────
-        // ENABLE_V11_V01 : master flag; true = visible to ALL HUB users, no role/host gate
-        // SAP_DEV_HOST   : secondary override — V11-V01 visible if URL contains this host
         buildConfigField "boolean", "ENABLE_V11_V01", "true"
         buildConfigField "String", "SAP_DEV_HOST", "\"192.168.144.174\""
     }
 
-    // AGP 8.x requires explicit opt-in for BuildConfig generation
     buildFeatures {
         buildConfig = true
     }
