@@ -20,6 +20,15 @@ public class LiveScanData  implements Serializable {
     @SerializedName("SCAN_QTY")
     private String scanQty;
 
+    /**
+     * Storage Type — propagated from LiveStockBinCrate (via ZWM_GET_STOCK_BIN)
+     * so it gets sent back to SAP in the IT_DATA save payload of
+     * ZWM_STK_ADJ_MSA_BIN. Falls back to blank if the source bin row didn't
+     * include LGTYP.
+     */
+    @SerializedName("LGTYP")
+    private String lgtyp;
+
     public static LiveScanData copyProperties(LiveStockBinCrate binData){
         if(binData == null){
             return null;
@@ -30,6 +39,10 @@ public class LiveScanData  implements Serializable {
         target.setStockTakeId(binData.getStockTakeId());
         if (binData.getCrate() != null) {
             target.setCrate(binData.getCrate());
+        }
+        // Propagate LGTYP from the source bin into the scan row
+        if (binData.getLgtyp() != null) {
+            target.setLgtyp(binData.getLgtyp());
         }
         return target;
     }
@@ -52,4 +65,6 @@ public class LiveScanData  implements Serializable {
     public void setStockTakeId(String stockTakeId) { this.stockTakeId = stockTakeId; }
     public String getScanQty() { return scanQty; }
     public void setScanQty(String scanQty) { this.scanQty = scanQty; }
+    public String getLgtyp() { return lgtyp; }
+    public void setLgtyp(String lgtyp) { this.lgtyp = lgtyp; }
 }
