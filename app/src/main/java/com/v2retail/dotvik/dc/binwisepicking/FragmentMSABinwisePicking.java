@@ -431,6 +431,12 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                 }
                 populateBinCrateTable();
                 UIFuncs.enableInput(con, txt_scan_hu);
+                // FIX 2026-04-30: scanner keystrokes were going to the picklist
+                // spinner because no view explicitly took focus after the bin
+                // data loaded. Move focus to Scan Ext HU so the next scan lands
+                // in the right field.
+                txt_scan_hu.requestFocus();
+                Log.d(TAG, "setBinData: txt_scan_hu enabled and focused for next scan");
                 return;
             }else{
                 showError("Not Found", "Bin Data is Empty");
@@ -569,6 +575,10 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                 txt_scanned_msa_bin.setText(bin);
                 txt_scan_msa_bin.setText("");
                 UIFuncs.enableInput(con, txt_scan_msa_crate);
+                // FIX 2026-04-30: focus must follow input enablement so the
+                // next scanner keystroke goes to MSA Crate, not the previous
+                // (now-disabled) MSA Bin field.
+                txt_scan_msa_crate.requestFocus();
                 binFound = true;
                 break;
             }
@@ -583,6 +593,9 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                 }
             }
             showError("Invalid Bin", "MSA Bin not found in the table");
+            // Keep focus on the MSA Bin field so the user can rescan immediately
+            txt_scan_msa_bin.setText("");
+            txt_scan_msa_bin.requestFocus();
         }
     }
 
@@ -603,6 +616,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
             }
         }
         txt_scan_msa_crate.setText("");
+        // Keep focus on the MSA Crate field for retry
+        txt_scan_msa_crate.requestFocus();
     }
 
     private void clearFieldsForNextScan(String key){
@@ -720,9 +735,6 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                                         if (request == REQUEST_VALIDATE_HU) {
                                             txt_scan_hu.setText("");
                                             txt_scan_hu.requestFocus();
-                                        }else if (request == REQUEST_VALIDATE_HU) {
-                                            txt_scan_hu.setText("");
-                                            txt_scan_hu.requestFocus();
                                         }
                                     } else {
                                         if (request == REQUEST_PICKLIST) {
@@ -734,6 +746,10 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                                             txt_scanned_hu.setText(UIFuncs.toUpperTrim(txt_scan_hu));
                                             txt_scan_hu.setText("");
                                             UIFuncs.enableInput(con, txt_scan_msa_bin);
+                                            // FIX 2026-04-30: move focus to
+                                            // MSA Bin so the next scan goes
+                                            // there, not back to Scan Ext HU.
+                                            txt_scan_msa_bin.requestFocus();
                                         }
                                         else if (request == REQUEST_SAVE) {
                                             txt_scan_msa_crate.setText("");
@@ -748,6 +764,10 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                                             UIFuncs.disableInput(con, txt_scan_msa_bin);
                                             UIFuncs.disableInput(con, txt_scan_msa_crate);
                                             UIFuncs.enableInput(con, txt_scan_hu);
+                                            // FIX 2026-04-30: focus the next
+                                            // active scan field after save so
+                                            // the user can immediately rescan.
+                                            txt_scan_hu.requestFocus();
                                             AlertBox box = new AlertBox(getContext());
                                             box.getBox("Success", returnobj.getString("MESSAGE"));
                                         }
