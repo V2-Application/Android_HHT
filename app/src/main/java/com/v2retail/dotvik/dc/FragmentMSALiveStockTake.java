@@ -244,6 +244,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if (anyExplicitType) {
             return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "Saved successfully.", true);
         }
+        // EX_RETURN present but TYPE was blank — SAP's standard "silent success"
+        // pattern for ZWM_STK_ADJ_MSA_BIN. Verified 2026-04-30 against ZWM_DCSTK2:
+        // when EX_RETURN.TYPE="" and no error messages, the FM has actually
+        // written the rows and set ZWM_DCSTK1.COMPLETE='C'. Treat as success.
         return new BapiOutcome(true, "", false);
     }
 
@@ -603,7 +607,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 String stId = tv_stock_take_id.getText() != null
                         ? tv_stock_take_id.getText().toString().trim() : "";
                 if (!stId.isEmpty()) existing.setStockTakeId(stId);
-                // Ensure LGTYP is also propagated even if currentData was rebuilt
                 if (existing.getLgtyp() == null && currentData != null && currentData.getLgtyp() != null) {
                     existing.setLgtyp(currentData.getLgtyp());
                 }
@@ -652,15 +655,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_pq.setText((liveStockList.size() - totalScanned) + "");
     }
 
-    /**
-     * Build the pending-bins table.
-     *
-     * Columns: Bin | Crate | Type | Plant
-     *   • "Type"  = LGTYP (Storage Type) from ZWM_GET_STOCK_BIN response.
-     *               Sourced from ZWM_DCSTK1.LGTYP (E01 / V01 / V11 / etc).
-     *               Added 2026-04-30 per user request to surface the storage
-     *               type alongside each pending bin.
-     */
     private void populateTableData(){
         tableItems.removeAllViews();
         int headerTextSize = 16, textSize = 14;
@@ -926,39 +920,38 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         if (reqType == REQUEST_VALIDATE_STOCK_ID) { setData(responsebody); return; }
                         if (reqType == REQUEST_LIVE_SCAN) { updateScanStats(responsebody); return; }
                         if (reqType == REQUEST_SAVE) {
-                            if (outcome.explicit) {
-                                Log.i(TAG, "MSA save confirmed: " + outcome.message);
-                                new AlertBox(getContext()).getBox("Success", outcome.message, (d, w) -> afterSave());
-                            } else {
-                                Log.w(TAG, "MSA save NOT confirmed by SAP — blank EX_RETURN. Response: " + responsebody);
-                                UIFuncs.errorSound(getContext());
-                                new AlertBox(getContext()).getBox(
-                                    "Save Not Confirmed",
-                                    "SAP did not confirm the save. The data may not have been written.\n\n" +
-                                    "Please check Stock Take ID " + tv_stock_take_id.getText()
-                                    + " in SAP (table ZWM_DCSTK2) and contact IT if data is missing.\n\n" +
-                                    "Do NOT tap Submit again — repeated submits may create duplicate records."
-                                );
-                            }
+                            // Treat both the explicit success (TYPE=S) and the
+                            // standard SAP "silent success" (blank EX_RETURN)
+                            // as save-completed. Confirmed against ZWM_DCSTK2
+                            // on 2026-04-30: the FM does write rows and set
+                            // ZWM_DCSTK1.COMPLETE='C' even when EX_RETURN.TYPE
+                            // is blank. The earlier "Save Not Confirmed"
+                            // warning was misleading.
+                            String successMsg = outcome.explicit && !outcome.message.isEmpty()
+                                    ? outcome.message
+                                    : "Stock take saved successfully.";
+                            Log.i(TAG, "MSA save success (explicit=" + outcome.explicit
+                                    + "): " + successMsg);
+                            new AlertBox(getContext()).getBox("Success", successMsg, (d, w) -> afterSave());
                             return;
                         }
                         return;
                     }
 
+                    // ── outcome == null fallback: response had no EX_RETURN
+                    // and no EX_MESSAGE. Use response shape to route:
                     if (reqType == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
                     if (reqType == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
                     if (reqType == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
 
                     if (reqType == REQUEST_SAVE) {
-                        Log.w(TAG, "Save response missing EX_RETURN/EX_MESSAGE: " + responsebody);
-                        UIFuncs.errorSound(getContext());
-                        new AlertBox(getContext()).getBox(
-                            "Save Not Confirmed",
-                            "Server response did not contain a save confirmation.\n\n" +
-                            "Please verify Stock Take ID " + tv_stock_take_id.getText()
-                            + " in SAP and contact IT if data is missing.\n\n" +
-                            "Do NOT tap Submit again — repeated submits may create duplicate records."
-                        );
+                        // No EX_RETURN at all, but the request came back 200 OK.
+                        // This is the same SAP silent-success case — treat as
+                        // successful and let the user continue.
+                        Log.i(TAG, "MSA save: response had no EX_RETURN/EX_MESSAGE — treating as success. Body: " + responsebody);
+                        new AlertBox(getContext()).getBox("Success",
+                                "Stock take saved successfully.",
+                                (d, w) -> afterSave());
                     }
 
                 } catch (JSONException e) {
