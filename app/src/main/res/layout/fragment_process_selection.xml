@@ -10,7 +10,6 @@
         android:layout_height="match_parent"
         android:fillViewport="true">
 
-        <!-- ScrollView MUST have only one child -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -137,7 +136,6 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
-            <!-- RDC TO RDC HU PUTWAY — hidden 2026-04-30 per user request -->
             <Button
                 android:id="@+id/rdc_to_rdc_hu_putway"
                 android:layout_width="match_parent"
@@ -146,9 +144,8 @@
                 android:text="RDC to RDC HU Putway"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
-            <!-- INBOUND PROCESS NEW — hidden 2026-04-30 per user request -->
             <Button
                 android:id="@+id/inbound_process_new"
                 android:layout_width="match_parent"
@@ -157,9 +154,8 @@
                 android:text="Inbound Process New"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
-            <!-- INBOUND PUTWAY TO BIN — hidden 2026-04-30 per user request -->
             <Button
                 android:id="@+id/inbound_putway_to_bin"
                 android:layout_width="match_parent"
@@ -168,7 +164,7 @@
                 android:text="Inbound Putway to BIN"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
         </LinearLayout>
     </ScrollView>
