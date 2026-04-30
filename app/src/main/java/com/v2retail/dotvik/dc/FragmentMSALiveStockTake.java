@@ -113,8 +113,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     /**
      * Re-entrancy guard for SAVE — prevents the SUBMIT button from firing
      * multiple ZWM_STK_ADJ_MSA_BIN RFC calls when tapped quickly or while a
-     * previous save is still in-flight. Only saveData() / submit checks this.
-     * Reset only in onResponse / onErrorResponse callbacks of the SAVE call.
+     * previous save is still in-flight. Reset only in onResponse / onErrorResponse.
      */
     private boolean saveInFlight = false;
 
@@ -203,7 +202,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private static final class BapiOutcome {
         final boolean success;
         final String message;
-        final boolean explicit; // true = TYPE was S/E/W/I/A (clear); false = TYPE was blank (ambiguous)
+        final boolean explicit; // true = TYPE was S/E/W/I/A (clear); false = TYPE was blank
         BapiOutcome(boolean success, String message, boolean explicit) {
             this.success = success;
             this.message = message != null ? message : "";
@@ -214,13 +213,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /**
-     * Parse SAP EX_RETURN. Returns:
-     *   • null if EX_RETURN is missing entirely
-     *   • BapiOutcome(false, msg, explicit=true) if any row is TYPE=E or A
-     *   • BapiOutcome(true,  msg, explicit=true) if any row is TYPE=S/W/I with a message
-     *   • BapiOutcome(true,  "", explicit=false) if all rows have blank TYPE — caller decides what to do
-     */
     private static BapiOutcome evaluateBapiReturn(JSONObject responsebody) throws JSONException {
         if (responsebody == null || !responsebody.has("EX_RETURN")) return null;
         Object raw = responsebody.get("EX_RETURN");
@@ -259,7 +251,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if (anyExplicitType) {
             return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "Saved successfully.", true);
         }
-        // All rows had blank TYPE — ambiguous (SAP didn't fill in a status).
         return new BapiOutcome(true, "", false);
     }
 
@@ -280,11 +271,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         return null;
     }
 
-    /**
-     * Called after a wrong Crate or Article scan error is dismissed.
-     * Clears BOTH the Crate and Article scan fields, then returns
-     * focus to Crate so the user can re-scan without extra taps.
-     */
     private void resetAfterScanError() {
         txt_scan_crate.setText("");
         txt_scan_article.setText("");
@@ -314,7 +300,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 }
                 break;
             case R.id.btn_msa_live_stock_take_submit:
-                // Re-entrancy guard — prevents repeated SAVE RFC calls
                 if (saveInFlight) {
                     Log.w(TAG, "SUBMIT ignored: previous save still in flight");
                     return;
@@ -373,7 +358,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
                     txt_scan_article.requestFocus();
-                    Log.d(TAG, "Crate entered (editor action): " + value + " -> focus Art.No.");
                     return true;
                 }
             }
@@ -391,7 +375,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                     txt_cur_crate.setText(value);
                     UIFuncs.enableInput(con, txt_scan_article);
                     txt_scan_article.requestFocus();
-                    Log.d(TAG, "Crate scanned: " + value + " -> focus Art.No.");
                 }
             }
         });
@@ -517,15 +500,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             totalScanned = 0;
             JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
             int rawLength = IT_DATA_ARRAY.length();
-            Log.d(TAG, "MSA-DIAG raw IT_DATA length=" + rawLength);
             for(int i = 0; i < rawLength; i++){
                 LiveStockBinCrate data = new Gson().fromJson(
                         IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
-                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin()
-                        + " CRATE=" + data.getCrate() + " PLANT=" + data.getPlant());
             }
-            Log.d(TAG, "MSA-DIAG liveStockList.size=" + liveStockList.size());
             if(liveStockList.size() > 0){
                 step2();
                 tv_stock_take_id.setText(dd_stock_id_list.getSelectedItem().toString());
@@ -561,7 +540,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("Invalid Bin", "Invalid BIN, please check below table for allowed BINs");
             txt_scan_binno.requestFocus();
         }else{
-            Log.d(TAG, "BIN " + binno + " found. withCarate=" + withCarate);
             setLastScanedItem(withCarate);
         }
     }
@@ -662,12 +640,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if(withCarate){
             UIFuncs.enableInput(con, txt_scan_crate);
             txt_scan_crate.requestFocus();
-            Log.d(TAG, "BIN has crate -> cursor -> Crate field");
         }else{
             UIFuncs.enableInput(con, txt_scan_crate);
             UIFuncs.enableInput(con, txt_scan_article);
             txt_scan_article.requestFocus();
-            Log.d(TAG, "BIN has no crate -> cursor -> Art.No.");
         }
 
         populateTableData();
@@ -734,6 +710,20 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
+    /**
+     * Build the IT_DATA table payload for ZWM_STK_ADJ_MSA_BIN.
+     *
+     * The FM signature (verified against SAP ABAP Function Builder) requires
+     * the rows in IT_DATA to use the exact field names:
+     *   BIN, CRATE, MATERIAL, PLANT, SCAN_QTY, ST_TAKE_ID
+     *
+     * LiveScanData is already annotated with the correct @SerializedName values
+     * so Gson serialization produces these field names directly. This method
+     * only adds defensive defaults (PLANT from device, SCAN_QTY="0" if blank,
+     * ST_TAKE_ID from screen header) — it must NOT add legacy aliases like
+     * MATNR, MENGE, or STOCK_TAKE because those break the FM's structure
+     * mapping and cause SAP to silently skip rows.
+     */
     private JSONArray getScanDataToSubmit(){
         try {
             JSONArray arrScanData = new JSONArray();
@@ -746,21 +736,22 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             for (Map.Entry<String, LiveScanData> dataEntry : scanData.entrySet()) {
                 LiveScanData data = dataEntry.getValue();
                 JSONObject itDataJson = new JSONObject(new Gson().toJson(data));
+
+                // Required FM fields — defensive defaults
                 itDataJson.put("ST_TAKE_ID", stIdHeader);
-                itDataJson.put("STOCK_TAKE", stIdHeader);
-                if (itDataJson.has("MATERIAL") && !itDataJson.isNull("MATERIAL")) {
-                    String mat = itDataJson.getString("MATERIAL").trim();
-                    if (!mat.isEmpty()) itDataJson.put("MATNR", mat);
-                }
+
                 String plant = itDataJson.optString("PLANT", "").trim();
-                if (plant.isEmpty() && WERKS != null && !WERKS.isEmpty()) itDataJson.put("PLANT", WERKS);
+                if (plant.isEmpty() && WERKS != null && !WERKS.isEmpty()) {
+                    itDataJson.put("PLANT", WERKS);
+                }
+
                 String sq = itDataJson.optString("SCAN_QTY", "").trim();
-                if (sq.isEmpty()) { itDataJson.put("SCAN_QTY", "0"); sq = "0"; }
-                itDataJson.put("MENGE", sq);
+                if (sq.isEmpty()) itDataJson.put("SCAN_QTY", "0");
+
                 arrScanData.put(itDataJson);
             }
             if (arrScanData.length() == 0) {
-                showError("Empty Request", "Noting to submit, please scan some articles");
+                showError("Empty Request", "Nothing to submit, please scan some articles");
             } else {
                 return arrScanData;
             }
@@ -799,8 +790,16 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
+    /**
+     * Fire ZWM_STK_ADJ_MSA_BIN with the FM-exact parameters:
+     *   Imports : IM_USER, IM_WERKS, IM_STOCK_TAKE_ID, IM_CRATE, IM_BIN, IM_DESKTOP
+     *   Tables  : IT_DATA  (rows with BIN/CRATE/MATERIAL/PLANT/SCAN_QTY/ST_TAKE_ID)
+     *   Exports : EX_RETURN
+     *
+     * Legacy aliases IT_SAVE / ET_SAVE / IM_ST_ID are NOT sent — they don't
+     * exist on the FM and pollute the request payload.
+     */
     private void saveData() {
-        // Final guard inside saveData itself — paranoid double-check
         if (saveInFlight) {
             Log.w(TAG, "saveData() ignored: previous save still in flight");
             return;
@@ -812,24 +811,21 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("bapiname", Vars.ZWM_STK_ADJ_MSA_BIN);
                 args.put("IM_WERKS", WERKS);
                 args.put("IM_USER", USER);
-                String stId = tv_stock_take_id.getText().toString();
-                args.put("IM_STOCK_TAKE_ID", stId);
-                args.put("IM_ST_ID", stId);
+                args.put("IM_STOCK_TAKE_ID", tv_stock_take_id.getText().toString());
                 putSaveHeaderFromSaveRows(args, dataToSave);
-                JSONArray tablePayload = new JSONArray(dataToSave.toString());
-                args.put("IT_SAVE", tablePayload);
-                args.put("ET_SAVE", tablePayload);
-                args.put("IT_DATA", tablePayload);
-                Log.d(TAG, "saveData -> IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
-                        + " rows=" + dataToSave.length());
 
-                // Lock SAVE before firing the network request
+                // ── ONLY IT_DATA — no IT_SAVE, no ET_SAVE (those are not on the FM) ──
+                args.put("IT_DATA", dataToSave);
+
+                Log.d(TAG, "saveData -> ZWM_STK_ADJ_MSA_BIN IM_STOCK_TAKE_ID="
+                        + tv_stock_take_id.getText() + " rows=" + dataToSave.length()
+                        + " sample=" + (dataToSave.length() > 0 ? dataToSave.getJSONObject(0).toString() : "[]"));
+
                 saveInFlight = true;
                 if (btn_submit != null) btn_submit.setEnabled(false);
 
                 showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
             } catch (JSONException e) {
-                // Unlock on synchronous failure so the user can retry
                 saveInFlight = false;
                 if (btn_submit != null) btn_submit.setEnabled(true);
                 e.printStackTrace(); UIFuncs.errorSound(con);
@@ -892,7 +888,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         JsonObjectRequest mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
             responsebody -> {
                 if (dialog != null) { dialog.dismiss(); dialog = null; }
-                // Always clear save-in-flight flag once SAVE response arrives
                 if (reqType == REQUEST_SAVE) {
                     saveInFlight = false;
                     if (btn_submit != null) btn_submit.setEnabled(true);
@@ -930,12 +925,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         if (reqType == REQUEST_LIVE_SCAN) { updateScanStats(responsebody); return; }
                         if (reqType == REQUEST_SAVE) {
                             if (outcome.explicit) {
-                                // SAP gave us a real S/W/I row with confirmation
                                 Log.i(TAG, "MSA save confirmed: " + outcome.message);
                                 new AlertBox(getContext()).getBox("Success", outcome.message, (d, w) -> afterSave());
                             } else {
-                                // EX_RETURN present but TYPE was blank — SAP did NOT confirm save.
-                                // Treat as warning, do NOT clear the form — user can retry or verify.
                                 Log.w(TAG, "MSA save NOT confirmed by SAP — blank EX_RETURN. Response: " + responsebody);
                                 UIFuncs.errorSound(getContext());
                                 new AlertBox(getContext()).getBox(
@@ -951,7 +943,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         return;
                     }
 
-                    // ── outcome == null fallback (no EX_RETURN at all) ───────────────
                     if (reqType == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
                     if (reqType == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
                     if (reqType == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
@@ -996,12 +987,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 return res;
             }
         };
-        // Volley auto-retry DISABLED for SAVE — prevents duplicate writes if a
-        // "successful" call gets a slow response and Volley retries it.
+        // Volley retries DISABLED for SAVE — prevents duplicate writes
         if (request == REQUEST_SAVE) {
             mJsonRequest.setRetryPolicy(new RetryPolicy() {
                 @Override public int getCurrentTimeout() { return 50000; }
-                @Override public int getCurrentRetryCount() { return 0; }   // NO retries
+                @Override public int getCurrentRetryCount() { return 0; }
                 @Override public void retry(VolleyError error) throws VolleyError { throw error; }
             });
         } else {
@@ -1012,7 +1002,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             });
         }
         mRequestQueue.add(mJsonRequest);
-        Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         try {
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
         } catch (AuthFailureError e) {
