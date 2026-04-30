@@ -136,6 +136,7 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
+            <!-- Hidden per user request 2026-04-30 -->
             <Button
                 android:id="@+id/rdc_to_rdc_hu_putway"
                 android:layout_width="match_parent"
@@ -144,8 +145,9 @@
                 android:text="RDC to RDC HU Putway"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="visible" />
+                android:visibility="gone" />
 
+            <!-- Hidden per user request 2026-04-30 -->
             <Button
                 android:id="@+id/inbound_process_new"
                 android:layout_width="match_parent"
@@ -154,8 +156,9 @@
                 android:text="Inbound Process New"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="visible" />
+                android:visibility="gone" />
 
+            <!-- Hidden per user request 2026-04-30 -->
             <Button
                 android:id="@+id/inbound_putway_to_bin"
                 android:layout_width="match_parent"
@@ -164,7 +167,7 @@
                 android:text="Inbound Putway to BIN"
                 android:textColor="#fff"
                 android:background="#1B4F72"
-                android:visibility="visible" />
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>
