@@ -110,16 +110,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
     int totalScanned = 0;
 
-    /**
-     * Re-entrancy guard for SAVE — prevents the SUBMIT button from firing
-     * multiple ZWM_STK_ADJ_MSA_BIN RFC calls when tapped quickly or while a
-     * previous save is still in-flight. Reset only in onResponse / onErrorResponse.
-     */
     private boolean saveInFlight = false;
 
-    public FragmentMSALiveStockTake() {
-        // Required empty public constructor
-    }
+    public FragmentMSALiveStockTake() {}
 
     public static FragmentMSALiveStockTake newInstance(String param1, String param2) {
         return new FragmentMSALiveStockTake();
@@ -202,7 +195,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private static final class BapiOutcome {
         final boolean success;
         final String message;
-        final boolean explicit; // true = TYPE was S/E/W/I/A (clear); false = TYPE was blank
+        final boolean explicit;
         BapiOutcome(boolean success, String message, boolean explicit) {
             this.success = success;
             this.message = message != null ? message : "";
@@ -277,7 +270,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.enableInput(con, txt_scan_crate);
         UIFuncs.enableInput(con, txt_scan_article);
         txt_scan_crate.requestFocus();
-        Log.d(TAG, "resetAfterScanError: crate + article cleared, focus -> Crate");
     }
 
     @Override
@@ -504,6 +496,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 LiveStockBinCrate data = new Gson().fromJson(
                         IT_DATA_ARRAY.getJSONObject(i).toString(), LiveStockBinCrate.class);
                 liveStockList.add(data);
+                Log.d(TAG, "MSA-DIAG row[" + i + "] BIN=" + data.getBin()
+                        + " CRATE=" + data.getCrate()
+                        + " LGTYP=" + data.getLgtyp()
+                        + " PLANT=" + data.getPlant());
             }
             if(liveStockList.size() > 0){
                 step2();
@@ -607,6 +603,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 String stId = tv_stock_take_id.getText() != null
                         ? tv_stock_take_id.getText().toString().trim() : "";
                 if (!stId.isEmpty()) existing.setStockTakeId(stId);
+                // Ensure LGTYP is also propagated even if currentData was rebuilt
+                if (existing.getLgtyp() == null && currentData != null && currentData.getLgtyp() != null) {
+                    existing.setLgtyp(currentData.getLgtyp());
+                }
                 scanData.put(materialKey, existing);
             }
             LiveScanData.updateScanQty(existing, data.getQty());
@@ -652,29 +652,44 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_pq.setText((liveStockList.size() - totalScanned) + "");
     }
 
+    /**
+     * Build the pending-bins table.
+     *
+     * Columns: Bin | Crate | Type | Plant
+     *   • "Type"  = LGTYP (Storage Type) from ZWM_GET_STOCK_BIN response.
+     *               Sourced from ZWM_DCSTK1.LGTYP (E01 / V01 / V11 / etc).
+     *               Added 2026-04-30 per user request to surface the storage
+     *               type alongside each pending bin.
+     */
     private void populateTableData(){
         tableItems.removeAllViews();
         int headerTextSize = 16, textSize = 14;
 
         TextView headerBin = new TextView(getContext());
-        TextView headerHuNo = new TextView(getContext());
-        TextView headerExHuNo = new TextView(getContext());
+        TextView headerCrate = new TextView(getContext());
+        TextView headerLgtyp = new TextView(getContext());
+        TextView headerPlant = new TextView(getContext());
 
-        headerBin.setLayoutParams(new TableRow.LayoutParams(350, TableRow.LayoutParams.WRAP_CONTENT));
+        headerBin.setLayoutParams(new TableRow.LayoutParams(280, TableRow.LayoutParams.WRAP_CONTENT));
         headerBin.setGravity(Gravity.CENTER); headerBin.setPadding(0,5,0,5);
         headerBin.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
         headerBin.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
         headerBin.setText("Bin");
 
-        headerHuNo.setGravity(Gravity.CENTER); headerHuNo.setPadding(0,5,0,5);
-        headerHuNo.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
-        headerHuNo.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
-        headerHuNo.setText("Crate");
+        headerCrate.setGravity(Gravity.CENTER); headerCrate.setPadding(0,5,0,5);
+        headerCrate.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerCrate.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerCrate.setText("Crate");
 
-        headerExHuNo.setGravity(Gravity.CENTER); headerExHuNo.setPadding(0,5,0,5);
-        headerExHuNo.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
-        headerExHuNo.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
-        headerExHuNo.setText("Plant");
+        headerLgtyp.setGravity(Gravity.CENTER); headerLgtyp.setPadding(0,5,0,5);
+        headerLgtyp.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerLgtyp.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerLgtyp.setText("Type");
+
+        headerPlant.setGravity(Gravity.CENTER); headerPlant.setPadding(0,5,0,5);
+        headerPlant.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerPlant.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerPlant.setText("Plant");
 
         TableRow tr = new TableRow(getContext());
         tr.setId(0);
@@ -682,7 +697,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT);
         trParams.setMargins(0,0,0,0);
         tr.setPadding(0,0,0,0); tr.setLayoutParams(trParams);
-        tr.addView(headerBin); tr.addView(headerHuNo); tr.addView(headerExHuNo);
+        tr.addView(headerBin);
+        tr.addView(headerCrate);
+        tr.addView(headerLgtyp);
+        tr.addView(headerPlant);
         tableItems.addView(tr, trParams);
 
         int rowNum = 1;
@@ -692,17 +710,26 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 tvBin.setText(data.getBin()); tvBin.setTextSize(textSize); tvBin.setPadding(5,2,0,2);
                 tvBin.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
-                TextView tvHu = new TextView(getContext());
-                tvHu.setText(data.getCrate()); tvHu.setTextSize(textSize); tvHu.setPadding(5,2,0,2);
-                tvHu.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+                TextView tvCrate = new TextView(getContext());
+                tvCrate.setText(data.getCrate()); tvCrate.setTextSize(textSize); tvCrate.setPadding(5,2,0,2);
+                tvCrate.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
-                TextView tvExHu = new TextView(getContext());
-                tvExHu.setText(data.getPlant()); tvExHu.setTextSize(textSize); tvExHu.setPadding(5,2,0,2);
-                tvExHu.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+                TextView tvLgtyp = new TextView(getContext());
+                String lgtypVal = data.getLgtyp() != null ? data.getLgtyp() : "";
+                tvLgtyp.setText(lgtypVal); tvLgtyp.setTextSize(textSize); tvLgtyp.setPadding(5,2,0,2);
+                tvLgtyp.setGravity(Gravity.CENTER);
+                tvLgtyp.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+                TextView tvPlant = new TextView(getContext());
+                tvPlant.setText(data.getPlant()); tvPlant.setTextSize(textSize); tvPlant.setPadding(5,2,0,2);
+                tvPlant.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
                 tr = new TableRow(getContext());
                 tr.setId(rowNum); tr.setPadding(0,0,0,0); tr.setLayoutParams(trParams);
-                tr.addView(tvBin); tr.addView(tvHu); tr.addView(tvExHu);
+                tr.addView(tvBin);
+                tr.addView(tvCrate);
+                tr.addView(tvLgtyp);
+                tr.addView(tvPlant);
                 tr.setTag(data);
                 tableItems.addView(tr, trParams);
                 rowNum++;
@@ -710,20 +737,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /**
-     * Build the IT_DATA table payload for ZWM_STK_ADJ_MSA_BIN.
-     *
-     * The FM signature (verified against SAP ABAP Function Builder) requires
-     * the rows in IT_DATA to use the exact field names:
-     *   BIN, CRATE, MATERIAL, PLANT, SCAN_QTY, ST_TAKE_ID
-     *
-     * LiveScanData is already annotated with the correct @SerializedName values
-     * so Gson serialization produces these field names directly. This method
-     * only adds defensive defaults (PLANT from device, SCAN_QTY="0" if blank,
-     * ST_TAKE_ID from screen header) — it must NOT add legacy aliases like
-     * MATNR, MENGE, or STOCK_TAKE because those break the FM's structure
-     * mapping and cause SAP to silently skip rows.
-     */
     private JSONArray getScanDataToSubmit(){
         try {
             JSONArray arrScanData = new JSONArray();
@@ -737,7 +750,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 LiveScanData data = dataEntry.getValue();
                 JSONObject itDataJson = new JSONObject(new Gson().toJson(data));
 
-                // Required FM fields — defensive defaults
                 itDataJson.put("ST_TAKE_ID", stIdHeader);
 
                 String plant = itDataJson.optString("PLANT", "").trim();
@@ -790,15 +802,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /**
-     * Fire ZWM_STK_ADJ_MSA_BIN with the FM-exact parameters:
-     *   Imports : IM_USER, IM_WERKS, IM_STOCK_TAKE_ID, IM_CRATE, IM_BIN, IM_DESKTOP
-     *   Tables  : IT_DATA  (rows with BIN/CRATE/MATERIAL/PLANT/SCAN_QTY/ST_TAKE_ID)
-     *   Exports : EX_RETURN
-     *
-     * Legacy aliases IT_SAVE / ET_SAVE / IM_ST_ID are NOT sent — they don't
-     * exist on the FM and pollute the request payload.
-     */
     private void saveData() {
         if (saveInFlight) {
             Log.w(TAG, "saveData() ignored: previous save still in flight");
@@ -814,7 +817,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 args.put("IM_STOCK_TAKE_ID", tv_stock_take_id.getText().toString());
                 putSaveHeaderFromSaveRows(args, dataToSave);
 
-                // ── ONLY IT_DATA — no IT_SAVE, no ET_SAVE (those are not on the FM) ──
                 args.put("IT_DATA", dataToSave);
 
                 Log.d(TAG, "saveData -> ZWM_STK_ADJ_MSA_BIN IM_STOCK_TAKE_ID="
@@ -987,7 +989,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 return res;
             }
         };
-        // Volley retries DISABLED for SAVE — prevents duplicate writes
         if (request == REQUEST_SAVE) {
             mJsonRequest.setRetryPolicy(new RetryPolicy() {
                 @Override public int getCurrentTimeout() { return 50000; }
