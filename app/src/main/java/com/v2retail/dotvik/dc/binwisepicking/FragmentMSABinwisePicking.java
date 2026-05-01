@@ -78,6 +78,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
     /** HHT scanners often inject keystrokes one-by-one; debounce collects the full barcode before RFC. */
     private static final long SCAN_DEBOUNCE_MS = 600L;
     private static final int SCAN_MIN_LEN_HU = 2;
+    /** Same threshold as HU so bin/crate auto-commit after scan matches Scan Ext HU behavior. */
+    private static final int SCAN_MIN_LEN_MSA_FIELD = 2;
 
     View rootView;
     String URL="";
@@ -114,6 +116,12 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
     private volatile boolean huValidationInFlight;
     /** Skip debounced HU validation while clearing/filling {@link #txt_scan_hu} programmatically. */
     private boolean suppressHuScanScheduling;
+
+    private Runnable msaBinCommitRunnable;
+    private Runnable msaCrateCommitRunnable;
+    /** Skip debounced bin/crate validation while clearing fields programmatically. */
+    private boolean suppressMsaBinScheduling;
+    private boolean suppressMsaCrateScheduling;
 
     private ExecutorService binParseExecutor;
 
@@ -190,6 +198,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
     @Override
     public void onDestroyView() {
         cancelHuScanCommit();
+        cancelMsaBinCommit();
+        cancelMsaCrateCommit();
         if (binParseExecutor != null) {
             binParseExecutor.shutdownNow();
             binParseExecutor = null;
@@ -232,6 +242,50 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         scanHandler.postDelayed(huCommitRunnable, SCAN_DEBOUNCE_MS);
     }
 
+    private void cancelMsaBinCommit() {
+        if (msaBinCommitRunnable != null) {
+            scanHandler.removeCallbacks(msaBinCommitRunnable);
+            msaBinCommitRunnable = null;
+        }
+    }
+
+    private void cancelMsaCrateCommit() {
+        if (msaCrateCommitRunnable != null) {
+            scanHandler.removeCallbacks(msaCrateCommitRunnable);
+            msaCrateCommitRunnable = null;
+        }
+    }
+
+    private void scheduleMsaBinCommit() {
+        cancelMsaBinCommit();
+        msaBinCommitRunnable = () -> {
+            msaBinCommitRunnable = null;
+            if (suppressMsaBinScheduling || txt_scan_msa_bin == null || !txt_scan_msa_bin.isEnabled()) {
+                return;
+            }
+            String value = UIFuncs.toUpperTrim(txt_scan_msa_bin);
+            if (value.length() >= SCAN_MIN_LEN_MSA_FIELD) {
+                validateMsaBin(value);
+            }
+        };
+        scanHandler.postDelayed(msaBinCommitRunnable, SCAN_DEBOUNCE_MS);
+    }
+
+    private void scheduleMsaCrateCommit() {
+        cancelMsaCrateCommit();
+        msaCrateCommitRunnable = () -> {
+            msaCrateCommitRunnable = null;
+            if (suppressMsaCrateScheduling || txt_scan_msa_crate == null || !txt_scan_msa_crate.isEnabled()) {
+                return;
+            }
+            String value = UIFuncs.toUpperTrim(txt_scan_msa_crate);
+            if (value.length() >= SCAN_MIN_LEN_MSA_FIELD) {
+                validateMSACrate(value);
+            }
+        };
+        scanHandler.postDelayed(msaCrateCommitRunnable, SCAN_DEBOUNCE_MS);
+    }
+
     /**
      * Hardware scanners often send KEYCODE_ENTER; {@link EditorInfo#IME_ACTION_DONE} is not always set.
      */
@@ -255,13 +309,44 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         return imeSubmit || enterFromHw;
     }
 
-    private static boolean trySubmitFromEnter(EditText field, Runnable whenNonEmpty) {
-        String value = UIFuncs.toUpperTrim(field);
+    private boolean trySubmitMsaBinFromEditor(TextView textView, int actionId, KeyEvent keyEvent) {
+        boolean enterFromHw = keyEvent != null
+                && keyEvent.getAction() == KeyEvent.ACTION_DOWN
+                && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+        boolean imeSubmit = actionId == EditorInfo.IME_ACTION_DONE
+                || actionId == EditorInfo.IME_ACTION_NEXT
+                || actionId == EditorInfo.IME_ACTION_GO;
+        if (!imeSubmit && !enterFromHw) {
+            return false;
+        }
+        cancelMsaBinCommit();
+        UIFuncs.hideKeyboard(getActivity());
+        String value = UIFuncs.toUpperTrim(txt_scan_msa_bin);
         if (!value.isEmpty()) {
-            whenNonEmpty.run();
+            validateMsaBin(value);
             return true;
         }
-        return false;
+        return imeSubmit || enterFromHw;
+    }
+
+    private boolean trySubmitMsaCrateFromEditor(TextView textView, int actionId, KeyEvent keyEvent) {
+        boolean enterFromHw = keyEvent != null
+                && keyEvent.getAction() == KeyEvent.ACTION_DOWN
+                && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+        boolean imeSubmit = actionId == EditorInfo.IME_ACTION_DONE
+                || actionId == EditorInfo.IME_ACTION_NEXT
+                || actionId == EditorInfo.IME_ACTION_GO;
+        if (!imeSubmit && !enterFromHw) {
+            return false;
+        }
+        cancelMsaCrateCommit();
+        UIFuncs.hideKeyboard(getActivity());
+        String value = UIFuncs.toUpperTrim(txt_scan_msa_crate);
+        if (!value.isEmpty()) {
+            validateMSACrate(value);
+            return true;
+        }
+        return imeSubmit || enterFromHw;
     }
 
     private void addInputEvents(){
@@ -323,54 +408,80 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         txt_scan_msa_crate.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                boolean enterFromHw = keyEvent != null
-                        && keyEvent.getAction() == KeyEvent.ACTION_DOWN
-                        && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER;
-                boolean imeSubmit = actionId == EditorInfo.IME_ACTION_DONE
-                        || actionId == EditorInfo.IME_ACTION_NEXT
-                        || actionId == EditorInfo.IME_ACTION_GO;
-                if (!imeSubmit && !enterFromHw) return false;
+                return trySubmitMsaCrateFromEditor(textView, actionId, keyEvent);
+            }
+        });
+        txt_scan_msa_crate.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                cancelMsaCrateCommit();
                 UIFuncs.hideKeyboard(getActivity());
                 String value = UIFuncs.toUpperTrim(txt_scan_msa_crate);
                 if (!value.isEmpty()) {
                     validateMSACrate(value);
                     return true;
                 }
-                return imeSubmit || enterFromHw;
-            }
-        });
-        txt_scan_msa_crate.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                UIFuncs.hideKeyboard(getActivity());
-                return trySubmitFromEnter(txt_scan_msa_crate, () -> validateMSACrate(UIFuncs.toUpperTrim(txt_scan_msa_crate)));
             }
             return false;
+        });
+        txt_scan_msa_crate.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (suppressMsaCrateScheduling) return;
+                String t = s.toString();
+                if (t.contains("\n") || t.contains("\r")) {
+                    suppressMsaCrateScheduling = true;
+                    String cleaned = t.replace("\r", "").replace("\n", "").trim();
+                    txt_scan_msa_crate.setText(cleaned);
+                    txt_scan_msa_crate.setSelection(Math.min(cleaned.length(), txt_scan_msa_crate.length()));
+                    suppressMsaCrateScheduling = false;
+                }
+                scheduleMsaCrateCommit();
+            }
         });
         txt_scan_msa_bin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                boolean enterFromHw = keyEvent != null
-                        && keyEvent.getAction() == KeyEvent.ACTION_DOWN
-                        && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER;
-                boolean imeSubmit = actionId == EditorInfo.IME_ACTION_DONE
-                        || actionId == EditorInfo.IME_ACTION_NEXT
-                        || actionId == EditorInfo.IME_ACTION_GO;
-                if (!imeSubmit && !enterFromHw) return false;
+                return trySubmitMsaBinFromEditor(textView, actionId, keyEvent);
+            }
+        });
+        txt_scan_msa_bin.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                cancelMsaBinCommit();
                 UIFuncs.hideKeyboard(getActivity());
                 String value = UIFuncs.toUpperTrim(txt_scan_msa_bin);
                 if (!value.isEmpty()) {
                     validateMsaBin(value);
                     return true;
                 }
-                return imeSubmit || enterFromHw;
-            }
-        });
-        txt_scan_msa_bin.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-                UIFuncs.hideKeyboard(getActivity());
-                return trySubmitFromEnter(txt_scan_msa_bin, () -> validateMsaBin(UIFuncs.toUpperTrim(txt_scan_msa_bin)));
             }
             return false;
+        });
+        txt_scan_msa_bin.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (suppressMsaBinScheduling) return;
+                String t = s.toString();
+                if (t.contains("\n") || t.contains("\r")) {
+                    suppressMsaBinScheduling = true;
+                    String cleaned = t.replace("\r", "").replace("\n", "").trim();
+                    txt_scan_msa_bin.setText(cleaned);
+                    txt_scan_msa_bin.setSelection(Math.min(cleaned.length(), txt_scan_msa_bin.length()));
+                    suppressMsaBinScheduling = false;
+                }
+                scheduleMsaBinCommit();
+            }
         });
     }
 
@@ -394,8 +505,12 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
 
     private void clear(){
         cancelHuScanCommit();
+        cancelMsaBinCommit();
+        cancelMsaCrateCommit();
         huValidationInFlight = false;
         suppressHuScanScheduling = true;
+        suppressMsaBinScheduling = true;
+        suppressMsaCrateScheduling = true;
         binDataMap = new LinkedHashMap<>();
         refreshBinCrateRecycler();
         UIFuncs.disableInput(con, txt_scan_hu);
@@ -411,6 +526,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         txt_sqty_tqty.setText("0/0");
         txt_store.setText("");
         suppressHuScanScheduling = false;
+        suppressMsaBinScheduling = false;
+        suppressMsaCrateScheduling = false;
     }
 
     /**
@@ -567,7 +684,9 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         for (Map.Entry<String, BinCrateHU> binDataEntry: binDataMap.entrySet()) {
             if(binDataEntry.getValue().getBin().equalsIgnoreCase(bin)){
                 txt_scanned_msa_bin.setText(bin);
+                suppressMsaBinScheduling = true;
                 txt_scan_msa_bin.setText("");
+                suppressMsaBinScheduling = false;
                 UIFuncs.enableInput(con, txt_scan_msa_crate);
                 // FIX 2026-04-30: focus must follow input enablement so the
                 // next scanner keystroke goes to MSA Crate, not the previous
@@ -588,7 +707,9 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
             }
             showError("Invalid Bin", "MSA Bin not found in the table");
             // Keep focus on the MSA Bin field so the user can rescan immediately
+            suppressMsaBinScheduling = true;
             txt_scan_msa_bin.setText("");
+            suppressMsaBinScheduling = false;
             txt_scan_msa_bin.requestFocus();
         }
     }
@@ -609,7 +730,9 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                 showError("Invalid Crate", "MSA Crate not found in the table");
             }
         }
+        suppressMsaCrateScheduling = true;
         txt_scan_msa_crate.setText("");
+        suppressMsaCrateScheduling = false;
         // Keep focus on the MSA Crate field for retry
         txt_scan_msa_crate.requestFocus();
     }
@@ -618,7 +741,9 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         totalScanned++;
         binDataMap.remove(key);
         txt_scanned_msa_crate.setText(UIFuncs.toUpperTrim(txt_scan_msa_crate));
+        suppressMsaCrateScheduling = true;
         txt_scan_msa_crate.setText("");
+        suppressMsaCrateScheduling = false;
         txt_sqty_tqty.setText(totalScanned + " / " + (binDataMap.size() + scannedBinData.size()));
         refreshBinCrateRecycler();
         txt_scan_msa_bin.requestFocus();
@@ -747,6 +872,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                                         txt_scan_msa_bin.requestFocus();
                                     } else if (request == REQUEST_SAVE) {
                                         suppressHuScanScheduling = true;
+                                        suppressMsaBinScheduling = true;
+                                        suppressMsaCrateScheduling = true;
                                         txt_scan_msa_crate.setText("");
                                         txt_scanned_msa_crate.setText("");
                                         txt_scan_msa_bin.setText("");
@@ -754,6 +881,8 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
                                         txt_scan_hu.setText("");
                                         txt_scanned_hu.setText("");
                                         suppressHuScanScheduling = false;
+                                        suppressMsaBinScheduling = false;
+                                        suppressMsaCrateScheduling = false;
                                         totalScanned = 0;
                                         scannedBinData = new HashMap<>();
                                         txt_sqty_tqty.setText(totalScanned + " / " + (binDataMap.size() + scannedBinData.size()));
