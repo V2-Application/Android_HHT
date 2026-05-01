@@ -3,6 +3,7 @@ package com.v2retail.dotvik.dc;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -10,7 +11,6 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import android.os.Handler;
-import android.provider.Contacts;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -46,8 +46,6 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
@@ -67,8 +65,6 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +87,16 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     FragmentManager fm;
 
     Button btn_back, btn_next, btn_submit;
+
+    /**
+     * Empty Bin toggle button (right side of "Next Scan:" row).
+     * When selected → background turns red, IM_BIN_EMP = "X" is sent on Submit.
+     * When deselected → background returns to colorPrimary, IM_BIN_EMP = "".
+     * Reset to deselected after every successful save.
+     */
+    Button btn_empty_bin;
+    private boolean emptyBinSelected = false;
+
     TextView tv_plant, tv_stock_take_id;
     EditText txt_tq, txt_sq, txt_pq;
     EditText txt_cur_binno, txt_cur_crate, txt_cur_article, txt_cur_sqty;
@@ -176,14 +182,39 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         btn_back = rootView.findViewById(R.id.btn_msa_live_stock_take_back);
         btn_next = rootView.findViewById(R.id.btn_msa_live_stock_take_next);
         btn_submit = rootView.findViewById(R.id.btn_msa_live_stock_take_submit);
+        btn_empty_bin = rootView.findViewById(R.id.btn_msa_live_stock_take_empty_bin);
 
         btn_back.setOnClickListener(this);
         btn_next.setOnClickListener(this);
         btn_submit.setOnClickListener(this);
+        btn_empty_bin.setOnClickListener(this);
 
         clear(true);
         addInputEvents();
         return rootView;
+    }
+
+    /** Toggle the Empty Bin button state and update its visual appearance. */
+    private void toggleEmptyBin() {
+        emptyBinSelected = !emptyBinSelected;
+        if (emptyBinSelected) {
+            btn_empty_bin.setBackgroundColor(Color.RED);
+            btn_empty_bin.setText("Empty Bin ✓");
+            Log.d(TAG, "Empty Bin selected — IM_BIN_EMP will be sent as X");
+        } else {
+            btn_empty_bin.setBackgroundResource(android.R.color.holo_blue_dark);
+            btn_empty_bin.setText("Empty Bin");
+            Log.d(TAG, "Empty Bin deselected — IM_BIN_EMP will be empty");
+        }
+    }
+
+    /** Reset Empty Bin button to deselected state (called after save and on clear). */
+    private void resetEmptyBin() {
+        emptyBinSelected = false;
+        if (btn_empty_bin != null) {
+            btn_empty_bin.setBackgroundResource(android.R.color.holo_blue_dark);
+            btn_empty_bin.setText("Empty Bin");
+        }
     }
 
     private void showError(String title, String message) {
@@ -244,10 +275,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         if (anyExplicitType) {
             return new BapiOutcome(true, infos.length() > 0 ? infos.toString() : "Saved successfully.", true);
         }
-        // EX_RETURN present but TYPE was blank — SAP's standard "silent success"
-        // pattern for ZWM_STK_ADJ_MSA_BIN. Verified 2026-04-30 against ZWM_DCSTK2:
-        // when EX_RETURN.TYPE="" and no error messages, the FM has actually
-        // written the rows and set ZWM_DCSTK1.COMPLETE='C'. Treat as success.
         return new BapiOutcome(true, "", false);
     }
 
@@ -305,6 +332,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 }else{
                     box.getBox("No Data", "Nothing to save. Scan a BIN from the list, then crate (if required), then article/barcode until the server confirms the scan. Then tap SUBMIT.");
                 }
+                break;
+            case R.id.btn_msa_live_stock_take_empty_bin:
+                toggleEmptyBin();
                 break;
         }
     }
@@ -401,6 +431,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         liveStockList = new ArrayList<>();
         totalScanned = 0;
         saveInFlight = false;
+        resetEmptyBin();
         step2();
         if(clearAll){
             llNextScreen.setVisibility(View.GONE);
@@ -813,9 +844,12 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
                 args.put("IT_DATA", dataToSave);
 
-                Log.d(TAG, "saveData -> ZWM_STK_ADJ_MSA_BIN IM_STOCK_TAKE_ID="
-                        + tv_stock_take_id.getText() + " rows=" + dataToSave.length()
-                        + " sample=" + (dataToSave.length() > 0 ? dataToSave.getJSONObject(0).toString() : "[]"));
+                // IM_BIN_EMP: send "X" if the user tapped Empty Bin, else blank.
+                // SAP RFC ZWM_STK_ADJ_MSA_BIN uses this flag to mark the bin as empty.
+                args.put("IM_BIN_EMP", emptyBinSelected ? "X" : "");
+                Log.d(TAG, "saveData -> IM_STOCK_TAKE_ID=" + tv_stock_take_id.getText()
+                        + " rows=" + dataToSave.length()
+                        + " IM_BIN_EMP=" + (emptyBinSelected ? "X" : ""));
 
                 saveInFlight = true;
                 if (btn_submit != null) btn_submit.setEnabled(false);
@@ -834,6 +868,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     private void afterSave(){
         scanData = new HashMap<>();
         currentData = null;
+        resetEmptyBin();
         txt_cur_crate.setText(""); txt_cur_binno.setText("");
         txt_cur_article.setText(""); txt_cur_sqty.setText("0");
         txt_scan_binno.setText(""); txt_scan_crate.setText("");
@@ -920,35 +955,23 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         if (reqType == REQUEST_VALIDATE_STOCK_ID) { setData(responsebody); return; }
                         if (reqType == REQUEST_LIVE_SCAN) { updateScanStats(responsebody); return; }
                         if (reqType == REQUEST_SAVE) {
-                            // Treat both the explicit success (TYPE=S) and the
-                            // standard SAP "silent success" (blank EX_RETURN)
-                            // as save-completed. Confirmed against ZWM_DCSTK2
-                            // on 2026-04-30: the FM does write rows and set
-                            // ZWM_DCSTK1.COMPLETE='C' even when EX_RETURN.TYPE
-                            // is blank. The earlier "Save Not Confirmed"
-                            // warning was misleading.
                             String successMsg = outcome.explicit && !outcome.message.isEmpty()
                                     ? outcome.message
                                     : "Stock take saved successfully.";
                             Log.i(TAG, "MSA save success (explicit=" + outcome.explicit
-                                    + "): " + successMsg);
+                                    + " emptyBin=" + emptyBinSelected + "): " + successMsg);
                             new AlertBox(getContext()).getBox("Success", successMsg, (d, w) -> afterSave());
                             return;
                         }
                         return;
                     }
 
-                    // ── outcome == null fallback: response had no EX_RETURN
-                    // and no EX_MESSAGE. Use response shape to route:
                     if (reqType == REQUEST_GET_STOCK_ID && responsebody.has("IT_DATA")) { populateStockIDs(responsebody); return; }
                     if (reqType == REQUEST_VALIDATE_STOCK_ID && responsebody.has("IT_DATA")) { setData(responsebody); return; }
                     if (reqType == REQUEST_LIVE_SCAN && responsebody.has("EX_DATA")) { updateScanStats(responsebody); return; }
 
                     if (reqType == REQUEST_SAVE) {
-                        // No EX_RETURN at all, but the request came back 200 OK.
-                        // This is the same SAP silent-success case — treat as
-                        // successful and let the user continue.
-                        Log.i(TAG, "MSA save: response had no EX_RETURN/EX_MESSAGE — treating as success. Body: " + responsebody);
+                        Log.i(TAG, "MSA save: no EX_RETURN — treating as success. emptyBin=" + emptyBinSelected);
                         new AlertBox(getContext()).getBox("Success",
                                 "Stock take saved successfully.",
                                 (d, w) -> afterSave());
