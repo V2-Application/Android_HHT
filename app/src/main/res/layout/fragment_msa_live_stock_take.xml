@@ -438,6 +438,8 @@
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Next Scan row: label on left, Empty Bin toggle button on right -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -449,12 +451,30 @@
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="4"
+                    android:layout_weight="5"
                     android:background="@color/colorAccent"
                     android:text="Next Scan:"
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:text="" />
+
+                <!-- Empty Bin toggle button — turns red when selected (IM_BIN_EMP = "X") -->
+                <Button
+                    android:id="@+id/btn_msa_live_stock_take_empty_bin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:text="Empty Bin"
+                    android:textSize="12sp"
+                    android:textColor="@color/white"
+                    android:background="@color/colorPrimary"
+                    android:padding="4dp" />
 
             </LinearLayout>
 
