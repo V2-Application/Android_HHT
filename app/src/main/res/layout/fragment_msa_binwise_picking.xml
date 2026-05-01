@@ -140,6 +140,8 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
                         android:inputType="textCapCharacters"
+                        android:nextFocusDown="@id/txt_msa_binwise_picking_process_msa_crate"
+                        android:nextFocusForward="@id/txt_msa_binwise_picking_process_msa_crate"
                         android:imeOptions="actionDone"
                         android:singleLine="true"
                         android:padding="9dp"

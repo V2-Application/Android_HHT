@@ -61,7 +61,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -679,39 +681,82 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         }
     }
 
-    public void validateMsaBin(String bin){
-        boolean binFound = false;
-        for (Map.Entry<String, BinCrateHU> binDataEntry: binDataMap.entrySet()) {
-            if(binDataEntry.getValue().getBin().equalsIgnoreCase(bin)){
-                txt_scanned_msa_bin.setText(bin);
-                suppressMsaBinScheduling = true;
-                txt_scan_msa_bin.setText("");
-                suppressMsaBinScheduling = false;
-                UIFuncs.enableInput(con, txt_scan_msa_crate);
-                // FIX 2026-04-30: focus must follow input enablement so the
-                // next scanner keystroke goes to MSA Crate, not the previous
-                // (now-disabled) MSA Bin field.
-                txt_scan_msa_crate.requestFocus();
-                binFound = true;
-                break;
+    /**
+     * HHT scans sometimes append a trailing character vs SAP bin labels (e.g. {@code A0-0102-E4s}
+     * vs table {@code A0-0102-E4}). Prefer exact match; otherwise accept the longest bin string that
+     * is a strict prefix of the scan so validation succeeds and focus can move to MSA Crate.
+     */
+    private String resolveCanonicalBinFromScan(String scannedNorm) {
+        if (binDataMap.isEmpty() || scannedNorm.isEmpty()) return null;
+        LinkedHashSet<String> bins = new LinkedHashSet<>();
+        for (BinCrateHU v : binDataMap.values()) {
+            String b = v.getBin();
+            if (b != null && !b.trim().isEmpty()) bins.add(b.trim());
+        }
+        for (String b : bins) {
+            if (scannedNorm.equalsIgnoreCase(b)) {
+                return matchingBinCasingFromMap(b);
             }
         }
+        String best = null;
+        for (String b : bins) {
+            if (scannedNorm.length() <= b.length()) continue;
+            if (scannedNorm.regionMatches(true, 0, b, 0, b.length())) {
+                if (best == null || b.length() > best.length()) best = b;
+            }
+        }
+        return best != null ? matchingBinCasingFromMap(best) : null;
+    }
 
-        if(!binFound){
-            if(!UIFuncs.toUpperTrim(txt_scanned_msa_crate).isEmpty()){
-                String key = bin + "-" + UIFuncs.toUpperTrim(txt_scanned_msa_crate);
-                if(scannedBinData.containsKey(key)){
-                    showError("Already Scanned", "MSA Crate and MSA Bin already scanned");
+    /** Use SAP casing from the first map row so crate keys stay consistent. */
+    private String matchingBinCasingFromMap(String binIgnoreCase) {
+        for (BinCrateHU v : binDataMap.values()) {
+            String b = v.getBin();
+            if (b != null && b.trim().equalsIgnoreCase(binIgnoreCase)) return b.trim();
+        }
+        return binIgnoreCase;
+    }
+
+    private void focusMsaScanField(EditText field) {
+        if (field == null) return;
+        field.post(() -> {
+            field.requestFocus();
+            Editable ed = field.getText();
+            if (ed != null) field.setSelection(ed.length());
+        });
+    }
+
+    public void validateMsaBin(String bin){
+        String scanned = bin == null ? "" : bin.trim().toUpperCase(Locale.ROOT);
+        String canonicalBin = resolveCanonicalBinFromScan(scanned);
+
+        if (canonicalBin != null) {
+            for (Map.Entry<String, BinCrateHU> binDataEntry : binDataMap.entrySet()) {
+                String rowBin = binDataEntry.getValue().getBin();
+                if (rowBin != null && rowBin.trim().equalsIgnoreCase(canonicalBin)) {
+                    txt_scanned_msa_bin.setText(rowBin.trim());
+                    suppressMsaBinScheduling = true;
+                    txt_scan_msa_bin.setText("");
+                    suppressMsaBinScheduling = false;
+                    UIFuncs.enableInput(con, txt_scan_msa_crate);
+                    focusMsaScanField(txt_scan_msa_crate);
                     return;
                 }
             }
-            showError("Invalid Bin", "MSA Bin not found in the table");
-            // Keep focus on the MSA Bin field so the user can rescan immediately
-            suppressMsaBinScheduling = true;
-            txt_scan_msa_bin.setText("");
-            suppressMsaBinScheduling = false;
-            txt_scan_msa_bin.requestFocus();
         }
+
+        if(!UIFuncs.toUpperTrim(txt_scanned_msa_crate).isEmpty()){
+            String key = scanned + "-" + UIFuncs.toUpperTrim(txt_scanned_msa_crate);
+            if(scannedBinData.containsKey(key)){
+                showError("Already Scanned", "MSA Crate and MSA Bin already scanned");
+                return;
+            }
+        }
+        showError("Invalid Bin", "MSA Bin not found in the table");
+        suppressMsaBinScheduling = true;
+        txt_scan_msa_bin.setText("");
+        suppressMsaBinScheduling = false;
+        focusMsaScanField(txt_scan_msa_bin);
     }
 
     public void validateMSACrate(String crate){
