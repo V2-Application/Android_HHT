@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <LinearLayout
@@ -88,6 +89,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:inputType="textCapCharacters"
                         android:imeOptions="actionDone"
                         android:singleLine="true"
                         android:padding="9dp"
@@ -135,6 +139,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
+                        android:inputType="textCapCharacters"
+                        android:nextFocusDown="@id/txt_msa_binwise_picking_process_msa_crate"
+                        android:nextFocusForward="@id/txt_msa_binwise_picking_process_msa_crate"
                         android:imeOptions="actionDone"
                         android:singleLine="true"
                         android:padding="9dp"
@@ -182,6 +189,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
+                        android:inputType="textCapCharacters"
                         android:imeOptions="actionDone"
                         android:singleLine="true"
                         android:padding="9dp"
@@ -242,20 +250,72 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:gravity="center_vertical"
                 android:layout_margin="5dp"
                 android:padding="2dp">
 
-                <ScrollView
+                <!-- Header row (matches item_msa_binwise_bin_crate_row weights) -->
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:fillViewport="true">
-                    <TableLayout
-                        android:id="@+id/table_msa_binwise_picking_process_msa_bin_crate"
-                        android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:stretchColumns="1,2"/>
-                </ScrollView>
+                        android:layout_weight="0.55"
+                        android:background="@drawable/table_header_cell_border"
+                        android:gravity="center"
+                        android:padding="6dp"
+                        android:text="#"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.25"
+                        android:background="@drawable/table_header_cell_border"
+                        android:gravity="center"
+                        android:padding="6dp"
+                        android:text="Bin"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.25"
+                        android:background="@drawable/table_header_cell_border"
+                        android:gravity="center"
+                        android:padding="6dp"
+                        android:text="Crate"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.95"
+                        android:background="@drawable/table_header_cell_border"
+                        android:gravity="center"
+                        android:padding="6dp"
+                        android:text="Qty"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_msa_binwise_bin_crate"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:clipToPadding="false"
+                    android:scrollbars="vertical"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

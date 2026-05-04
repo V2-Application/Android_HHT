@@ -17,6 +17,15 @@ public class LiveStockBinCrate  implements Serializable {
     private String stockTakeId;
     @SerializedName("HHT_ID")
     private String hhtId;
+
+    /**
+     * Storage Type — sourced from ZWM_DCSTK1.LGTYP via ZWM_GET_STOCK_BIN RFC.
+     * Common values: E01 (MSA), V01 (Putaway), V11 (HU). Used for display
+     * in the bins table and propagated to LiveScanData on submit.
+     */
+    @SerializedName("LGTYP")
+    private String lgtyp;
+
     private boolean picked;
 
     public static LiveStockBinCrate newInstance(LiveStockBinCrate source){
@@ -30,6 +39,7 @@ public class LiveStockBinCrate  implements Serializable {
         target.setCrate(source.getCrate());
         target.setStockTakeId(source.getStockTakeId());
         target.setHhtId(source.getHhtId());
+        target.setLgtyp(source.getLgtyp());
         target.setPicked(source.isPicked());
 
         return target;
@@ -90,5 +100,13 @@ public class LiveStockBinCrate  implements Serializable {
 
     public void setHhtId(String hhtId) {
         this.hhtId = hhtId;
+    }
+
+    public String getLgtyp() {
+        return lgtyp;
+    }
+
+    public void setLgtyp(String lgtyp) {
+        this.lgtyp = lgtyp;
     }
 }

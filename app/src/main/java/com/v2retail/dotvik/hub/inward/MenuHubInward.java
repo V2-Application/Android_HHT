@@ -10,16 +10,21 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.v2retail.dotvik.BuildConfig;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.hub.HubProcessSelectionActivity;
 import com.v2retail.util.AlertBox;
+import com.v2retail.util.SharedPreferencesData;
 
 public class MenuHubInward extends Fragment implements View.OnClickListener {
+
+    private static final String TAG = "MenuHubInward";
 
     private View rootView;
     private FragmentActivity activity;
@@ -29,10 +34,17 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
     AlertBox box;
 
     Button hu_grc;
+<<<<<<< HEAD
     Button hu_stock_review;  // HU Stock Review — ZWM_HU_STOCK_REV_RFC | DEV 2026-04-21
     Button hu_v11_v01;       // V11-V01         — ZWM_HU_STOCK_REV_RFC, Type=V11 | DEV 2026-04-22
     Button hu_picking;       // HUB HU Picking  — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
     Button hu_putway;        // HUB HU Putway   — ZWM_HUB_HU_PUTWAY_RFC, batch mode | DEV 2026-04-25
+=======
+    Button hu_stock_review;
+    Button hu_v11_v01;       // V11-V01        — ZWM_HU_STOCK_REV_RFC, Type=V11   | DEV 2026-04-22
+    Button hu_picking;       // HUB HU Picking — ZWM_HUB_HU_PICKING_RFC           | DEV 2026-04-23
+    Button hu_putway;        // HUB HU Putway  — ZWM_HUB_HU_PUTWAY_RFC, batch mode | DEV 2026-04-25
+>>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
 
     private MenuHubInward.OnFragmentInteractionListener mListener;
 
@@ -64,8 +76,76 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
         hu_v11_v01.setOnClickListener(this);
         hu_picking.setOnClickListener(this);
         hu_putway.setOnClickListener(this);
+<<<<<<< HEAD
+=======
+
+        // Environment/role-driven visibility for V11-V01 button
+        applyV11V01Visibility();
+>>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
 
         return rootView;
+    }
+
+    /**
+     * Controls V11-V01 button visibility using a layered policy.
+     *
+     * <p>Resolution order (any match → visible):
+     *
+     * <ol>
+     *   <li>Build-time flag {@link BuildConfig#ENABLE_V11_V01} — default {@code true}.
+     *       When {@code true}, V11-V01 shows in every build (dev + prod). Flip to
+     *       {@code false} in {@code app/build.gradle} to gate production by host
+     *       / role instead.</li>
+     *   <li>DEV host override — if the device's configured SAP URL contains
+     *       {@link BuildConfig#SAP_DEV_HOST}, V11-V01 shows regardless of the
+     *       build flag (dev-machine escape hatch).</li>
+     *   <li>Role / permission — implicit. This fragment only loads for users
+     *       whose SAP {@code EX_GROUP="HUB"} (enforced by LoginActivity routing).
+     *       Additional granular API-driven perm checks hook in here.</li>
+     * </ol>
+     */
+    private void applyV11V01Visibility() {
+        boolean flagOn = BuildConfig.ENABLE_V11_V01;
+        boolean devHost = isDevHostConfigured();
+        boolean rolePerm = hasV11V01Permission();
+
+        boolean show = flagOn || devHost || rolePerm;
+        hu_v11_v01.setVisibility(show ? View.VISIBLE : View.GONE);
+
+        Log.d(TAG, "V11-V01 visibility → " + (show ? "VISIBLE" : "GONE")
+                + "  [flag=" + flagOn
+                + ", devHost=" + devHost
+                + ", role=" + rolePerm + "]");
+    }
+
+    /** @return true when the device's URL points at the DEV SAP host. */
+    private boolean isDevHostConfigured() {
+        try {
+            if (BuildConfig.SAP_DEV_HOST == null || BuildConfig.SAP_DEV_HOST.isEmpty()) {
+                return false;
+            }
+            SharedPreferencesData data = new SharedPreferencesData(con);
+            String url = data.read("URL");
+            return url != null && url.contains(BuildConfig.SAP_DEV_HOST);
+        } catch (Exception e) {
+            Log.w(TAG, "isDevHostConfigured check failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Optional role/permission gate. Currently returns false because the API
+     * exposes coarse {@code EX_GROUP} only (already checked at login routing).
+     * Extend this when the backend surfaces a granular "V11_V01_ACCESS" perm
+     * — read it from SharedPreferences / an authorised endpoint here.
+     */
+    private boolean hasV11V01Permission() {
+        // Placeholder — returns false so the flag/host layers are authoritative.
+        // Example future implementation:
+        //   SharedPreferencesData data = new SharedPreferencesData(con);
+        //   String perms = data.read("PERMISSIONS");
+        //   return perms != null && perms.contains("V11_V01");
+        return false;
     }
 
     public void onButtonPressed(Uri uri) {
@@ -121,6 +201,8 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
                 fragment = new FragmentHUStockReview();
                 break;
             case R.id.hub_inward_v11_v01:
+                // Guard: never route if button was hidden (defensive)
+                if (hu_v11_v01.getVisibility() != View.VISIBLE) return;
                 // V11-V01 — ZWM_HU_STOCK_REV_RFC with Type pre-set to V11 | DEV 2026-04-22
                 fragment = new FragmentHUStockReviewV11();
                 break;

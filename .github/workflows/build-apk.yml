@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main, HHT-Dev ]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build'
+        required: false
+        default: 'main'
 
 permissions:
   contents: write
@@ -58,22 +63,29 @@ jobs:
           echo "version=$VER" >> $GITHUB_OUTPUT
           echo "Version: $VER"
 
+      - name: Set release info (main branch)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "TAG=v${{ steps.version.outputs.version }}-build${{ github.run_number }}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}" >> $GITHUB_ENV
+          echo "PRERELEASE=false" >> $GITHUB_ENV
+          echo "RELEASE_BODY=Version: ${{ steps.version.outputs.version }}\nBuild: ${{ github.run_number }}\nCommit: ${{ github.sha }}\nBranch: main (Production)" >> $GITHUB_ENV
+
+      - name: Set release info (HHT-Dev branch)
+        if: github.ref == 'refs/heads/HHT-Dev'
+        run: |
+          echo "TAG=v${{ steps.version.outputs.version }}-build${{ github.run_number }}-DEV" >> $GITHUB_ENV
+          echo "RELEASE_NAME=[DEV] V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}" >> $GITHUB_ENV
+          echo "PRERELEASE=true" >> $GITHUB_ENV
+          echo "RELEASE_BODY=Version: ${{ steps.version.outputs.version }}\nBuild: ${{ github.run_number }}\nCommit: ${{ github.sha }}\nBranch: HHT-Dev (SAP DEV - 192.168.144.174 / Client 210 / BATCHUSER)\nEndpoint: https://v2-hht-api.azurewebsites.net/api/hht?env=dev\n\nDEV BUILD - For testing only. Do NOT deploy to production stores." >> $GITHUB_ENV
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}-build${{ github.run_number }}-DEV
-          name: '[DEV] V2 HHT v${{ steps.version.outputs.version }} Build ${{ github.run_number }}'
-          prerelease: true
-          body: |
-            **BRANCH: HHT-Dev — DEV BUILD ONLY**
-            Version: ${{ steps.version.outputs.version }}
-            Build: ${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            SAP Environment: DEV (192.168.144.174 / Client 210 / BATCHUSER)
-            Endpoint: https://v2-hht-api.azurewebsites.net/api/hht?env=dev
-
-            ⚠️ For testing only — do NOT deploy to production stores.
-            Merge HHT-Dev → main when testing is complete.
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          prerelease: ${{ env.PRERELEASE }}
+          body: ${{ env.RELEASE_BODY }}
           files: V2_HHT_Azure_Release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

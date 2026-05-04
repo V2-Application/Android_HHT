@@ -6,14 +6,22 @@ android {
         applicationId "com.v2retail.dotvik"
         minSdkVersion 25
         targetSdkVersion 31
-        versionCode 1180
-        versionName "12.108"
+        versionCode 1213
+        versionName "12.114"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
         aaptOptions {
             cruncherEnabled = false
         }
+
+        buildConfigField "boolean", "ENABLE_V11_V01", "true"
+        buildConfigField "String", "SAP_DEV_HOST", "\"192.168.144.174\""
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
             def versionName = variant.versionName.replace('.', '_')

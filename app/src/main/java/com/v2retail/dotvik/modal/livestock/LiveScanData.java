@@ -20,20 +20,38 @@ public class LiveScanData  implements Serializable {
     @SerializedName("SCAN_QTY")
     private String scanQty;
 
+    /**
+     * Storage Type — propagated from LiveStockBinCrate (via ZWM_GET_STOCK_BIN)
+     * so it gets sent back to SAP in the IT_DATA save payload of
+     * ZWM_STK_ADJ_MSA_BIN. Falls back to blank if the source bin row didn't
+     * include LGTYP.
+     */
+    @SerializedName("LGTYP")
+    private String lgtyp;
+
     public static LiveScanData copyProperties(LiveStockBinCrate binData){
         if(binData == null){
             return null;
         }
-
         LiveScanData target = new LiveScanData();
         target.setBin(binData.getBin());
         target.setPlant(binData.getPlant());
         target.setStockTakeId(binData.getStockTakeId());
+<<<<<<< HEAD
         // Crate from pick list row — ZWM_GET_STOCK_BIN often omits ST_TAKE_ID but
         // still returns BIN/CRATE/PLANT; crate must reach ET_SAVE for SAP posting.
         if (binData.getCrate() != null) {
             target.setCrate(binData.getCrate());
         }
+=======
+        if (binData.getCrate() != null) {
+            target.setCrate(binData.getCrate());
+        }
+        // Propagate LGTYP from the source bin into the scan row
+        if (binData.getLgtyp() != null) {
+            target.setLgtyp(binData.getLgtyp());
+        }
+>>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
         return target;
     }
 
@@ -43,51 +61,18 @@ public class LiveScanData  implements Serializable {
         current.setScanQty(Util.formatDouble(scanQty + artQty));
     }
 
-    public String getMaterial() {
-        return material;
-    }
-
-    public void setMaterial(String material) {
-        this.material = material;
-    }
-
-    public String getPlant() {
-        return plant;
-    }
-
-    public void setPlant(String plant) {
-        this.plant = plant;
-    }
-
-    public String getBin() {
-        return bin;
-    }
-
-    public void setBin(String bin) {
-        this.bin = bin;
-    }
-
-    public String getCrate() {
-        return crate;
-    }
-
-    public void setCrate(String crate) {
-        this.crate = crate;
-    }
-
-    public String getStockTakeId() {
-        return stockTakeId;
-    }
-
-    public void setStockTakeId(String stockTakeId) {
-        this.stockTakeId = stockTakeId;
-    }
-
-    public String getScanQty() {
-        return scanQty;
-    }
-
-    public void setScanQty(String scanQty) {
-        this.scanQty = scanQty;
-    }
+    public String getMaterial() { return material; }
+    public void setMaterial(String material) { this.material = material; }
+    public String getPlant() { return plant; }
+    public void setPlant(String plant) { this.plant = plant; }
+    public String getBin() { return bin; }
+    public void setBin(String bin) { this.bin = bin; }
+    public String getCrate() { return crate; }
+    public void setCrate(String crate) { this.crate = crate; }
+    public String getStockTakeId() { return stockTakeId; }
+    public void setStockTakeId(String stockTakeId) { this.stockTakeId = stockTakeId; }
+    public String getScanQty() { return scanQty; }
+    public void setScanQty(String scanQty) { this.scanQty = scanQty; }
+    public String getLgtyp() { return lgtyp; }
+    public void setLgtyp(String lgtyp) { this.lgtyp = lgtyp; }
 }

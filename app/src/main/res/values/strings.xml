@@ -1,30 +1,28 @@
 <resources>
-    <string name="app_name">V2RetailOps [DEV]</string>
+    <string name="app_name">V2RetailOps</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title"> V2 Store [DEV]</string>
-    <string name="nav_header_subtitle">SAP DEV 192.168.144.174 · Client 210</string>
+    <string name="nav_header_title"> V2 Store</string>
+    <string name="nav_header_subtitle">Variety \u0026 Value</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_login">Sign in — SAP DEV (192.168.144.174)</string>
+    <string name="title_activity_login">Sign in</string>
     <string name="scanner_activity">Scan</string>
-
     <string name="prompt_email">User</string>
     <string name="prompt_password">Password </string>
-    <string name="action_sign_in">Login [DEV]</string>
-    <string name="action_sign_in_short">Login [DEV]</string>
+    <string name="action_sign_in">Login</string>
+    <string name="action_sign_in_short">Login in</string>
     <string name="error_invalid_email">This user name is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
     <string name="permission_rationale">"Contacts permissions are needed for providing email completions."</string>
-
     <string name="dev">8080 (Prod)</string>
     <string name="qa">7080 (QA) </string>
     <string name="prod">6080 (Dev)</string>
-
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
+<<<<<<< HEAD
 
     <!-- DEV APK — URL LIST
          Verified chain (2026-04-22 11:25 UTC):
@@ -34,8 +32,16 @@
     <array name="ipAddress">
         <item>https://hht-api.v2retail.net/dev (SAP DEV — 192.168.144.174)</item>
         <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
+=======
+    <array name="ipAddress">
+        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
+        <item>https://v2-hht-api.azurewebsites.net/api/hht (V2 Cloud)</item>
+        <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
+        <item>http://192.168.151.40:16080/xmwgw (Dev Legacy)</item>
+        <item>http://192.168.151.40:17080/xmwgw (QA Legacy)</item>
+        <item>http://192.168.144.200:9080/xmwgw (Prod Legacy)</item>
+>>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
     </array>
-
     <array name="choose_store">
         <item>DC</item>
         <item>Store</item>
@@ -56,5 +62,4 @@
         <item>Customer refused to accept</item>
         <item>Other</item>
     </array>
-
 </resources>

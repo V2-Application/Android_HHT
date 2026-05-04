@@ -11,7 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:clickable="true">
+        android:clickable="true"
+        android:paddingBottom="58dp">
         <LinearLayout
             android:id="@+id/ll_msa_live_stock_take_stock_take"
             android:layout_width="match_parent"
@@ -172,7 +173,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="4"
                     android:padding="5dp"
-                    android:text="No of Bins"
+                    android:text="Bins."
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -438,6 +439,8 @@
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Next Scan row: label left, Empty Bin compact button right -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -449,37 +452,56 @@
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="4"
+                    android:layout_weight="5"
                     android:background="@color/colorAccent"
                     android:text="Next Scan:"
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
+                <!-- spacer -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:text="" />
+
+                <!--
+                    Empty Bin — single line; wider slot (weight 4) avoids "Empty" / "Bin" wrapping.
+                -->
+                <Button
+                    android:id="@+id/btn_msa_live_stock_take_empty_bin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:maxLines="1"
+                    android:text="Empty Bin"
+                    android:textSize="11sp"
+                    android:textColor="@color/white"
+                    android:background="@color/colorPrimary"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp" />
+
             </LinearLayout>
 
-            <TableLayout
-                android:id="@+id/table_msa_live_stock_take_items"
+            <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:stretchColumns="1,2"></TableLayout>
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="4dp"
+                android:fillViewport="false"
+                android:scrollbars="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="5dp"
-                android:layout_marginLeft="2dp"
-                android:layout_marginRight="2dp"
-                android:layout_marginBottom="60dp"
-                android:padding="2dp">
-                <ScrollView
+                <TableLayout
+                    android:id="@+id/table_msa_live_stock_take_items"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                </ScrollView>
-            </LinearLayout>
+                    android:layout_height="wrap_content"
+                    android:stretchColumns="1,2" />
+            </ScrollView>
         </LinearLayout>
     </LinearLayout>
     <LinearLayout
