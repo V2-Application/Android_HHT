@@ -555,16 +555,40 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
     private void populateStockIDs(JSONObject body) {
         try {
-            stockIds.clear(); stockIds.add("Select");
+            stockIds.clear();
+            stockIds.add("Select");
             JSONArray arr = body.getJSONArray("IT_DATA");
-            for (int i=0; i<arr.length(); i++)
-                stockIds.add(arr.getJSONObject(i).getString("ST_TAKE_ID"));
-            if (stockIds.size()>0) {
-                ((BaseAdapter)dd_stock_id_list.getAdapter()).notifyDataSetChanged();
-                dd_stock_id_list.setEnabled(true); dd_stock_id_list.invalidate();
-                dd_stock_id_list.setSelection(0); dd_stock_id_list.requestFocus();
-            } else new AlertBox(getContext()).getBox("No Data","No Stock Take IDs found.",(d,w)->clear(true));
-        } catch (Exception e) { e.printStackTrace(); new AlertBox(getContext()).getErrBox(e); }
+
+            // SAFEGUARD — JSON RFC gateway returns a clean 0-indexed array with NO header row.
+            // Loop MUST start at i=0. Never use i=1 here (that was the old string-RFC habit
+            // where index 0 was a summary/header row — it does NOT apply to JSON responses).
+            // A log line is printed so any mismatch between received vs loaded count is
+            // immediately visible in logcat without needing to reproduce on device.
+            for (int i = 0; i < arr.length(); i++) {
+                String id = arr.getJSONObject(i).optString("ST_TAKE_ID", "").trim();
+                if (!id.isEmpty()) {
+                    stockIds.add(id);
+                }
+            }
+            int received = arr.length();
+            int loaded   = stockIds.size() - 1; // subtract the "Select" placeholder
+            Log.d(TAG, "populateStockIDs: IT_DATA rows received=" + received
+                    + " | IDs loaded into spinner=" + loaded
+                    + (received != loaded ? " *** MISMATCH — check loop index or blank ST_TAKE_ID ***" : " [OK]"));
+
+            if (loaded > 0) {
+                ((BaseAdapter) dd_stock_id_list.getAdapter()).notifyDataSetChanged();
+                dd_stock_id_list.setEnabled(true);
+                dd_stock_id_list.invalidate();
+                dd_stock_id_list.setSelection(0);
+                dd_stock_id_list.requestFocus();
+            } else {
+                new AlertBox(getContext()).getBox("No Data", "No Stock Take IDs found.", (d, w) -> clear(true));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            new AlertBox(getContext()).getErrBox(e);
+        }
     }
 
     private void setData(JSONObject body) {
