@@ -210,8 +210,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 break;
 
             case R.id.btn_msa_live_stock_take_empty_bin:
-                // Empty Bin: no toggle, no color change.
-                // Immediately submits with IM_BIN_EMP = "X".
                 onEmptyBinClicked();
                 break;
         }
@@ -390,9 +388,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
      * Unified save method.
      * @param emptyBin true  → IM_BIN_EMP = "X" (Empty Bin button clicked)
      *                 false → IM_BIN_EMP = ""  (normal Submit)
-     *
-     * When emptyBin = true and scanData is empty, a single placeholder row
-     * is built from currentData so the FM knows which BIN is being marked empty.
      */
     private void saveData(boolean emptyBin) {
         if (saveInFlight) { Log.w(TAG, "saveData ignored: in flight"); return; }
@@ -405,11 +400,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
 
             JSONArray itData;
             if (!scanData.isEmpty()) {
-                // Normal path — build from scanned articles
                 itData = buildItData(stId);
                 if (itData == null) return;
             } else if (emptyBin && currentData != null) {
-                // Empty Bin path — no articles scanned; send BIN row with SCAN_QTY=0
                 itData = buildEmptyBinItData(stId);
             } else {
                 showError("No Data", "Nothing to save. Scan a BIN and article first.");
@@ -422,13 +415,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IM_STOCK_TAKE_ID", stId);
             putSaveHeader(args, itData);
             args.put("IT_DATA", itData);
-            // IM_BIN_EMP — "X" for Empty Bin, "" for normal submit
             args.put("IM_BIN_EMP", emptyBin ? "X" : "");
 
-            Log.d(TAG, "saveData emptyBin=" + emptyBin
-                    + " IM_STOCK_TAKE_ID=" + stId
-                    + " rows=" + itData.length()
-                    + " IM_BIN_EMP=" + (emptyBin ? "X" : "\"\""));
+            Log.d(TAG, "saveData emptyBin=" + emptyBin + " IM_STOCK_TAKE_ID=" + stId
+                    + " rows=" + itData.length() + " IM_BIN_EMP=" + (emptyBin ? "X" : "\"\""));
 
             saveInFlight = true;
             if (btn_submit != null) btn_submit.setEnabled(false);
@@ -441,7 +431,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /** Build IT_DATA from scanData map (normal submit). */
     private JSONArray buildItData(String stId) {
         try {
             JSONArray arr = new JSONArray();
@@ -457,7 +446,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         } catch (Exception e) { box.getErrBox(e); return null; }
     }
 
-    /** Build a single IT_DATA row for Empty Bin (no articles scanned). */
     private JSONArray buildEmptyBinItData(String stId) throws JSONException {
         JSONObject row = new JSONObject();
         row.put("BIN", currentData.getBin());
