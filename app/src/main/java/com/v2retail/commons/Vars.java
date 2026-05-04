@@ -287,6 +287,6 @@ public class Vars {
     public static String ZSDC_DIRECT_SAVE_RFC = "ZSDC_DIRECT_SAVE_RFC";
     public static String ZWM_GET_STOCK_BIN = "ZWM_GET_STOCK_BIN";
     public static String ZWM_GET_STOCK_TAKE_ID = "ZWM_GET_STOCK_TAKE_ID";
-    public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN";
+    public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN_EMP";
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
 }
