@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  HUB HU Putaway — RFC: ZWM_HUB_HU_PUTWAY_RFC (re-used)
+  Fields:
+    Plant        (IV_WERKS)     — readonly, from SharedPreferences
+    Storage Type (IV_LGTYP)     — readonly, default "V01"
+    BIN          (IV_BIN)       — scannable, locks after first successful scan
+    Crate HU     (IV_CRATE_HU)  — scannable, repeats; auto-submits each scan
+    Scan Qty     (display only) — auto-increments on every successful submit
+  Buttons:
+    Reset — clears BIN / Crate HU / QT, re-enables BIN
+    Back  — pops fragment off back stack
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Form card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/form_section_border"
+            android:padding="14dp">
+
+            <!-- Plant (readonly) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="Plant"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222" />
+
+                <EditText
+                    android:id="@+id/txt_hub_putaway_werks"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Plant"
+                    android:textSize="16sp"
+                    android:textColor="#555555"
+                    android:background="#EEEEEE"
+                    android:padding="8dp"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:cursorVisible="false" />
+            </LinearLayout>
+
+            <!-- Storage Type (readonly, default V01) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="Storage Type"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222" />
+
+                <EditText
+                    android:id="@+id/txt_hub_putaway_lgtyp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="V01"
+                    android:textSize="16sp"
+                    android:textColor="#555555"
+                    android:background="#EEEEEE"
+                    android:padding="8dp"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:cursorVisible="false" />
+            </LinearLayout>
+
+            <!-- BIN (scan; locks on first successful scan) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="BIN"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222" />
+
+                <EditText
+                    android:id="@+id/txt_hub_putaway_bin"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Scan / Enter BIN"
+                    android:textSize="16sp"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:imeOptions="actionDone"
+                    android:padding="8dp"
+                    android:background="@android:drawable/edit_text" />
+            </LinearLayout>
+
+            <!-- Crate HU (scan; repeats) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="Crate HU"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222" />
+
+                <EditText
+                    android:id="@+id/txt_hub_putaway_crate_hu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Scan / Enter Crate HU"
+                    android:textSize="16sp"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:imeOptions="actionDone"
+                    android:padding="8dp"
+                    android:background="@android:drawable/edit_text" />
+            </LinearLayout>
+
+            <!-- Scan Qty (auto, readonly) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="Scan Qty"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222" />
+
+                <EditText
+                    android:id="@+id/txt_hub_putaway_qt"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="0"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#1B5E20"
+                    android:background="#EEEEEE"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:inputType="number"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:cursorVisible="false" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Result panel — hidden until first response -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/txt_hub_putaway_result_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/txt_hub_putaway_result_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="15sp"
+            android:padding="4dp"
+            android:visibility="gone" />
+
+        <!-- Action buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp">
+
+            <Button
+                android:id="@+id/btn_hub_putaway_back"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="BACK"
+                android:textColor="#FFFFFF"
+                android:background="#424242" />
+
+            <Button
+                android:id="@+id/btn_hub_putaway_reset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="RESET"
+                android:textColor="#FFFFFF"
+                android:background="#1976D2" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
