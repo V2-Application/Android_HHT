@@ -198,30 +198,18 @@ public class Vars {
     // RFC: ZWM_HUB_HU_PICKING_RFC
     // IV_WERKS — Plant (from SharedPreferences)
     // IV_STORE — Destination store (scanned)
-<<<<<<< HEAD
-    // IV_BIN   — Source bin (scanned)
-=======
     // IV_BIN — Source bin (scanned)
->>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
     // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
     // Added: 2026-04-23 | DEV BRANCH
     public static String ZWM_HUB_HU_PICKING_RFC = "ZWM_HUB_HU_PICKING_RFC";
 
     // ── HUB: HU Putway at Hub ───────────────────────────────────────────────
     // RFC: ZWM_HUB_HU_PUTWAY_RFC
-<<<<<<< HEAD
-    // IV_WERKS     — Plant (from SharedPreferences)
-    // IV_CRATE_HU  — Crate/HU being put away (scanned)
-    // IV_BIN       — Destination bin (scanned)
-    // IV_LGTYP     — Storage Type (scanned/entered)
-    // ES_RETURN    — BAPIRET2 return structure {TYPE, MESSAGE}
-=======
     // IV_WERKS — Plant (from SharedPreferences)
     // IV_CRATE_HU — Crate/HU being put away (scanned)
     // IV_BIN — Destination bin (scanned)
     // IV_LGTYP — Storage Type (scanned/entered)
     // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
->>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
     // Added: 2026-04-23 | DEV BRANCH
     public static String ZWM_HUB_HU_PUTWAY_RFC = "ZWM_HUB_HU_PUTWAY_RFC";
 
