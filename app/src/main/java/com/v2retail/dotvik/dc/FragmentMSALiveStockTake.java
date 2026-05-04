@@ -557,7 +557,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         try {
             stockIds.clear(); stockIds.add("Select");
             JSONArray arr = body.getJSONArray("IT_DATA");
-            for (int i=1; i<arr.length(); i++)
+            for (int i=0; i<arr.length(); i++)
                 stockIds.add(arr.getJSONObject(i).getString("ST_TAKE_ID"));
             if (stockIds.size()>0) {
                 ((BaseAdapter)dd_stock_id_list.getAdapter()).notifyDataSetChanged();
