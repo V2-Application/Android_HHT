@@ -15,39 +15,6 @@ public class LiveArticleQty  implements Serializable {
     @SerializedName("QUANTITY")
     private String qty;
 
-<<<<<<< HEAD
-    public String getArticle() {
-        return article;
-    }
-
-    public void setArticle(String article) {
-        this.article = article;
-    }
-
-    public String getMatnr() {
-        return matnr;
-    }
-
-    public void setMatnr(String matnr) {
-        this.matnr = matnr;
-    }
-
-    public String getBarcode() {
-        return barcode;
-    }
-
-    public void setBarcode(String barcode) {
-        this.barcode = barcode;
-    }
-
-    public String getQty() {
-        return qty;
-    }
-
-    public void setQty(String qty) {
-        this.qty = qty;
-    }
-=======
     public String getArticle() { return article; }
     public void setArticle(String article) { this.article = article; }
     public String getMatnr() { return matnr; }
@@ -56,5 +23,4 @@ public class LiveArticleQty  implements Serializable {
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public String getQty() { return qty; }
     public void setQty(String qty) { this.qty = qty; }
->>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
 }

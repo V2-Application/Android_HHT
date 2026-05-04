@@ -34,17 +34,10 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
     AlertBox box;
 
     Button hu_grc;
-<<<<<<< HEAD
-    Button hu_stock_review;  // HU Stock Review — ZWM_HU_STOCK_REV_RFC | DEV 2026-04-21
-    Button hu_v11_v01;       // V11-V01         — ZWM_HU_STOCK_REV_RFC, Type=V11 | DEV 2026-04-22
-    Button hu_picking;       // HUB HU Picking  — ZWM_HUB_HU_PICKING_RFC | DEV 2026-04-23
-    Button hu_putway;        // HUB HU Putway   — ZWM_HUB_HU_PUTWAY_RFC, batch mode | DEV 2026-04-25
-=======
     Button hu_stock_review;
     Button hu_v11_v01;       // V11-V01        — ZWM_HU_STOCK_REV_RFC, Type=V11   | DEV 2026-04-22
     Button hu_picking;       // HUB HU Picking — ZWM_HUB_HU_PICKING_RFC           | DEV 2026-04-23
     Button hu_putway;        // HUB HU Putway  — ZWM_HUB_HU_PUTWAY_RFC, batch mode | DEV 2026-04-25
->>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
 
     private MenuHubInward.OnFragmentInteractionListener mListener;
 
@@ -76,12 +69,9 @@ public class MenuHubInward extends Fragment implements View.OnClickListener {
         hu_v11_v01.setOnClickListener(this);
         hu_picking.setOnClickListener(this);
         hu_putway.setOnClickListener(this);
-<<<<<<< HEAD
-=======
 
         // Environment/role-driven visibility for V11-V01 button
         applyV11V01Visibility();
->>>>>>> e14d7aa332ceb2f241c6851c778f717e7cc667ac
 
         return rootView;
     }
