@@ -188,29 +188,12 @@ public class Vars {
     public static String ZDIS_HU_DC_HUB_PRO_RFC = "ZDIS_HU_DC_HUB_PRO_RFC";
 
     // ── HUB: HU Stock Review at Hub ─────────────────────────────────────────
-    // RFC: ZWM_HU_STOCK_REV_RFC
-    // IV_WERKS — Plant | IV_HU — HU number | IV_LGTYP — Storage Type
-    // ES_RETURN — BAPIRET2 return structure
-    // Added: 2026-04-21 | DEV BRANCH ONLY
     public static String ZWM_HU_STOCK_REV_RFC = "ZWM_HU_STOCK_REV_RFC";
 
     // ── HUB: HU Picking at Hub ──────────────────────────────────────────────
-    // RFC: ZWM_HUB_HU_PICKING_RFC
-    // IV_WERKS — Plant (from SharedPreferences)
-    // IV_STORE — Destination store (scanned)
-    // IV_BIN — Source bin (scanned)
-    // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
-    // Added: 2026-04-23 | DEV BRANCH
     public static String ZWM_HUB_HU_PICKING_RFC = "ZWM_HUB_HU_PICKING_RFC";
 
     // ── HUB: HU Putway at Hub ───────────────────────────────────────────────
-    // RFC: ZWM_HUB_HU_PUTWAY_RFC
-    // IV_WERKS — Plant (from SharedPreferences)
-    // IV_CRATE_HU — Crate/HU being put away (scanned)
-    // IV_BIN — Destination bin (scanned)
-    // IV_LGTYP — Storage Type (scanned/entered)
-    // ES_RETURN — BAPIRET2 return structure {TYPE, MESSAGE}
-    // Added: 2026-04-23 | DEV BRANCH
     public static String ZWM_HUB_HU_PUTWAY_RFC = "ZWM_HUB_HU_PUTWAY_RFC";
 
     public static String ZWM_PTL_GET_ZONE = "ZWM_PTL_GET_ZONE";
@@ -287,8 +270,13 @@ public class Vars {
     public static String ZSDC_DIRECT_SAVE_RFC = "ZSDC_DIRECT_SAVE_RFC";
     public static String ZWM_GET_STOCK_BIN = "ZWM_GET_STOCK_BIN";
     public static String ZWM_GET_STOCK_TAKE_ID = "ZWM_GET_STOCK_TAKE_ID";
-    // REVERTED 2026-05-05: ZWM_STK_ADJ_MSA_BIN_EMP doesn't exist on SAP — was breaking Submit on production.
-    // Verified via TFDIR query on PROD: only ZWM_STK_ADJ_MSA_BIN exists. SAP-side _EMP RFC creation still pending.
-    public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN";
+
+    // ── MSA Live Stock Take save RFCs (split per architectural request 2026-05-05) ────
+    // SUBMIT button   → Vars.ZWM_STK_ADJ_MSA_BIN     → SAP RFC ZWM_STK_ADJ_MSA_BIN     (normal save with scanned articles)
+    // EMPTY BIN button → Vars.ZWM_STK_ADJ_MSA_BIN_EMP → SAP RFC ZWM_STK_ADJ_MSA_BIN_EMP (mark BIN as empty; SAP wrapper that delegates to the original RFC for now)
+    // Both RFCs exist on DEV + QA. _EMP must be transported to PROD before stores can use Empty Bin.
+    public static String ZWM_STK_ADJ_MSA_BIN     = "ZWM_STK_ADJ_MSA_BIN";
+    public static String ZWM_STK_ADJ_MSA_BIN_EMP = "ZWM_STK_ADJ_MSA_BIN_EMP";
+
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
 }
