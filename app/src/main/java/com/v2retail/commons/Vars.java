@@ -287,6 +287,8 @@ public class Vars {
     public static String ZSDC_DIRECT_SAVE_RFC = "ZSDC_DIRECT_SAVE_RFC";
     public static String ZWM_GET_STOCK_BIN = "ZWM_GET_STOCK_BIN";
     public static String ZWM_GET_STOCK_TAKE_ID = "ZWM_GET_STOCK_TAKE_ID";
-    public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN_EMP";
+    // REVERTED 2026-05-05: ZWM_STK_ADJ_MSA_BIN_EMP doesn't exist on SAP — was breaking Submit on production.
+    // Verified via TFDIR query on PROD: only ZWM_STK_ADJ_MSA_BIN exists. SAP-side _EMP RFC creation still pending.
+    public static String ZWM_STK_ADJ_MSA_BIN = "ZWM_STK_ADJ_MSA_BIN";
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
 }
