@@ -85,12 +85,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     FragmentManager fm;
 
     Button btn_back, btn_next, btn_submit;
-
-    /**
-     * Empty Bin button — plain button (no color toggle).
-     * Clicking it immediately triggers Submit with IM_BIN_EMP = "X".
-     * A BIN must have been scanned first (currentData != null).
-     */
     Button btn_empty_bin;
 
     TextView tv_plant, tv_stock_take_id;
@@ -182,14 +176,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         return rootView;
     }
 
-    // ── onClick ───────────────────────────────────────────────────────────────
-
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_msa_live_stock_take_back:
-                // FIX 2026-05-05: BACK now actually navigates back (was calling clear(true) which
-                // just reset state on the same screen — making the button look broken).
                 box.getBox("Alert", "Do you want to go back. Any unsaved progress will be lost",
                     (d, w) -> navigateBack(), (d, w) -> {});
                 break;
@@ -217,11 +207,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /**
-     * Pop the fragment back stack to return to the previous screen
-     * (MSA process selection / dashboard). Falls back to activity onBackPressed
-     * if for some reason the FragmentManager isn't available.
-     */
     private void navigateBack() {
         try {
             if (fm != null && fm.getBackStackEntryCount() > 0) {
@@ -242,10 +227,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         }
     }
 
-    /**
-     * Empty Bin clicked — validates a BIN was scanned, then fires Submit
-     * immediately with IM_BIN_EMP = "X". No color change on the button.
-     */
     private void onEmptyBinClicked() {
         if (saveInFlight) {
             Log.w(TAG, "Empty Bin ignored: save in flight");
@@ -255,11 +236,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             box.getBox("No BIN Scanned", "Please scan a BIN first before marking it as empty.");
             return;
         }
-        Log.d(TAG, "Empty Bin clicked for BIN=" + currentData.getBin() + " — firing submit with IM_BIN_EMP=X");
+        Log.d(TAG, "Empty Bin clicked for BIN=" + currentData.getBin()
+                + " — calling RFC " + Vars.ZWM_STK_ADJ_MSA_BIN_EMP);
         saveData(true);
     }
-
-    // ── Input events ──────────────────────────────────────────────────────────
 
     private void showError(String title, String message) {
         UIFuncs.errorSound(con);
@@ -332,8 +312,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_scan_article.requestFocus();
     }
 
-    // ── State management ──────────────────────────────────────────────────────
-
     private void clear(boolean clearAll) {
         scanData = new HashMap<>();
         liveStockList = new ArrayList<>();
@@ -378,8 +356,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         UIFuncs.enableInput(con, txt_scan_binno); txt_scan_binno.requestFocus();
     }
 
-    // ── RFC helpers ───────────────────────────────────────────────────────────
-
     private void getStockIDs() {
         JSONObject args = new JSONObject();
         try {
@@ -412,12 +388,19 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     }
 
     /**
-     * Unified save method.
-     * @param emptyBin true  → IM_BIN_EMP = "X" (Empty Bin button clicked)
-     *                 false → IM_BIN_EMP = ""  (normal Submit)
+     * v12.115 (2026-05-05): Submit and Empty Bin now call DIFFERENT SAP RFCs.
+     *
+     *   emptyBin = false  (SUBMIT button)    → ZWM_STK_ADJ_MSA_BIN
+     *   emptyBin = true   (EMPTY BIN button) → ZWM_STK_ADJ_MSA_BIN_EMP
+     *
+     * IM_BIN_EMP is still sent in the JSON payload for backward compatibility.
      */
     private void saveData(boolean emptyBin) {
         if (saveInFlight) { Log.w(TAG, "saveData ignored: in flight"); return; }
+
+        final String rfcName = emptyBin
+                ? Vars.ZWM_STK_ADJ_MSA_BIN_EMP
+                : Vars.ZWM_STK_ADJ_MSA_BIN;
 
         JSONObject args = new JSONObject();
         try {
@@ -436,7 +419,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 return;
             }
 
-            args.put("bapiname", Vars.ZWM_STK_ADJ_MSA_BIN);
+            args.put("bapiname", rfcName);
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
             args.put("IM_STOCK_TAKE_ID", stId);
@@ -444,12 +427,14 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             args.put("IT_DATA", itData);
             args.put("IM_BIN_EMP", emptyBin ? "X" : "");
 
-            Log.d(TAG, "saveData emptyBin=" + emptyBin + " IM_STOCK_TAKE_ID=" + stId
-                    + " rows=" + itData.length() + " IM_BIN_EMP=" + (emptyBin ? "X" : "\"\""));
+            Log.d(TAG, "saveData rfc=" + rfcName + " emptyBin=" + emptyBin
+                    + " IM_STOCK_TAKE_ID=" + stId
+                    + " rows=" + itData.length()
+                    + " IM_BIN_EMP=" + (emptyBin ? "X" : "\"\""));
 
             saveInFlight = true;
             if (btn_submit != null) btn_submit.setEnabled(false);
-            showProcessingAndSubmit(Vars.ZWM_STK_ADJ_MSA_BIN, REQUEST_SAVE, args);
+            showProcessingAndSubmit(rfcName, REQUEST_SAVE, args);
 
         } catch (JSONException e) {
             saveInFlight = false;
@@ -517,8 +502,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         new AlertBox(getContext()).getErrBox(e);
     }
 
-    // ── BAPI response parsing ─────────────────────────────────────────────────
-
     private static final class BapiOutcome {
         final boolean success, explicit;
         final String message;
@@ -578,16 +561,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         txt_scan_crate.requestFocus();
     }
 
-    // ── Data population ───────────────────────────────────────────────────────
-
     private void populateStockIDs(JSONObject body) {
         try {
             stockIds.clear();
             stockIds.add("Select");
             JSONArray arr = body.getJSONArray("IT_DATA");
-
-            // SAFEGUARD — JSON RFC gateway returns a clean 0-indexed array with NO header row.
-            // Loop MUST start at i=0. Never use i=1 here.
             for (int i = 0; i < arr.length(); i++) {
                 String id = arr.getJSONObject(i).optString("ST_TAKE_ID", "").trim();
                 if (!id.isEmpty()) {
@@ -739,8 +717,6 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         tv.setText(text); tv.setTextSize(textSizeSp); tv.setPadding(5,2,0,2);
         tv.setBackground(getResources().getDrawable(R.drawable.table_cell_border)); return tv;
     }
-
-    // ── Volley ────────────────────────────────────────────────────────────────
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
         dialog=new ProgressDialog(getContext());
