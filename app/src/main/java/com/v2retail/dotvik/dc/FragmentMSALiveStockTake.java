@@ -188,8 +188,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_msa_live_stock_take_back:
+                // FIX 2026-05-05: BACK now actually navigates back (was calling clear(true) which
+                // just reset state on the same screen — making the button look broken).
                 box.getBox("Alert", "Do you want to go back. Any unsaved progress will be lost",
-                    (d, w) -> clear(true), (d, w) -> {});
+                    (d, w) -> navigateBack(), (d, w) -> {});
                 break;
 
             case R.id.btn_msa_live_stock_take_next:
@@ -212,6 +214,31 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             case R.id.btn_msa_live_stock_take_empty_bin:
                 onEmptyBinClicked();
                 break;
+        }
+    }
+
+    /**
+     * Pop the fragment back stack to return to the previous screen
+     * (MSA process selection / dashboard). Falls back to activity onBackPressed
+     * if for some reason the FragmentManager isn't available.
+     */
+    private void navigateBack() {
+        try {
+            if (fm != null && fm.getBackStackEntryCount() > 0) {
+                fm.popBackStack();
+                return;
+            }
+            FragmentManager pfm = getParentFragmentManager();
+            if (pfm != null && pfm.getBackStackEntryCount() > 0) {
+                pfm.popBackStack();
+                return;
+            }
+            if (getActivity() != null) {
+                getActivity().onBackPressed();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "navigateBack failed", e);
+            if (getActivity() != null) getActivity().onBackPressed();
         }
     }
 
@@ -560,10 +587,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             JSONArray arr = body.getJSONArray("IT_DATA");
 
             // SAFEGUARD — JSON RFC gateway returns a clean 0-indexed array with NO header row.
-            // Loop MUST start at i=0. Never use i=1 here (that was the old string-RFC habit
-            // where index 0 was a summary/header row — it does NOT apply to JSON responses).
-            // A log line is printed so any mismatch between received vs loaded count is
-            // immediately visible in logcat without needing to reproduce on device.
+            // Loop MUST start at i=0. Never use i=1 here.
             for (int i = 0; i < arr.length(); i++) {
                 String id = arr.getJSONObject(i).optString("ST_TAKE_ID", "").trim();
                 if (!id.isEmpty()) {
@@ -571,10 +595,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 }
             }
             int received = arr.length();
-            int loaded   = stockIds.size() - 1; // subtract the "Select" placeholder
+            int loaded   = stockIds.size() - 1;
             Log.d(TAG, "populateStockIDs: IT_DATA rows received=" + received
                     + " | IDs loaded into spinner=" + loaded
-                    + (received != loaded ? " *** MISMATCH — check loop index or blank ST_TAKE_ID ***" : " [OK]"));
+                    + (received != loaded ? " *** MISMATCH ***" : " [OK]"));
 
             if (loaded > 0) {
                 ((BaseAdapter) dd_stock_id_list.getAdapter()).notifyDataSetChanged();
