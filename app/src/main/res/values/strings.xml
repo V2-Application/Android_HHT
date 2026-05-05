@@ -23,8 +23,8 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="date">Date.</string>
     <array name="ipAddress">
-        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
         <item>https://v2-hht-api.azurewebsites.net/api/hht (V2 Cloud)</item>
+        <item>https://hht-api.v2retail.net/dev (Dev Cloud)</item>
         <item>https://hht-api.v2retail.net/qa (QA Cloud)</item>
         <item>http://192.168.151.40:16080/xmwgw (Dev Legacy)</item>
         <item>http://192.168.151.40:17080/xmwgw (QA Legacy)</item>
