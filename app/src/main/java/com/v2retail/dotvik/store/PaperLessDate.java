@@ -1,5 +1,6 @@
 package com.v2retail.dotvik.store;
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -63,8 +64,14 @@ import java.util.Locale;
 
 public class PaperLessDate extends Fragment {
 
+    private static final String DELIVERY_REQ_TAG = "PaperLessDate_ZWM_GET_HHTUSER_DELIVERY";
+
     String mode = Vars.PAPER_LESS;
     Context con;
+    /** When true, printer TextWatcher must not auto-trigger NEXT (programmatic setText). */
+    private boolean suppressPrinterAutoSubmit;
+    private volatile boolean deliveryRequestInProgress;
+    private View loadingOverlay;
     public PaperLessDate() {
     }
 
@@ -105,6 +112,7 @@ public class PaperLessDate extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_paper_less_date, container, false);
         con = getContext();
+        loadingOverlay = view.findViewById(R.id.paperless_loading_overlay);
 
         selectDate = view.findViewById(R.id.select_date);
         inputFromDate = view.findViewById(R.id.input_date);
@@ -130,7 +138,7 @@ public class PaperLessDate extends Fragment {
             String defaultrPrinter = data.read(Vars.TVS_PRINTER);
             if(defaultrPrinter != null && defaultrPrinter.length() > 0){
                 if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
-                    inputPrinter.setText(data.read(Vars.TVS_PRINTER));
+                    setPrinterFieldTextKeepingFocus(data.read(Vars.TVS_PRINTER));
                 }
             }
         }
@@ -185,23 +193,51 @@ public class PaperLessDate extends Fragment {
             nextV2.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (deliveryRequestInProgress) {
+                        return;
+                    }
                     if(mode.equalsIgnoreCase(Vars.TVS_PAPER_LESS) || mode.equalsIgnoreCase(Vars.TVS_PAPER_LESS_LHU)){
                         AlertBox box = new AlertBox(getContext());
-                        String printerName = UIFuncs.toUpperTrim(inputPrinter);
+                        final String printerName = UIFuncs.toUpperTrim(inputPrinter);
                         if(printerName.length() == 0){
                             box.getBox("Select Printer","Please scan TVS wireless printer");
-                            inputPrinter.setText("");
+                            setPrinterFieldTextKeepingFocus("");
                             inputPrinter.requestFocus();
                             return;
                         }
-                        else{
+                        deliveryRequestInProgress = true;
+                        showSubmitLoading();
+                        // Bonded-device lookup can stall the UI thread on some devices; run off main.
+                        new Thread(() -> {
                             TSPLPrinter printerHelper = new TSPLPrinter(con);
-                            if(!printerHelper.findBluetoothPrinter(printerName, false)){
-                                box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
+                            final boolean found = printerHelper.findBluetoothPrinter(printerName, false);
+                            Activity act = getActivity();
+                            if (act == null) {
+                                finishDeliveryRequest();
                                 return;
                             }
-                        }
-                        data.write(Vars.TVS_PRINTER,printerName);
+                            act.runOnUiThread(() -> {
+                                if (!isAdded()) {
+                                    finishDeliveryRequest();
+                                    return;
+                                }
+                                if (!found) {
+                                    finishDeliveryRequest();
+                                    box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
+                                    return;
+                                }
+                                data.write(Vars.TVS_PRINTER, printerName);
+                                String fromDate = inputFromDate.getText().toString().trim();
+                                if (TextUtils.isEmpty(fromDate)) {
+                                    inputFromDate.setError("Enter the start Date");
+                                    finishDeliveryRequest();
+                                    Toast.makeText(getContext(), "Show Error", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                sendJSONGenericRequest(fromDate);
+                            });
+                        }).start();
+                        return;
                     }
                     onSubmit();
                 }
@@ -263,6 +299,9 @@ public class PaperLessDate extends Fragment {
                 }
                 @Override
                 public void afterTextChanged(Editable s) {
+                    if (suppressPrinterAutoSubmit || deliveryRequestInProgress) {
+                        return;
+                    }
                     String value = s.toString().toUpperCase();
                     if(value.length()>0 && scannerReading) {
                         nextV2.performClick();
@@ -306,7 +345,64 @@ public class PaperLessDate extends Fragment {
                 .setActionBarTitle(Vars.PAPER_LESS.equals(mode) ? "Paperless Picking" : (Vars.TVS_PAPER_LESS.equals(mode) ? "TVS Paperless Picking" : "Live HU TVS Paperless Picking"));
     }
 
+    @Override
+    public void onDestroyView() {
+        if (getContext() != null) {
+            ApplicationController.getInstance().getRequestQueue().cancelAll(DELIVERY_REQ_TAG);
+        }
+        deliveryRequestInProgress = false;
+        hideSubmitLoading();
+        loadingOverlay = null;
+        super.onDestroyView();
+    }
+
+    private void setPrinterFieldTextKeepingFocus(String value) {
+        suppressPrinterAutoSubmit = true;
+        try {
+            inputPrinter.setText(value != null ? value : "");
+        } finally {
+            suppressPrinterAutoSubmit = false;
+        }
+    }
+
+    private void showSubmitLoading() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.VISIBLE);
+        }
+        if (nextV2 != null) {
+            nextV2.setEnabled(false);
+        }
+        if (backV2 != null) {
+            backV2.setEnabled(false);
+        }
+    }
+
+    private void hideSubmitLoading() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.GONE);
+        }
+        if (nextV2 != null) {
+            nextV2.setEnabled(true);
+        }
+        if (backV2 != null) {
+            backV2.setEnabled(true);
+        }
+    }
+
+    private void finishDeliveryRequest() {
+        deliveryRequestInProgress = false;
+        View root = loadingOverlay;
+        if (root != null) {
+            root.post(this::hideSubmitLoading);
+        } else {
+            hideSubmitLoading();
+        }
+    }
+
     private void onSubmit() {
+        if (deliveryRequestInProgress) {
+            return;
+        }
         String fromDate = inputFromDate.getText().toString().trim();
 
         if (TextUtils.isEmpty(fromDate)) {
@@ -316,11 +412,15 @@ public class PaperLessDate extends Fragment {
         if (fromDate.isEmpty()) {
             Toast.makeText(getContext(), "Show Error", Toast.LENGTH_SHORT).show();
         } else {
+            deliveryRequestInProgress = true;
+            showSubmitLoading();
             sendJSONGenericRequest(fromDate);
         }
     }
 
     private void sendJSONGenericRequest(String fromDate) {
+        ApplicationController.getInstance().getRequestQueue().cancelAll(DELIVERY_REQ_TAG);
+
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest = null;
         // String rfc = "ZHHTUSR_DEL_PICKING_RFC";
@@ -353,28 +453,66 @@ public class PaperLessDate extends Fragment {
         mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
-            public void onResponse(JSONObject responsebody) {
-                try {
-                    JSONArray jsonArray = responsebody.getJSONArray("ET_DATA");
-
-                    if (jsonArray != null && jsonArray.length()>1) {
-                        PapperLessPicking papperLessPicking = PapperLessPicking.newInstance(mode);
-                        Bundle bundle = new Bundle();
-                        bundle.putString("data", jsonArray.toString());
-
-                        papperLessPicking.setArguments(bundle);
-                        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-
-                        ft.add(R.id.home, papperLessPicking);
-                        ft.addToBackStack("PapperLessPicking");
-                        ft.commit();
-                    } else {
-                        Toast.makeText(getContext(), "No Delivery Found", Toast.LENGTH_LONG).show();
+            public void onResponse(final JSONObject responsebody) {
+                // Volley delivers here on the main thread; large ET_DATA parse + toString() caused ANRs.
+                final String modeForNav = mode;
+                new Thread(() -> {
+                    try {
+                        JSONArray jsonArray = responsebody.getJSONArray("ET_DATA");
+                        final int n = jsonArray != null ? jsonArray.length() : 0;
+                        if (jsonArray != null && n > 0) {
+                            final String dataStr = jsonArray.toString();
+                            Activity act = getActivity();
+                            if (act == null) {
+                                finishDeliveryRequest();
+                                return;
+                            }
+                            act.runOnUiThread(() -> {
+                                if (!isAdded() || getActivity() == null) {
+                                    finishDeliveryRequest();
+                                    return;
+                                }
+                                try {
+                                    PapperLessPicking papperLessPicking = PapperLessPicking.newInstance(modeForNav);
+                                    Bundle bundle = new Bundle();
+                                    bundle.putString("data", dataStr);
+                                    papperLessPicking.setArguments(bundle);
+                                    FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+                                    ft.add(R.id.home, papperLessPicking);
+                                    ft.addToBackStack("PapperLessPicking");
+                                    ft.commit();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                } finally {
+                                    finishDeliveryRequest();
+                                }
+                            });
+                        } else {
+                            Activity act = getActivity();
+                            if (act == null) {
+                                finishDeliveryRequest();
+                                return;
+                            }
+                            act.runOnUiThread(() -> {
+                                try {
+                                    if (isAdded() && getContext() != null) {
+                                        Toast.makeText(getContext(), "No Delivery Found", Toast.LENGTH_LONG).show();
+                                    }
+                                } finally {
+                                    finishDeliveryRequest();
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Activity act = getActivity();
+                        if (act != null) {
+                            act.runOnUiThread(() -> finishDeliveryRequest());
+                        } else {
+                            deliveryRequestInProgress = false;
+                        }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+                }).start();
             }
 
 
@@ -417,6 +555,7 @@ public class PaperLessDate extends Fragment {
 
             }
         });
+        mJsonRequest.setTag(DELIVERY_REQ_TAG);
         mRequestQueue.add(mJsonRequest);
         Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         Log.d(TAG, "jsonRequest getBodyContentType->" + mJsonRequest.getBodyContentType());
@@ -454,6 +593,7 @@ public class PaperLessDate extends Fragment {
                     err = "Parse Error!";
                 } else err = error.toString();
 
+                finishDeliveryRequest();
                 AlertBox box = new AlertBox(getContext());
                 box.getBox("Err", err);
             }

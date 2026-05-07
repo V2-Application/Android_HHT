@@ -166,6 +166,13 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         btn_submit    = rootView.findViewById(R.id.btn_msa_live_stock_take_submit);
         btn_empty_bin = rootView.findViewById(R.id.btn_msa_live_stock_take_empty_bin);
 
+        // Prevent hardware Enter/DPAD focus from triggering SUBMIT unintentionally after scans.
+        // Saving must be an explicit tap on SUBMIT.
+        if (btn_submit != null) {
+            btn_submit.setFocusable(false);
+            btn_submit.setFocusableInTouchMode(false);
+        }
+
         btn_back.setOnClickListener(this);
         btn_next.setOnClickListener(this);
         btn_submit.setOnClickListener(this);
@@ -599,6 +606,9 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             JSONArray arr = body.getJSONArray("IT_DATA");
             for (int i=0; i<arr.length(); i++) {
                 LiveStockBinCrate d = new Gson().fromJson(arr.getJSONObject(i).toString(), LiveStockBinCrate.class);
+                // SAP sometimes sends a header-like row as the first record.
+                // We already render our own UI header, so skip it.
+                if (isSapHeaderRow(d)) continue;
                 liveStockList.add(d);
             }
             if (liveStockList.size()>0) {
@@ -608,6 +618,19 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 populateTableData();
             } else new AlertBox(getContext()).getBox("No Data","Picklist is empty.",(d,w)->clear(true));
         } catch (Exception e) { e.printStackTrace(); new AlertBox(getContext()).getErrBox(e); }
+    }
+
+    private static boolean isSapHeaderRow(LiveStockBinCrate d) {
+        if (d == null) return false;
+        String bin   = d.getBin()   != null ? d.getBin().trim()   : "";
+        String crate = d.getCrate() != null ? d.getCrate().trim() : "";
+        String type  = d.getLgtyp() != null ? d.getLgtyp().trim() : "";
+        String plant = d.getPlant() != null ? d.getPlant().trim() : "";
+
+        return "STORAGE BIN".equalsIgnoreCase(bin)
+                && "CRATE".equalsIgnoreCase(crate)
+                && "STORAGE TYPE".equalsIgnoreCase(type)
+                && "PLANT".equalsIgnoreCase(plant);
     }
 
     private void validateBinNo(String binno) {
@@ -694,7 +717,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         tableItems.addView(hr,tp);
         int rowNum=1;
         for (LiveStockBinCrate data : liveStockList) {
-            if (!data.isPicked()) {
+            if (!data.isPicked() && !isSapHeaderRow(data)) {
                 TableRow tr=new TableRow(getContext()); tr.setId(rowNum); tr.setPadding(0,0,0,0); tr.setLayoutParams(tp);
                 tr.addView(dataCell(data.getBin(),rSz)); tr.addView(dataCell(data.getCrate(),rSz));
                 tr.addView(dataCell(data.getLgtyp()!=null?data.getLgtyp():"",rSz)); tr.addView(dataCell(data.getPlant(),rSz));

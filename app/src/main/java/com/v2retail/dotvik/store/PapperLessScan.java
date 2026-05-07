@@ -59,7 +59,9 @@ import org.json.JSONObject;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
@@ -119,6 +121,42 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
     V2RDB db;
     private String startdate;
     private String starttime;
+    private String lastProcessedArticle = "";
+    private long lastProcessedArticleAtMs = 0L;
+
+    private boolean shouldProcessArticleNow(String article) {
+        if (article == null) return false;
+        String a = article.trim();
+        if (a.isEmpty()) return false;
+        long now = android.os.SystemClock.elapsedRealtime();
+        // Many scanners send an Enter key after the barcode, which can trigger BOTH
+        // TextWatcher and EditorAction. Guard to avoid double-processing the same scan.
+        if (a.equals(lastProcessedArticle) && (now - lastProcessedArticleAtMs) < 800) {
+            return false;
+        }
+        lastProcessedArticle = a;
+        lastProcessedArticleAtMs = now;
+        return true;
+    }
+
+    private JSONArray normalizeEtBinMc(JSONArray raw) {
+        if (raw == null) return null;
+        JSONArray normalized = new JSONArray();
+        try {
+            for (int i = 0; i < raw.length(); i++) {
+                JSONObject obj = raw.optJSONObject(i);
+                if (obj == null) continue;
+                // Keep only actual bin/material rows
+                String vlpla = obj.optString("VLPLA", "");
+                String matnr = obj.optString("MATNR", "");
+                if (vlpla.length() == 0 && matnr.length() == 0) continue;
+                normalized.put(obj);
+            }
+        } catch (Exception ignore) {
+            return raw;
+        }
+        return normalized;
+    }
 
     public PapperLessScan() {
     }
@@ -513,7 +551,9 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                 String article = s.toString();
                 if(scannerReading) {
                     Log.d(TAG, "Scanned article No: " +  article);
-                    handleArticleScanning(article);
+                    if (shouldProcessArticleNow(article)) {
+                        handleArticleScanning(article);
+                    }
                 }
 
             }
@@ -524,7 +564,11 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
                     Log.d(TAG, "Article Go");
-                    if (handleArticleScanning(artNoEditText.getText().toString())) {
+                    String article = artNoEditText.getText().toString();
+                    if (!shouldProcessArticleNow(article)) {
+                        return true;
+                    }
+                    if (handleArticleScanning(article)) {
                         return true;
                     } else {
                         return false;
@@ -661,7 +705,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                     mPackingNo = state.param4;
                     mExLikp = new JSONObject(state.param5);
                     mEtLips = new JSONArray(state.param6);
-                    mEtBinMc = new JSONArray(state.param7);
+                    mEtBinMc = normalizeEtBinMc(new JSONArray(state.param7));
                     mEtEanData = new JSONArray(state.param8);
                     tsqCount = Integer.parseInt(state.param9);
                     tqCount = Integer.parseInt(state.param10);
@@ -684,11 +728,16 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                         String key = emptyBinMapKeys.next();
                         emptyBinMap.put(key, emptyBinMapJson.getString(key));
                     }
-                    if(mEtBinMc.getJSONObject(1).has("STORE")) {
-                        storeIdText.setText(mEtBinMc.getJSONObject(1).getString("STORE"));
+                    if(mEtBinMc != null && mEtBinMc.length() > 0 && mEtBinMc.getJSONObject(0).has("STORE")) {
+                        storeIdText.setText(mEtBinMc.getJSONObject(0).getString("STORE"));
                     }
                     currentIndex = Integer.parseInt(state.param18);
-                    setDataInView(currentIndex);
+                    if (mEtBinMc != null && mEtBinMc.length() > 0) {
+                        // Old saved states may have been 1-based; clamp.
+                        if (currentIndex < 0) currentIndex = 0;
+                        if (currentIndex >= mEtBinMc.length()) currentIndex = 0;
+                        setDataInView(currentIndex);
+                    }
                     currentScanBin.setText(state.param14);
                     currentScanArticle.setText(state.param15);
                     currentScanQuantity.setText(state.param16);
@@ -705,13 +754,13 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
     private void setDataInView(int position) {
         try {
-            if (position >= 1 && position < mEtBinMc.length()) {
+            if (mEtBinMc != null && position >= 0 && position < mEtBinMc.length()) {
                 JSONObject json_2 = mEtBinMc.getJSONObject(position);
-                String binVLPlA = json_2.getString("VLPLA");
-                String crate = json_2.getString("CRATE");
-                String matnr = json_2.getString("MATNR");
-                String catDesc = json_2.getString("WGBEZ");
-                String ean11 = json_2.getString("EAN11");
+                String binVLPlA = json_2.optString("VLPLA", "");
+                String crate = json_2.optString("CRATE", "");
+                String matnr = json_2.optString("MATNR", "");
+                String catDesc = json_2.optString("WGBEZ", "");
+                String ean11 = json_2.optString("EAN11", "");
 
                 secondScanItemNo.setText(catDesc);
                 secondItemBin.setText(binVLPlA);
@@ -723,10 +772,10 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
                 if (position + 1 < mEtBinMc.length()) {
                     JSONObject json_3 = mEtBinMc.getJSONObject(position + 1);
-                    binVLPlA = json_3.getString("VLPLA");
-                    crate = json_3.getString("CRATE");
-                    matnr = json_3.getString("MATNR");
-                    catDesc = json_3.getString("WGBEZ");
+                    binVLPlA = json_3.optString("VLPLA", "");
+                    crate = json_3.optString("CRATE", "");
+                    matnr = json_3.optString("MATNR", "");
+                    catDesc = json_3.optString("WGBEZ", "");
 
                     thirdScanItemNo.setText(catDesc);
                     thirdItemBin.setText(binVLPlA);
@@ -788,22 +837,26 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                     String matnr = eanObject.getString("MATNR");
                     String articleCount = eanObject.getString("UMREZ");
                     String toBeScan = secondItemRemainQty.getText().toString();
+                    int defaultQtyForScan = parseIntSafe(articleCount);
+                    int enteredQtyForScan = parseIntSafe(sqtyEditText != null ? sqtyEditText.getText().toString() : "");
+                    // If operator has entered SQty, use it; otherwise fall back to UMREZ from barcode master.
+                    int qtyForThisScan = enteredQtyForScan > 0 ? enteredQtyForScan : defaultQtyForScan;
 
                     if (matnr.equals(secondItemMatnr.getText().toString()) && secondItemBin.getText().toString().toUpperCase(Locale.ROOT).trim().equals(binEditText.getText().toString().toUpperCase(Locale.ROOT).trim())) {
                         String binMatnrKey = currentScanBin.getText().toString() + "," + secondItemMatnr.getText().toString();
 
                         if (scanMap !=null && scanMap.containsKey(binMatnrKey)) {
                             Integer prevCount = scanMap.get(binMatnrKey);
-                            int tempArticleCount = prevCount.intValue() + Integer.parseInt(articleCount);
+                            int tempArticleCount = prevCount.intValue() + qtyForThisScan;
                             if (tempArticleCount == Integer.parseInt(toBeScan)) {
-                                processingContainData(Integer.parseInt(articleCount), binMatnrKey, matnr, eanObject);
+                                processingContainData(qtyForThisScan, binMatnrKey, matnr, eanObject);
                                 retVal = true;
                                 artNoEditText.setText("");
                                 nextBin();
                                 binEditText.setText("");
                                 binEditText.requestFocus();
                             } else if (tempArticleCount < Integer.parseInt(toBeScan)) {
-                                processingContainData(Integer.parseInt(articleCount), binMatnrKey, matnr, eanObject);
+                                processingContainData(qtyForThisScan, binMatnrKey, matnr, eanObject);
                                 retVal = true;
                                 artNoEditText.setText("");
                                 artNoEditText.requestFocus();
@@ -819,14 +872,14 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                         });
                             }
                         } else {
-                            if (Integer.parseInt(articleCount) == Integer.parseInt(toBeScan)) {
-                                processingFirstTimeData(Integer.parseInt(articleCount), binMatnrKey, matnr, eanObject);
+                            if (qtyForThisScan == Integer.parseInt(toBeScan)) {
+                                processingFirstTimeData(qtyForThisScan, binMatnrKey, matnr, eanObject);
                                 artNoEditText.setText("");
                                 retVal = true;
                                 nextBin();
                                 binEditText.requestFocus();
-                            } else if (Integer.parseInt(articleCount) < Integer.parseInt(toBeScan)) {
-                                processingFirstTimeData(Integer.parseInt(articleCount), binMatnrKey, matnr, eanObject);
+                            } else if (qtyForThisScan < Integer.parseInt(toBeScan)) {
+                                processingFirstTimeData(qtyForThisScan, binMatnrKey, matnr, eanObject);
                                 artNoEditText.setText("");
                                 artNoEditText.requestFocus();
                                 retVal = true;
@@ -954,9 +1007,10 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
             scanMap.put(binMatnrKey, new Integer(articleCount));
             try {
+                // TMENG must reflect this scan's quantity (same as articleCount), not master-data UMREZ (often 1).
                 addDataForUpdateInSAP(matnr, deliveryLine.getString("CHARG"),
                         deliveryLine.getString("WERKS"), deliveryLine.getString("LGORT"), mPackingNo,
-                        eanJson.getString("UMREZ"), deliveryLine.getString("VRKME"), parts[0] );
+                        String.valueOf(articleCount), deliveryLine.getString("VRKME"), parts[0] );
             } catch(JSONException jsone) {
             }
         } else {
@@ -982,8 +1036,9 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                 return;
             }
 
-            trQCount = trQCount - articleCount;
-            tsqCount = tsqCount + articleCount;
+            int incrementForThisScan = articleCount;
+            trQCount = trQCount - incrementForThisScan;
+            tsqCount = tsqCount + incrementForThisScan;
 
             sqEditTextField.setText("" + tsqCount);
             rqEditTextFiled.setText("" + trQCount);
@@ -1002,7 +1057,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
             try {
                 addDataForUpdateInSAP(matnr, deliveryLine.getString("CHARG"),
                         deliveryLine.getString("WERKS"), deliveryLine.getString("LGORT"), mPackingNo,
-                        eanJson.getString("UMREZ"), deliveryLine.getString("VRKME"), parts[0] );
+                        String.valueOf(incrementForThisScan), deliveryLine.getString("VRKME"), parts[0] );
             } catch(JSONException jsone) {
 
             }
@@ -1098,25 +1153,30 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                                         mEtLips = responsebody.getJSONArray("ET_LIPS");
                                         mEtEanData =   responsebody.getJSONArray("ET_EAN_DATA");
                                         try {
-                                            mEtBinMc = responsebody.getJSONArray("ET_BIN_MC");
-                                            for (int i = 1; i < PapperLessScan.this.mEtBinMc.length(); i++) {
-                                                JSONObject etBin = PapperLessScan.this.mEtBinMc.getJSONObject(i);
-                                                int lineQty = sapNumberToInt("VISTM", etBin);
-                                                int remainQty = sapNumberToInt("REMAIN_QTY", etBin);
-                                                tqCount = tqCount + lineQty;
-                                                trQCount = trQCount + remainQty;
-                                                tqEditTextFiled.setText("" + tqCount);
-                                                rqEditTextFiled.setText("" + trQCount);
-                                                PapperLessScan.this.mEtBinMc.getJSONObject(i).put("UMREZ","1");
+                                            tqCount = 0;
+                                            trQCount = 0;
+                                            mEtBinMc = normalizeEtBinMc(responsebody.getJSONArray("ET_BIN_MC"));
+                                            if (mEtBinMc != null) {
+                                                for (int i = 0; i < mEtBinMc.length(); i++) {
+                                                    JSONObject etBin = mEtBinMc.getJSONObject(i);
+                                                    int lineQty = sapNumberToInt("VISTM", etBin);
+                                                    int remainQty = sapNumberToInt("REMAIN_QTY", etBin);
+                                                    tqCount = tqCount + lineQty;
+                                                    trQCount = trQCount + remainQty;
+                                                    mEtBinMc.getJSONObject(i).put("UMREZ","1");
+                                                }
                                             }
-                                            if(mEtBinMc.getJSONObject(1).has("STORE")) {
-                                                storeIdText.setText(mEtBinMc.getJSONObject(1).getString("STORE"));
+                                            tqEditTextFiled.setText("" + tqCount);
+                                            rqEditTextFiled.setText("" + trQCount);
+                                            if(mEtBinMc != null && mEtBinMc.length() > 0 && mEtBinMc.getJSONObject(0).has("STORE")) {
+                                                storeIdText.setText(mEtBinMc.getJSONObject(0).getString("STORE"));
                                             }
-                                            String binMcJson = mEtBinMc.toString();
+                                            String binMcJson = mEtBinMc != null ? mEtBinMc.toString() : "[]";
                                             mEtBinMc = new JSONArray(binMcJson);
                                         } catch (JSONException jsone) {
 
                                         }
+                                        currentIndex = 0;
                                         setDataInView(currentIndex);
                                         binEditText.requestFocus();
                                         return;
@@ -1168,7 +1228,79 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
 
         }
     }
+    /**
+     * Persists the quantity shown in SQty into {@link #scanMap} so Save uses the operator-entered value,
+     * not only per-scan barcode UMREZ.
+     */
+    private void syncCurrentRowSqtyIntoScanMap() {
+        if (sqtyEditText == null) {
+            return;
+        }
+        String s = sqtyEditText.getText().toString().trim();
+        if (s.length() == 0) {
+            return;
+        }
+        try {
+            int q = Integer.parseInt(s);
+            String bin = currentScanBin.getText().toString().trim();
+            String matnr = secondItemMatnr.getText().toString().trim();
+            if (bin.length() == 0 || matnr.length() == 0) {
+                return;
+            }
+            scanMap.put(bin + "," + matnr, q);
+        } catch (NumberFormatException ignored) {
+        }
+    }
+
+    private static int parseIntSafe(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Merges duplicate bin/material lines and applies final quantities from {@link #scanMap}
+     * (after manual SQty sync) so SAP receives one TMENG per line, not repeated 1s.
+     */
+    private void consolidateScannedDataForSubmit() {
+        if (scannedDataForSubmit == null || scannedDataForSubmit.length() == 0) {
+            return;
+        }
+        try {
+            LinkedHashMap<String, JSONObject> merged = new LinkedHashMap<>();
+            for (int i = 0; i < scannedDataForSubmit.length(); i++) {
+                JSONObject row = scannedDataForSubmit.getJSONObject(i);
+                String matnr = row.optString("MATNR", "");
+                String bin = row.optString("RFBEL", "");
+                String key = bin + "," + matnr;
+                if (!merged.containsKey(key)) {
+                    merged.put(key, new JSONObject(row.toString()));
+                } else {
+                    JSONObject acc = merged.get(key);
+                    int sum = parseIntSafe(acc.optString("TMENG", "0"))
+                            + parseIntSafe(row.optString("TMENG", "0"));
+                    acc.put("TMENG", String.valueOf(sum));
+                }
+            }
+            for (Map.Entry<String, JSONObject> e : merged.entrySet()) {
+                if (scanMap.containsKey(e.getKey())) {
+                    e.getValue().put("TMENG", String.valueOf(scanMap.get(e.getKey())));
+                }
+            }
+            scannedDataForSubmit = new JSONArray();
+            for (JSONObject v : merged.values()) {
+                scannedDataForSubmit.put(v);
+            }
+        } catch (Exception ex) {
+            Log.e(TAG, "consolidateScannedDataForSubmit", ex);
+        }
+    }
+
     void saveScannedData() {
+        syncCurrentRowSqtyIntoScanMap();
+        consolidateScannedDataForSubmit();
 
         final RequestQueue mRequestQueue;
 

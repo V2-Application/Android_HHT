@@ -166,13 +166,21 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
             Gson gson=new Gson();
             JSONArray jsonObject=new JSONArray(resposne);
 
-            for(int i=1;i<jsonObject.length();i++){
-                Log.d("scan", jsonObject.getString(i));
-                JSONObject etDataNode = jsonObject.getJSONObject(i);
-                deliveryList.add(etDataNode.getString("VBELN") + "-" +
-                        etDataNode.getString("WERKS") + "-" +
-                        etDataNode.getString("PRIORITY") + "-" +
-                        etDataNode.getString("FLOOR"));
+            for(int i=0;i<jsonObject.length();i++){
+                JSONObject etDataNode;
+                try {
+                    etDataNode = jsonObject.getJSONObject(i);
+                } catch (Exception ignore) {
+                    continue;
+                }
+                // Some SAP responses may include non-delivery rows; only add when VBELN exists.
+                if (!etDataNode.has("VBELN")) {
+                    continue;
+                }
+                deliveryList.add(etDataNode.optString("VBELN") + "-" +
+                        etDataNode.optString("WERKS") + "-" +
+                        etDataNode.optString("PRIORITY") + "-" +
+                        etDataNode.optString("FLOOR"));
             }
 
         }catch (JSONException e){
