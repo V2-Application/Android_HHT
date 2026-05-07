@@ -56,9 +56,11 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements View.OnClickListener {
 
@@ -352,18 +354,49 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         }
     }
 
+    /**
+     * v12.115 (2026-05-07): Two fixes for Zone dropdown
+     *  1. SAFEGUARD: JSON RFC adapter returns clean 0-indexed array with NO header row.
+     *     Loop MUST start at i=0, length is the full array length.
+     *     (Was: i=1 to length-1 — silently dropped the first zone.)
+     *  2. DEDUPE: SAP's ET_ZONE often returns the same ZONE for multiple stores —
+     *     resulting in 8+ duplicate "F0-ST1" entries in the dropdown.
+     *     Use a HashSet to keep only unique zones in display order.
+     */
     public void setZoneList(JSONObject responsebody){
         try
         {
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_ZONE");
-            int totalEtRecords = ET_DATA_ARRAY.length() - 1;
+            int totalEtRecords = ET_DATA_ARRAY.length();
             if(totalEtRecords > 0){
                 zones.clear();
                 zones.add("Select");
+                Set<String> seen = new HashSet<>();
+                int duplicatesSkipped = 0;
+                int blanksSkipped = 0;
                 for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    zones.add(ET_RECORD.getString("ZONE"));
+                    JSONObject ET_RECORD = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                    String zone = ET_RECORD.optString("ZONE", "").trim();
+                    if(zone.isEmpty()){
+                        blanksSkipped++;
+                        continue;
+                    }
+                    if(!seen.add(zone)){
+                        duplicatesSkipped++;
+                        continue;
+                    }
+                    zones.add(zone);
                 }
+                Log.d(TAG, "setZoneList: ET_ZONE rows=" + totalEtRecords
+                        + " | unique zones loaded=" + (zones.size() - 1)
+                        + " | duplicates skipped=" + duplicatesSkipped
+                        + " | blanks skipped=" + blanksSkipped);
+
+                if(zones.size() <= 1){
+                    box.getBox("No Zones", "No zones returned by SAP for user " + USER);
+                    return;
+                }
+
                 ((BaseAdapter) dd_zone_list.getAdapter()).notifyDataSetChanged();
                 dd_zone_list.setEnabled(true);
                 dd_zone_list.invalidate();
