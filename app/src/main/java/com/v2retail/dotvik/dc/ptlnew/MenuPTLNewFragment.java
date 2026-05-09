@@ -34,6 +34,15 @@ public class MenuPTLNewFragment extends Fragment implements
 
     Button ptl_picking_with_pallete, ptl_picking_without_pallete, ptl_picking_full_crate_30, ptl_new_picking_4_0;
 
+    private void disableAndGreyOut(Button button) {
+        if (button == null) return;
+        button.setEnabled(false);
+        button.setClickable(false);
+        button.setAlpha(0.45f);
+        button.setBackgroundColor(0xFF7A7A7A); // grey
+        button.setTextColor(0xFFEEEEEE);
+    }
+
     public MenuPTLNewFragment() {
         // Required empty public constructor
     }
@@ -65,6 +74,11 @@ public class MenuPTLNewFragment extends Fragment implements
         ptl_picking_without_pallete.setOnClickListener(this);
         ptl_picking_full_crate_30.setOnClickListener(this);
         ptl_new_picking_4_0.setOnClickListener(this);
+
+        // Disable and grey-out these three processes
+        disableAndGreyOut(ptl_picking_with_pallete);
+        disableAndGreyOut(ptl_picking_without_pallete);
+        disableAndGreyOut(ptl_picking_full_crate_30);
 
         return view;
     }
