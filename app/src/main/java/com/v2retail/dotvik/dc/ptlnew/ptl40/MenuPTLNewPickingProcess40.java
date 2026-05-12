@@ -17,12 +17,10 @@ import android.widget.Toast;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateFloorStaging;
-import com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateReceiveAtFloor;
-import com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateReceiveAtZone;
 import com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateTagWithFloorBIN;
 import com.v2retail.dotvik.dc.ptlnew.withoutpallate.FragmentPTLNewWithoutPallateCrateFloorStaging;
 import com.v2retail.dotvik.dc.ptlnew.withoutpallate.FragmentPTLNewWithoutPallatePicking;
-import com.v2retail.dotvik.dc.ptlnew.withoutpallate.FragmentPTLNewWithoutPallatePutwayStorewise;
+import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewArticlePutwayStorewise;
 import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewFloorModule;
 import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewHUCloseAndPrint;
 import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewHUZoneStoreMapping;
@@ -41,7 +39,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
     String TAG = MenuPTLNewPickingProcess40.class.getName();
     private OnFragmentInteractionListener mListener;
 
-    Button ptl_picking, flr_bin, flr_stagging, receive_at_floor, receive_at_zone, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise;
+    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise;
 
     public MenuPTLNewPickingProcess40() {
     }
@@ -65,7 +63,6 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         ptl_picking = view.findViewById(R.id.ptl_new_picking_process_4_0_ptl_picking);
         flr_bin = view.findViewById(R.id.ptl_new_picking_process_4_0_flr_bin);
         flr_stagging = view.findViewById(R.id.ptl_new_picking_process_4_0_crate_tag_plt_flr_stagging);
-        receive_at_floor = view.findViewById(R.id.ptl_new_picking_process_4_0_receive_at_gnd_flr);
         receive_at_zone = view.findViewById(R.id.ptl_new_picking_process_4_0_receive_at_zone);
         hu_zone_store_mapping = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_zone_store_mapping);
         hu_close = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_close);
@@ -76,7 +73,6 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         flr_bin.setOnClickListener(this);
         flr_stagging.setOnClickListener(this);
         receive_at_zone.setOnClickListener(this);
-        receive_at_floor.setOnClickListener(this);
         hu_zone_store_mapping.setOnClickListener(this);
         hu_close.setOnClickListener(this);
         hu_print.setOnClickListener(this);
@@ -129,14 +125,11 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
             case R.id.ptl_new_picking_process_4_0_flr_bin:
                 fragment = FragmentPTLNewFullCrateTagWithFloorBIN.newInstance();
                 break;
-            case R.id.ptl_new_picking_process_4_0_receive_at_gnd_flr:
-                fragment = FragmentPTLNewFullCrateReceiveAtFloor.newInstance("PTL - Floor Receive");
-                break;
             case R.id.ptl_new_picking_process_4_0_crate_tag_plt_flr_stagging:
                 fragment = FragmentPTLNewFullCrateFloorStaging.newInstance("PTL - Crate Floor Staging");
                 break;
             case R.id.ptl_new_picking_process_4_0_receive_at_zone:
-                fragment = FragmentPTLNewFullCrateReceiveAtZone.newInstance("PTL - Receive at Zone");
+                fragment = FragmentPTLNewReceiveAtZone.newInstance();
                 break;
             case R.id.ptl_new_picking_process_4_0_hu_zone_store_mapping:
                 fragment = FragmentPTLNewProcess40ZoneStoreHUMapping.newInstance();
@@ -148,7 +141,11 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
                 fragment = FragmentPTLNewHUCloseAndPrint.newInstance("HU Print");
                 break;
             case R.id.ptl_new_picking_process_4_0_article_putway_storewise:
-                fragment = FragmentPTLNewWithoutPallatePutwayStorewise.newInstance(false);
+                // Redesigned 2026-05-09 — modern card UI with FLR-Station based flow.
+                // (See FragmentPTLNewArticlePutwayStorewise + spec doc "PTL Article
+                //  Putway Store Wise". The legacy FragmentPTLNewWithoutPallatePutwayStorewise
+                //  is no longer reachable from this menu.)
+                fragment = FragmentPTLNewArticlePutwayStorewise.newInstance();
                 break;
         }
         if (fragment != null) {

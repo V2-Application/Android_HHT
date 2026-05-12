@@ -1,334 +1,522 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    PTL — Article Putway Store Wise.
+    Reference UI: label column (11sp bold) + stacked bordered value column (25dp min height),
+    groups separated by vertical space, generous scroll padding above BACK/SUBMIT footer.
+-->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingStart="5dp"
-    android:paddingEnd="5dp">
-
-    <LinearLayout
+    android:background="@color/white">
+<!-- 
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:orientation="vertical">
+        android:layout_above="@+id/ptl_apsw_footer"
+        android:layout_alignParentTop="true"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none"> -->
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="96dp">
 
-            <TextView
-                android:layout_width="0dp"
+            <!-- ═════ Group 1 — FLR Station / HUB ═════ -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Zone"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:baselineAligned="false"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <Spinner
-                    android:id="@+id/ptl_new_article_putway_storewise_dd_zone"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown" />
+                    android:layout_weight="5"
+                    android:orientation="vertical"
+                    android:paddingEnd="10dp">
 
-            </RelativeLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Scan FLR STATION"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Station"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Scan Crate"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="HUB"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_scan_crate"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="7"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_scan_station"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/apsw_putway_cell_editable"
+                        android:gravity="center"
+                        android:hint="Scan Station"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:singleLine="true"
+                        android:textColor="@color/textPrimary"
+                        android:textColorHint="@color/textSecondary"
+                        android:textSize="11sp" />
 
-            <TextView
-                android:layout_width="0dp"
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_station"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_hub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ═════ Group 2 — Crate ═════ -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Crate"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="18dp"
+                android:baselineAligned="false"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_crate"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="5"
+                    android:orientation="vertical"
+                    android:paddingEnd="10dp">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Scan Crate"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Scan Article"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Crate"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_scan_article"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="7"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_scan_crate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/apsw_putway_cell_editable"
+                        android:gravity="center"
+                        android:hint="Scan Crate"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:singleLine="true"
+                        android:textColor="@color/textPrimary"
+                        android:textColorHint="@color/textSecondary"
+                        android:textSize="11sp" />
 
-            <TextView
-                android:layout_width="0dp"
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_crate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ═════ Group 3 — Article / Store ═════ -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Article"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="18dp"
+                android:baselineAligned="false"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_article"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="5"
+                    android:orientation="vertical"
+                    android:paddingEnd="10dp">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Scan Article"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Proposed Store"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Article"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Proposed Store"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_proposed_store"
-                    android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Store Floor"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="7"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_scan_article"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/apsw_putway_cell_editable"
+                        android:gravity="center"
+                        android:hint="Scan Article"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:singleLine="true"
+                        android:textColor="@color/textPrimary"
+                        android:textColorHint="@color/textSecondary"
+                        android:textSize="11sp" />
 
-            <TextView
-                android:layout_width="0dp"
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_article"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_proposed_store"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_store_floor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ═════ Group 4 — HU ═════ -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Scan HU"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="18dp"
+                android:baselineAligned="false"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_ptl_new_article_putway_storewise_scan_hu"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:layout_weight="5"
+                    android:orientation="vertical"
+                    android:paddingEnd="10dp">
 
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="Scan HU"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="0dp"
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical|start"
+                        android:minHeight="25dp"
+                        android:text="HU"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:orientation="vertical">
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_scan_hu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/apsw_putway_cell_editable"
+                        android:gravity="center"
+                        android:hint="Scan Hu"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:singleLine="true"
+                        android:textColor="@color/textPrimary"
+                        android:textColorHint="@color/textSecondary"
+                        android:textSize="11sp" />
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_article_putway_storewise_hu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="-1dp"
+                        android:background="@drawable/apsw_putway_cell_readonly"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:minHeight="25dp"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ═════ Group 5 — Pending Qty (green border) ═════ -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Pending Qty"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="18dp"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:gravity="center_vertical|start"
+                    android:minHeight="25dp"
+                    android:paddingEnd="10dp"
+                    android:text="Pending Qty"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/txt_ptl_new_article_putway_storewise_pending_qty"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:layout_weight="7"
+                    android:background="@drawable/apsw_putway_cell_pending"
                     android:enabled="false"
-                    android:padding="7dp"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:gravity="center"
+                    android:minHeight="25dp"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="3dp"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="11sp" />
+            </LinearLayout>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
-
-
-
-        </LinearLayout>
-    </LinearLayout>
+    <!-- </ScrollView> -->
 
     <LinearLayout
+        android:id="@+id/ptl_apsw_footer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:background="@color/white"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="5dp"
-        android:weightSum="2">
+        android:paddingStart="16dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="18dp"
+        android:weightSum="1">
 
         <Button
             android:id="@+id/btn_ptl_new_article_putway_storewise_back"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="2dp"
-            android:layout_weight="2"
-            android:background="@color/colorPrimary"
-            android:text="Back"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/apsw_btn_back"
+            android:text="BACK"
+            android:textAllCaps="true"
             android:textColor="@color/white"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </RelativeLayout>

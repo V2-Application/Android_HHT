@@ -399,8 +399,35 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                 }
                 break;
             case R.id.btn_ptl_new_picking_process_40_next:
-                if(!UIFuncs.toUpperTrim(txt_picklist).isEmpty()){
-                    getPicklistListData(UIFuncs.toUpperTrim(txt_picklist));
+                if(currentStep == 1){
+                    if(!UIFuncs.toUpperTrim(txt_picklist).isEmpty()){
+                        getPicklistListData(UIFuncs.toUpperTrim(txt_picklist));
+                    }else{
+                        box.getBox("Invalid", "Please scan Floor Bin first");
+                        txt_scan_bin.requestFocus();
+                    }
+                }else if(currentStep == 2){
+                    if(UIFuncs.toUpperTrim(txt_scanned_empty_crate).isEmpty()){
+                        box.getBox("Invalid", "Please scan Empty Crate");
+                        txt_empty_crate.requestFocus();
+                        break;
+                    }
+                    if(UIFuncs.toUpperTrim(txt_scanned_msa_bin).isEmpty()){
+                        box.getBox("Invalid", "Please scan MSA BIN");
+                        txt_scan_msa_bin.requestFocus();
+                        break;
+                    }
+                    if(UIFuncs.toUpperTrim(txt_scanned_msa_crate).isEmpty()){
+                        box.getBox("Invalid", "Please scan MSA Crate");
+                        txt_scan_msa_crate.requestFocus();
+                        break;
+                    }
+                    if(etDataMap == null || etDataMap.isEmpty()){
+                        box.getBox("Invalid", "MSA Crate details not loaded. Please re-scan MSA Crate");
+                        txt_scan_msa_crate.requestFocus();
+                        break;
+                    }
+                    step3(1);
                 }
                 break;
             case R.id.btn_ptl_new_picking_process_40_save:
@@ -515,14 +542,24 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             binDataMap = new LinkedHashMap<>();
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
             int totalEtRecords = ET_DATA_ARRAY.length();
+            boolean firstRowSet = false;
             if(totalEtRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
+                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
                     BinCrateData binCrateData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), BinCrateData.class);
-                    binDataMap.put(binCrateData.getBin()+"-"+binCrateData.getCrate(), binCrateData);
-                    if(recordIndex == 1){
-                        txt_floor.setText(binCrateData.getFloor());
-                        txt_section.setText(binCrateData.getSection());
-                        txt_picklist.setText(binCrateData.getPicklist());
+                    if(binCrateData == null){
+                        continue;
+                    }
+                    String keyBin = (binCrateData.getBin() == null) ? "" : binCrateData.getBin().trim();
+                    String keyCrate = (binCrateData.getCrate() == null) ? "" : binCrateData.getCrate().trim();
+                    if(keyBin.isEmpty() && keyCrate.isEmpty()){
+                        continue;
+                    }
+                    binDataMap.put(keyBin + "-" + keyCrate, binCrateData);
+                    if(!firstRowSet){
+                        txt_floor.setText(binCrateData.getFloor() == null ? "" : binCrateData.getFloor());
+                        txt_section.setText(binCrateData.getSection() == null ? "" : binCrateData.getSection());
+                        txt_picklist.setText(binCrateData.getPicklist() == null ? "" : binCrateData.getPicklist());
+                        firstRowSet = true;
                     }
                 }
             }
@@ -737,14 +774,20 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             int totalEanRecords = ET_EAN_DATA_ARRAY.length();
 
             if (totalEtRecords > 0) {
-                for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
+                for (int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++) {
                     PicklistData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
+                    if(picklistData == null || picklistData.getArticle() == null || picklistData.getArticle().trim().isEmpty()){
+                        continue;
+                    }
                     etDataMap.put(picklistData.getMsaCrate() + "-" + picklistData.getBin() + "-" + UIFuncs.removeLeadingZeros(picklistData.getArticle()), picklistData);
                 }
             }
             if (totalEanRecords > 0) {
-                for (int recordIndex = 1; recordIndex < totalEanRecords; recordIndex++) {
+                for (int recordIndex = 0; recordIndex < totalEanRecords; recordIndex++) {
                     HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
+                    if(eanData == null || eanData.getLgean11() == null || eanData.getLgean11().trim().isEmpty()){
+                        continue;
+                    }
                     eanDataMap.put(eanData.getLgean11(), eanData);
                 }
             }

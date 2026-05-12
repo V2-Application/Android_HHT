@@ -54,7 +54,7 @@
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Receive at Zone"
+            android:text="Receive at FLR STA"
             android:id="@+id/ptl_new_receive_at_zone"
             android:layout_margin="5dp"
             android:textColor="#fff"

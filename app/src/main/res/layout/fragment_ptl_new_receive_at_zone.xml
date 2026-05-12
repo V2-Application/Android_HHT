@@ -8,8 +8,11 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_above="@+id/ptl_receive_flr_sta_footer"
+        android:layout_alignParentTop="true"
         android:layout_margin="5dp"
         android:orientation="vertical">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -24,40 +27,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
-                android:text="Scan Zone"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8">
-
-                <Spinner
-                    android:id="@+id/ptl_new_receive_at_zone_dd_zone"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@android:drawable/btn_dropdown"
-                    android:spinnerMode="dropdown" />
-
-            </RelativeLayout>
-
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Scan Pallate"
+                android:text="Scan Pallete"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -71,7 +41,7 @@
                     android:id="@+id/txt_ptl_new_receive_at_zone_scan_pallate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
+                    android:background="@drawable/ptl_flr_sta_field_editable"
                     android:imeOptions="actionDone"
                     android:maxLines="1"
                     android:padding="7dp"
@@ -81,6 +51,7 @@
             </RelativeLayout>
 
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -95,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
-                android:text="Pallate"
+                android:text="Pallete"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -109,14 +80,17 @@
                     android:id="@+id/txt_ptl_new_receive_at_zone_pallate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/ptl_flr_sta_field_editable"
                     android:enabled="false"
+                    android:maxLines="1"
                     android:padding="7dp"
+                    android:singleLine="true"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
 
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -124,14 +98,14 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="2dp"
-            android:weightSum="20">
+            android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="12"
+                android:layout_weight="4"
                 android:padding="7dp"
-                android:text="No of Scanned Pallate"
+                android:text="HUB"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -142,10 +116,10 @@
                 android:layout_weight="8">
 
                 <EditText
-                    android:id="@+id/txt_ptl_new_receive_at_zone_scanned_pallate"
+                    android:id="@+id/txt_ptl_new_receive_at_zone_hub"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/ptl_flr_sta_hub_readonly"
                     android:enabled="false"
                     android:padding="7dp"
                     android:textColor="@color/black"
@@ -153,6 +127,7 @@
             </RelativeLayout>
 
         </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -160,15 +135,14 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="2dp"
-            android:visibility="visible"
-            android:weightSum="20">
+            android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="12"
+                android:layout_weight="4"
                 android:padding="7dp"
-                android:text="No of Crate in Pallate"
+                android:text="No of Crate"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -176,23 +150,62 @@
             <RelativeLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="3dp"
                 android:layout_weight="8">
 
                 <EditText
                     android:id="@+id/txt_ptl_new_receive_at_zone_crate_in_pallate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/ptl_flr_sta_crate_readonly"
                     android:enabled="false"
+                    android:gravity="center"
                     android:padding="7dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:padding="7dp"
+                android:text="HUB Station"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="8">
+
+                <Spinner
+                    android:id="@+id/ptl_new_receive_at_zone_dd_hub_station"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/ptl_flr_sta_spinner"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="32dp"
+                    android:spinnerMode="dropdown" />
+
+            </RelativeLayout>
+
         </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/ptl_receive_flr_sta_footer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -205,10 +218,25 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
-            android:layout_weight="2"
-            android:background="@color/colorPrimary"
-            android:text="Back"
+            android:layout_weight="1"
+            android:background="#e71821"
+            android:text="BACK"
+            android:textAllCaps="true"
             android:textColor="@color/white"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_ptl_new_receive_at_zone_save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:background="#e71821"
+            android:text="SAVE"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </RelativeLayout>

@@ -42,19 +42,10 @@
                 android:layout_margin="5dp"
                 android:textColor="#fff"
                 android:background="#e71821" />
-
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Pallate Receive At GND Floor"
-                android:id="@+id/ptl_new_picking_process_4_0_receive_at_gnd_flr"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:background="#e71821" />
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Receive at Zone Station"
+                android:text="Receive at FLR STA"
                 android:id="@+id/ptl_new_picking_process_4_0_receive_at_zone"
                 android:layout_margin="5dp"
                 android:textColor="#fff"

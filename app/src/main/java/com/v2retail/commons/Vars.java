@@ -224,6 +224,13 @@ public class Vars {
     public static String ZWM_PTL_ZONE_CRATE_VALIDATE = "ZWM_PTL_ZONE_CRATE_VALIDATE";
     public static String ZWM_PTL_ZONE_HU_VALIDATE = "ZWM_PTL_ZONE_HU_VALIDATE";
 
+    // PTL — Article Putway Store Wise (FLR Station based flow, redesign 2026-05-09)
+    // Step 1: validate the scanned FLR Station; SAP returns the HUB to display.
+    public static String ZWM_PTL_STATION_VALIDATE = "ZWM_PTL_STATION_VALIDATE";
+    // Step 2: validate scanned crate against the FLR Station + HUB; SAP returns
+    //         ET_DATA (article/store/floor rows) and ET_EAN_DATA (barcodes).
+    public static String ZWM_PTL_STATION_CRATE_VALIDATE = "ZWM_PTL_STATION_CRATE_VALIDATE";
+
     public static String ZWM_PTL_FLR_STG_PAL_VALIDAT_V2 = "ZWM_PTL_FLR_STG_PAL_VALIDAT_V2";
     public static String ZWM_PTL_FLR_STG_CRT_VALID_V2 = "ZWM_PTL_FLR_STG_CRT_VALID_V2";
     public static String ZGRT_PICK_GET_TO_LIST_PTL_V3 = "ZGRT_PICK_GET_TO_LIST_PTL_V3";
@@ -248,6 +255,8 @@ public class Vars {
     public static String ZWM_PTL_GET_ZONE_STATION_V3 = "ZWM_PTL_GET_ZONE_STATION_V3";
     public static String ZWM_PTL_VALIDATE_STORE_V3 = "ZWM_PTL_VALIDATE_STORE_V3";
     public static String ZWM_PTL_VALIDATE_HU_V3 = "ZWM_PTL_VALIDATE_HU_V3";
+    public static String ZWM_PTL_PLT_VAL_AT_ZONE_FL = "ZWM_PTL_PLT_VAL_AT_ZONE_FL";
+    public static String ZWM_PTL_PLT_REC_AT_ZONE_FL = "ZWM_PTL_PLT_REC_AT_ZONE_FL";
     public static String ZWM_PTL_PLT_REC_AT_ZONE_SRT_V3 = "ZWM_PTL_PLT_REC_AT_ZONE_SRT_V3";
     public static String ZGRT_PICK_GET_PICK_DATA_V4 = "ZGRT_PICK_GET_PICK_DATA_V4";
     public static String ZWM_PTL_CRATE_VALIDATE_V4 = "ZWM_PTL_CRATE_VALIDATE_V4";

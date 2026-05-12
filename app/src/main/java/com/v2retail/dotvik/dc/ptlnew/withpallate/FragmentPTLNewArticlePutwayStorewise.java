@@ -2,10 +2,13 @@ package com.v2retail.dotvik.dc.ptlnew.withpallate;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import android.os.Handler;
@@ -17,12 +20,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.android.volley.AuthFailureError;
@@ -54,44 +53,67 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
+/**
+ * PTL — Article Putway Store Wise (redesign 2026-05-09).
+ *
+ * Flow per spec doc "PTL_Article Putway Store Wise":
+ *  1. Scan FLR STATION → {@link Vars#ZWM_PTL_STATION_VALIDATE} → SAP returns {@code EX_HUB}.
+ *     The scanned station is shown in the (gray) Station field; HUB is shown in the
+ *     (gray) HUB field.
+ *  2. Scan Crate → {@link Vars#ZWM_PTL_STATION_CRATE_VALIDATE} (IM_USER, IM_WERKS,
+ *     IM_ZONE_STATION, IM_CRATE, IM_HUB) → SAP returns ET_DATA (article/store/floor)
+ *     and ET_EAN_DATA (barcodes). Cursor moves to Scan Article.
+ *  3. Scan Article (barcode) → validated locally against ET_EAN_DATA-EAN11; the
+ *     resolved MATNR is matched against ET_DATA-ARTICLE to populate Article,
+ *     Proposed Store and Store Floor. IS_DATA is prepared for the HU step.
+ *  4. Scan HU → {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} (IM_USER, IM_WERKS, IS_DATA) immediately
+ *     after a valid HU scan (no Submit button). On success the row's pending qty is decremented
+ *     and the cursor returns to Scan Article for the next pick.
+ */
 public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements View.OnClickListener {
 
-    private static final int REQUEST_ZONE_LIST = 1500;
-    private static final int REQUEST_VALIDATE_ZONE_CRATE = 1501;
+    private static final int REQUEST_VALIDATE_STATION = 1500;
+    private static final int REQUEST_VALIDATE_STATION_CRATE = 1501;
     private static final int REQUEST_VALIDATE_ZONE_HU = 1502;
 
     private static final String TAG = FragmentPTLNewArticlePutwayStorewise.class.getName();
 
     View rootView;
-    String URL="";
-    String WERKS="";
-    String USER="";
+    String URL = "";
+    String WERKS = "";
+    String USER = "";
     Context con;
     AlertBox box;
     ProgressDialog dialog;
     FragmentManager fm;
 
-    List<String> zones = new ArrayList<String>();
-    ArrayAdapter<String> zoneAdapter;
-
-    boolean spinnerTouched = false;
-
-    Spinner dd_zone_list;
-
     Button btn_back;
-    EditText txt_scan_crate, txt_crate, txt_scan_article, txt_article, txt_proposed_store, txt_scan_hu, txt_pending_qty;
+    EditText txt_scan_station, txt_station, txt_hub;
+    EditText txt_scan_crate, txt_crate;
+    EditText txt_scan_article, txt_article, txt_proposed_store, txt_store_floor;
+    EditText txt_scan_hu, txt_hu, txt_pending_qty;
+
+    /** FLR Station confirmed by validate RFC; required for crate/HU calls. */
+    private String validatedStation = "";
+    /** HUB returned by validate RFC for the FLR Station; passed back as IM_HUB. */
+    private String validatedHub = "";
 
     Map<String, PicklistData> etDataMap = new LinkedHashMap<>();
     Map<String, HUEANData> eanDataMap = new HashMap<>();
     PicklistData currentScan = null;
+    /** HU from the last {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} payload (do not read {@code txt_scan_hu} on response). */
+    private String lastHuSubmitted = "";
+    /** Prevents double RFC when the scanner sends keystrokes + ENTER. */
+    private boolean huValidateInFlight = false;
+
+    /** Brand red used in the screen footer / spec mock-up. */
+    private static final int ACTION_BAR_RED = 0xFFE71821;
+
     public FragmentPTLNewArticlePutwayStorewise() {
         // Required empty public constructor
     }
@@ -109,7 +131,47 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     @Override
     public void onResume() {
         super.onResume();
-        ((Process_Selection_Activity) getActivity()).setActionBarTitle("PTL-Article Putway Storewise");
+        Process_Selection_Activity activity = (Process_Selection_Activity) getActivity();
+        if (activity != null) {
+            activity.setActionBarTitle("PTL- Article Putway Store Wise");
+            applyRedActionBar(activity);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        restoreActionBarBackground();
+    }
+
+    /**
+     * Re-tints the activity's action bar to brand red while this screen is visible.
+     * On pause we revert to the app theme's {@code colorPrimary} so other fragments
+     * keep the default appearance.
+     */
+    private void applyRedActionBar(AppCompatActivity activity) {
+        ActionBar bar = activity.getSupportActionBar();
+        if (bar == null) {
+            return;
+        }
+        bar.setBackgroundDrawable(new ColorDrawable(ACTION_BAR_RED));
+        // Force a redraw — some devices don't repaint until the title is reset.
+        CharSequence title = bar.getTitle();
+        bar.setTitle("");
+        bar.setTitle(title);
+    }
+
+    private void restoreActionBarBackground() {
+        Process_Selection_Activity activity = (Process_Selection_Activity) getActivity();
+        if (activity == null) {
+            return;
+        }
+        ActionBar bar = activity.getSupportActionBar();
+        if (bar == null) {
+            return;
+        }
+        // Revert to the theme's colorPrimary (#1A1A1A — see app/src/main/res/values/colors.xml).
+        bar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#1A1A1A")));
     }
 
     @Override
@@ -118,35 +180,33 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         rootView = inflater.inflate(R.layout.fragment_ptl_new_article_putway_storewise, container, false);
 
         con = getContext();
-        box=new AlertBox(con);
-        dialog=new ProgressDialog(con);
-        SharedPreferencesData data=new SharedPreferencesData(con);
-        URL=data.read("URL");
-        WERKS=data.read("WERKS");
-        USER=data.read("USER");
-        FragmentActivity activity = getActivity();
+        box = new AlertBox(con);
+        dialog = new ProgressDialog(con);
+        SharedPreferencesData data = new SharedPreferencesData(con);
+        URL = data.read("URL");
+        WERKS = data.read("WERKS");
+        USER = data.read("USER");
 
-        dd_zone_list = rootView.findViewById(R.id.ptl_new_article_putway_storewise_dd_zone);
-        dd_zone_list.setSelection(0);
+        txt_scan_station = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_station);
+        txt_station = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_station);
+        txt_hub = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_hub);
 
         txt_scan_crate = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_crate);
         txt_crate = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_crate);
+
         txt_scan_article = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_article);
         txt_article = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_article);
         txt_proposed_store = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_proposed_store);
+        txt_store_floor = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_store_floor);
+
         txt_scan_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_hu);
+        txt_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_hu);
         txt_pending_qty = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_pending_qty);
 
         btn_back = rootView.findViewById(R.id.btn_ptl_new_article_putway_storewise_back);
-
         btn_back.setOnClickListener(this);
 
-        zoneAdapter = new ArrayAdapter<String>(activity,android.R.layout.simple_list_item_1, zones);
-        zoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        dd_zone_list.setAdapter(zoneAdapter);
-        dd_zone_list.setOnTouchListener((v,me) -> {spinnerTouched = true; v.performClick(); return false;});
-
-        clear(true);
+        clearAll();
         addInputEvents();
 
         return rootView;
@@ -154,73 +214,156 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_ptl_new_article_putway_storewise_back:
-                box.confirmBack(fm, con);
-                break;
+        int id = view.getId();
+        if (id == R.id.btn_ptl_new_article_putway_storewise_back) {
+            box.confirmBack(fm, con);
         }
     }
 
-    private void clear(boolean clearAll){
+    private void endHuValidateInFlight() {
+        huValidateInFlight = false;
+        if (txt_scan_hu != null) {
+            UIFuncs.enableInput(con, txt_scan_hu);
+        }
+    }
+
+    /**
+     * After a valid HU scan (or IME Done), posts {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} immediately.
+     */
+    private void onHuScanned(String hu) {
+        if (huValidateInFlight) {
+            return;
+        }
+        if (validatedStation.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Please scan FLR Station first.");
+            txt_scan_station.requestFocus();
+            return;
+        }
+        if (currentScan == null) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Please scan a Crate and an Article before scanning HU.");
+            if (txt_scan_crate.isEnabled()) {
+                txt_scan_crate.requestFocus();
+            } else {
+                txt_scan_article.requestFocus();
+            }
+            txt_scan_hu.setText("");
+            return;
+        }
+        String huNorm = hu == null ? "" : hu.trim().toUpperCase();
+        if (huNorm.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Please scan an HU.");
+            txt_scan_hu.requestFocus();
+            return;
+        }
+        txt_hu.setText(huNorm);
+        huValidateInFlight = true;
         UIFuncs.disableInput(con, txt_scan_hu);
-        txt_scan_article.setText("");
-        txt_scan_hu.setText("");
-        if(clearAll){
-            this.currentScan = null;
-            UIFuncs.disableInput(con, txt_scan_article);
-            UIFuncs.disableInput(con, txt_scan_crate);
-            txt_crate.setText("");
-            txt_scan_crate.setText("");
-            txt_article.setText("");
-            txt_proposed_store.setText("");
-            txt_pending_qty.setText("");
-            etDataMap = new HashMap<>();
-            eanDataMap = new HashMap<>();
-            dd_zone_list.requestFocus();
-            getZoneList();
-        }else{
-            double qty = Double.parseDouble(this.currentScan.getQuantity());
-            qty = qty - 1;
-            if(qty == 0){
-                this.currentScan.setSqty(1);
-            }else{
-                this.currentScan.setSqty(0);
-            }
-            this.currentScan.setQuantity(Util.formatDouble(qty));
-            calculatePendingQty(qty);
-            this.currentScan = null;
-            UIFuncs.enableInput(con, txt_scan_article);
-        }
+        validateZoneHU(huNorm);
     }
 
-    private void addInputEvents(){
-        dd_zone_list.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+    /**
+     * Reset everything to the initial state — only the Scan FLR Station field is editable.
+     */
+    private void clearAll() {
+        currentScan = null;
+        validatedStation = "";
+        validatedHub = "";
+        etDataMap = new LinkedHashMap<>();
+        eanDataMap = new HashMap<>();
+
+        txt_scan_station.setText("");
+        txt_station.setText("");
+        txt_hub.setText("");
+        txt_scan_crate.setText("");
+        txt_crate.setText("");
+        txt_scan_article.setText("");
+        txt_article.setText("");
+        txt_proposed_store.setText("");
+        txt_store_floor.setText("");
+        txt_scan_hu.setText("");
+        txt_hu.setText("");
+        txt_pending_qty.setText("");
+
+        UIFuncs.disableInput(con, txt_scan_crate);
+        UIFuncs.disableInput(con, txt_scan_article);
+        UIFuncs.disableInput(con, txt_scan_hu);
+        UIFuncs.enableInput(con, txt_scan_station);
+        txt_scan_station.requestFocus();
+    }
+
+    /**
+     * Reset everything that depends on a crate (article/store/HU rows + pending qty).
+     * Called when a fresh crate is about to be scanned and after a successful HU put-away
+     * when the crate has been fully consumed.
+     */
+    private void clearForNextCrate() {
+        currentScan = null;
+        etDataMap = new LinkedHashMap<>();
+        eanDataMap = new HashMap<>();
+
+        txt_crate.setText("");
+        txt_scan_article.setText("");
+        txt_article.setText("");
+        txt_proposed_store.setText("");
+        txt_store_floor.setText("");
+        txt_scan_hu.setText("");
+        txt_hu.setText("");
+        txt_pending_qty.setText("");
+
+        UIFuncs.disableInput(con, txt_scan_article);
+        UIFuncs.disableInput(con, txt_scan_hu);
+        UIFuncs.enableInput(con, txt_scan_crate);
+        txt_scan_crate.requestFocus();
+    }
+
+    private void addInputEvents() {
+        // ─── Scan FLR Station ────────────────────────────────────────────────
+        txt_scan_station.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (spinnerTouched) {
-                    if(dd_zone_list.getSelectedItem() != null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                        UIFuncs.enableInput(con, txt_scan_crate);
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    String value = UIFuncs.toUpperTrim(txt_scan_station);
+                    if (!value.isEmpty()) {
+                        validateStation(value);
+                        return true;
                     }
-                    spinnerTouched = false;
                 }
+                return false;
+            }
+        });
+        txt_scan_station.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().toUpperCase().trim();
+                if (!value.isEmpty() && scannerReading) {
+                    validateStation(value);
+                }
             }
         });
 
+        // ─── Scan Crate ──────────────────────────────────────────────────────
         txt_scan_crate.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_crate);
-                    if (!value.isEmpty()) {
-                        if(dd_zone_list.getSelectedItem() !=null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                            validateZoneCrate(value, dd_zone_list.getSelectedItem().toString());
-                        }
+                    if (!value.isEmpty() && !validatedStation.isEmpty()) {
+                        validateStationCrate(value);
                         return true;
                     }
                 }
@@ -231,30 +374,23 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             boolean scannerReading = false;
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
 
             @Override
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
-                if (!value.isEmpty() && scannerReading) {
-                    if(dd_zone_list.getSelectedItem() !=null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                        validateZoneCrate(value , dd_zone_list.getSelectedItem().toString());
-                    }
+                if (!value.isEmpty() && scannerReading && !validatedStation.isEmpty()) {
+                    validateStationCrate(value);
                 }
             }
         });
 
+        // ─── Scan Article (barcode) ──────────────────────────────────────────
         txt_scan_article.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
@@ -273,17 +409,11 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             boolean scannerReading = false;
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
 
             @Override
@@ -295,16 +425,19 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             }
         });
 
+        // ─── Scan HU ─────────────────────────────────────────────────────────
+        // Scanning HU immediately calls ZWM_PTL_ZONE_HU_VALIDATE_V3 (no Submit button).
         txt_scan_hu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     UIFuncs.hideKeyboard(getActivity());
+                    // Scanner often sends ENTER after the watcher fires; avoid duplicate RFC.
                     String value = UIFuncs.toUpperTrim(txt_scan_hu);
-                    if (!value.isEmpty()) {
-                        validateZoneHU(value);
-                        return true;
+                    if (!value.isEmpty() && !huValidateInFlight) {
+                        onHuScanned(value);
                     }
+                    return true;
                 }
                 return false;
             }
@@ -313,255 +446,386 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             boolean scannerReading = false;
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if ((before == 0 && start == 0) && count > 3) {
-                    scannerReading = true;
-                } else {
-                    scannerReading = false;
-                }
+                scannerReading = (before == 0 && start == 0) && count > 3;
             }
 
             @Override
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
-                    validateZoneHU(value);
+                    onHuScanned(value);
                 }
             }
         });
     }
 
-    private void getZoneList(){
+    // ─── Step 1: validate FLR Station ──────────────────────────────────────────
+
+    private void validateStation(String station) {
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_PTL_GET_ZONE);
+            args.put("bapiname", Vars.ZWM_PTL_STATION_VALIDATE);
             args.put("IM_USER", USER);
-            args.put("IM_ZONE", null);
-            showProcessingAndSubmit(Vars.ZWM_PTL_GET_ZONE, REQUEST_ZONE_LIST, args);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_ZONE_STATION", station);
+            showProcessingAndSubmit(Vars.ZWM_PTL_STATION_VALIDATE, REQUEST_VALIDATE_STATION, args);
         } catch (JSONException e) {
-            e.printStackTrace();
-            if(dialog!=null) {
-                dialog.dismiss();
-                dialog = null;
-            }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            handleException(e);
         }
     }
 
-    /**
-     * v12.115 (2026-05-07): Two fixes for Zone dropdown
-     *  1. SAFEGUARD: JSON RFC adapter returns clean 0-indexed array with NO header row.
-     *     Loop MUST start at i=0, length is the full array length.
-     *     (Was: i=1 to length-1 — silently dropped the first zone.)
-     *  2. DEDUPE: SAP's ET_ZONE often returns the same ZONE for multiple stores —
-     *     resulting in 8+ duplicate "F0-ST1" entries in the dropdown.
-     *     Use a HashSet to keep only unique zones in display order.
-     */
-    public void setZoneList(JSONObject responsebody){
-        try
-        {
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_ZONE");
-            int totalEtRecords = ET_DATA_ARRAY.length();
-            if(totalEtRecords > 0){
-                zones.clear();
-                zones.add("Select");
-                Set<String> seen = new HashSet<>();
-                int duplicatesSkipped = 0;
-                int blanksSkipped = 0;
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD = ET_DATA_ARRAY.getJSONObject(recordIndex);
-                    String zone = ET_RECORD.optString("ZONE", "").trim();
-                    if(zone.isEmpty()){
-                        blanksSkipped++;
-                        continue;
-                    }
-                    if(!seen.add(zone)){
-                        duplicatesSkipped++;
-                        continue;
-                    }
-                    zones.add(zone);
-                }
-                Log.d(TAG, "setZoneList: ET_ZONE rows=" + totalEtRecords
-                        + " | unique zones loaded=" + (zones.size() - 1)
-                        + " | duplicates skipped=" + duplicatesSkipped
-                        + " | blanks skipped=" + blanksSkipped);
+    private void onStationValidated(String scannedStation, JSONObject responsebody) {
+        validatedStation = scannedStation;
+        validatedHub = responsebody.optString("EX_HUB", "").trim();
 
-                if(zones.size() <= 1){
-                    box.getBox("No Zones", "No zones returned by SAP for user " + USER);
-                    return;
-                }
+        txt_station.setText(validatedStation);
+        txt_hub.setText(validatedHub);
 
-                ((BaseAdapter) dd_zone_list.getAdapter()).notifyDataSetChanged();
-                dd_zone_list.setEnabled(true);
-                dd_zone_list.invalidate();
-                dd_zone_list.setSelection(0);
-                dd_zone_list.requestFocus();
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
-        }
+        UIFuncs.disableInput(con, txt_scan_station);
+        UIFuncs.enableInput(con, txt_scan_crate);
+
+        txt_scan_station.setText("");
+        txt_scan_crate.requestFocus();
     }
 
-    private void validateZoneCrate(String crate, String zone){
+    // ─── Step 2: validate Crate against Station + HUB ──────────────────────────
+
+    private void validateStationCrate(String crate) {
         JSONObject args = new JSONObject();
         try {
-            this.currentScan = null;
-            args.put("bapiname", Vars.ZWM_PTL_ZONE_CRATE_VALIDATE);
+            currentScan = null;
+            args.put("bapiname", Vars.ZWM_PTL_STATION_CRATE_VALIDATE);
+            args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
-            args.put("IM_USER", USER);
+            args.put("IM_ZONE_STATION", validatedStation);
             args.put("IM_CRATE", crate);
-            args.put("IM_ZONE", zone);
-            showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_CRATE_VALIDATE, REQUEST_VALIDATE_ZONE_CRATE, args);
+            args.put("IM_HUB", validatedHub);
+            showProcessingAndSubmit(Vars.ZWM_PTL_STATION_CRATE_VALIDATE, REQUEST_VALIDATE_STATION_CRATE, args);
         } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
-            if (dialog != null) {
-                dialog.dismiss();
-                dialog = null;
-            }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            handleException(e);
         }
     }
 
-    private void setEtEanData(JSONObject responsebody){
-        try
-        {
-            etDataMap = new HashMap<>();
+    private void setEtEanData(JSONObject responsebody) {
+        try {
+            etDataMap = new LinkedHashMap<>();
             eanDataMap = new HashMap<>();
-            txt_crate.setText(UIFuncs.toUpperTrim(txt_scan_crate));
+
+            String scannedCrate = UIFuncs.toUpperTrim(txt_scan_crate);
+            txt_crate.setText(scannedCrate);
             txt_scan_crate.setText("");
-            txt_proposed_store.setText("");
-            txt_scan_article.setText("");
             txt_article.setText("");
+            txt_proposed_store.setText("");
+            txt_store_floor.setText("");
+            txt_scan_article.setText("");
             txt_pending_qty.setText("");
             txt_scan_hu.setText("");
+            txt_hu.setText("");
 
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
-            JSONArray ET_EAN_DATA_ARRAY = responsebody.getJSONArray("ET_EAN_DATA");
-            int totalEtRecords = ET_DATA_ARRAY.length();
-            int totalEanRecords = ET_EAN_DATA_ARRAY.length();
-            if(totalEtRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
-                    PicklistData etData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
-                    etDataMap.put(etData.getArticle() + "-" + etData.getStore(), etData);
+            JSONArray ET_DATA_ARRAY = responsebody.optJSONArray("ET_DATA");
+            JSONArray ET_EAN_DATA_ARRAY = responsebody.optJSONArray("ET_EAN_DATA");
+            int totalEtRecords = ET_DATA_ARRAY != null ? ET_DATA_ARRAY.length() : 0;
+            int totalEanRecords = ET_EAN_DATA_ARRAY != null ? ET_EAN_DATA_ARRAY.length() : 0;
+
+            // RFC adapter returns clean 0-indexed JSON arrays with NO header row;
+            // loop must start at i=0 (matches the pattern in ZoneList parsing).
+            for (int i = 0; i < totalEtRecords; i++) {
+                PicklistData etData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(i).toString(), PicklistData.class);
+                if (etData == null || etData.getArticle() == null) {
+                    continue;
                 }
+                etDataMap.put(etData.getArticle() + "-" + etData.getStore(), etData);
             }
-            if(totalEanRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEanRecords; recordIndex++){
-                    HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
-                    eanDataMap.put(eanData.getLgean11(), eanData);
+            for (int i = 0; i < totalEanRecords; i++) {
+                HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(i).toString(), HUEANData.class);
+                if (eanData == null || eanData.getLgean11() == null) {
+                    continue;
                 }
+                eanDataMap.put(eanData.getLgean11(), eanData);
             }
-            if(totalEtRecords > 0 && totalEanRecords > 0){
+
+            if (!etDataMap.isEmpty() && !eanDataMap.isEmpty()) {
+                UIFuncs.disableInput(con, txt_scan_crate);
                 UIFuncs.enableInput(con, txt_scan_article);
+                txt_scan_article.requestFocus();
                 return;
-            }else{
+            } else {
                 box.getBox("No Records Found", "No data available for scan");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            handleException(e);
         }
         txt_crate.setText("");
         txt_scan_crate.requestFocus();
     }
 
-    private void validateArticleScan(String barcode){
-        if(eanDataMap.containsKey(barcode)){
+    // ─── Step 3: validate scanned barcode against the loaded ET data ───────────
+
+    private void validateArticleScan(String barcode) {
+        if (eanDataMap.containsKey(barcode)) {
             String matnr = eanDataMap.get(barcode).getLgmatnr();
             PicklistData scanData = null;
-            for (Map.Entry<String, PicklistData> dataEntry: etDataMap.entrySet()) {
-                if(dataEntry.getValue().getArticle().equalsIgnoreCase(matnr)){
+            for (Map.Entry<String, PicklistData> dataEntry : etDataMap.entrySet()) {
+                if (dataEntry.getValue().getArticle().equalsIgnoreCase(matnr)) {
                     scanData = dataEntry.getValue();
-                    if(scanData.getSqty() == 0){
+                    if (scanData.getSqty() == 0) {
                         break;
                     }
                 }
             }
-            if(scanData != null){
+            if (scanData != null) {
                 double qty = Double.parseDouble(scanData.getQuantity());
-                if(scanData.getSqty() == 1){
+                if (scanData.getSqty() == 1) {
                     box.getBox("All Scanned", String.format("Max allowed Qty of %s already scanned. Please scan different barcode", UIFuncs.removeLeadingZeros(matnr)));
-                }else{
+                } else {
                     txt_article.setText(matnr);
                     txt_proposed_store.setText(scanData.getStore());
+                    txt_store_floor.setText(scanData.getFloor() == null ? "" : scanData.getFloor());
                     txt_scan_hu.setText("");
+                    txt_hu.setText("");
                     this.currentScan = scanData;
                     calculatePendingQty(qty);
+                    UIFuncs.disableInput(con, txt_scan_article);
                     UIFuncs.enableInput(con, txt_scan_hu);
+                    txt_scan_hu.requestFocus();
                     return;
                 }
-            }else{
+            } else {
                 box.getBox("Invalid", String.format("Article %s is invalid and not found in ET Records", matnr));
             }
-        }else{
+        } else {
             box.getBox("Invalid", "Scanned Barcode is invalid and not available in EAN Records");
         }
         txt_scan_article.setText("");
         txt_scan_article.requestFocus();
     }
 
-    private void calculatePendingQty(double qty){
-        for (Map.Entry<String, PicklistData> dataEntry: etDataMap.entrySet()) {
+    private void calculatePendingQty(double qty) {
+        if (currentScan == null) {
+            txt_pending_qty.setText(Util.formatDouble(qty));
+            return;
+        }
+        for (Map.Entry<String, PicklistData> dataEntry : etDataMap.entrySet()) {
             PicklistData data = dataEntry.getValue();
-            if(data.getSqty() == 1) continue;
-            if(!dataEntry.getKey().equalsIgnoreCase(this.currentScan.getArticle()+"-"+this.currentScan.getStore()) &&
-                    dataEntry.getKey().startsWith(this.currentScan.getArticle()+"-")){
+            if (data.getSqty() == 1) continue;
+            if (!dataEntry.getKey().equalsIgnoreCase(currentScan.getArticle() + "-" + currentScan.getStore())
+                    && dataEntry.getKey().startsWith(currentScan.getArticle() + "-")) {
                 qty += Double.parseDouble(data.getQuantity());
             }
         }
         txt_pending_qty.setText(Util.formatDouble(qty));
     }
 
-    private JSONObject getScanDataToSubmit(String hu){
-        try {
-            if (currentScan == null) {
-                box.getBox("Empty Request", "Noting to submit, please scan some articles");
-                txt_scan_article.requestFocus();
-                return null;
-            }
-            this.currentScan.setHu(hu);
-            this.currentScan.setZone(dd_zone_list.getSelectedItem().toString());
-            return new JSONObject(new Gson().toJson(this.currentScan));
-        }catch (Exception exce){
-            box.getErrBox(exce);
-        }
-        return null;
+    // ─── Step 4: validate the scanned HU and post the put-away ─────────────────
+    // IS_DATA = single JSON object (RFC adaptor contract), same shape as SAP ZWM_PTL_MSA_CRATE_ST export.
+
+    private static String nz(String s) {
+        return s == null ? "" : s.trim();
     }
 
-    private void validateZoneHU(String hu){
-        JSONObject args = new JSONObject();
+    /** SAP MENGE-style: always three decimals (e.g. {@code "5.000"}). */
+    private static String sapMenge3(double v) {
+        return String.format(Locale.US, "%.3f", v);
+    }
+
+    /** NUMC-style: pad with leading zeros to {@code len}; empty → all zeros. */
+    private static String sapNumc(String value, int len) {
+        String s = nz(value);
+        if (s.isEmpty()) {
+            char[] z = new char[len];
+            java.util.Arrays.fill(z, '0');
+            return new String(z);
+        }
+        if (s.length() > len) {
+            return s.substring(s.length() - len);
+        }
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = s.length(); i < len; i++) {
+            sb.append('0');
+        }
+        sb.append(s);
+        return sb.toString();
+    }
+
+    private static double parseMenge(String q) {
         try {
-            args.put("bapiname", Vars.ZWM_PTL_ZONE_HU_VALIDATE);
-            args.put("IM_WERKS", WERKS);
-            args.put("IM_USER", USER);
-            JSONObject itData = getScanDataToSubmit(hu);
-            if(itData != null){
-                itData.put("QUANTITY", Util.formatDouble((Double.parseDouble(this.currentScan.getQuantity()) - 1)));
-                args.put("IS_DATA", itData);
-                showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_HU_VALIDATE, REQUEST_VALIDATE_ZONE_HU, args);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            UIFuncs.errorSound(con);
-            if (dialog != null) {
-                dialog.dismiss();
-                dialog = null;
-            }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+            return Double.parseDouble(nz(q).replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return 0.0;
         }
     }
+
+    /**
+     * Builds {@code IS_DATA} as one JSON object (not an array), matching the adaptor payload
+     * shape used for {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3}.
+     */
+    private JSONObject buildIsDataObjectForZoneHuValidate(String huRaw) {
+        if (currentScan == null) {
+            box.getBox("Empty Request", "Nothing to submit, please scan some articles");
+            txt_scan_article.requestFocus();
+            return null;
+        }
+        String hu = huRaw == null ? "" : huRaw.trim().toUpperCase();
+        if (hu.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "HU cannot be blank. Please scan HU again.");
+            return null;
+        }
+        if (nz(validatedStation).isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Station is missing. Please scan FLR Station again.");
+            return null;
+        }
+
+        PicklistData p = currentScan;
+
+        String crateVal = nz(p.getCrate());
+        if (crateVal.isEmpty()) {
+            crateVal = nz(p.getMsaCrate());
+        }
+        if (crateVal.isEmpty()) {
+            crateVal = UIFuncs.toUpperTrim(txt_crate);
+        }
+        String msaCrateVal = nz(p.getMsaCrate());
+        if (msaCrateVal.isEmpty()) {
+            msaCrateVal = crateVal;
+        }
+
+        String article = nz(p.getArticle());
+        if (article.isEmpty()) {
+            article = UIFuncs.toUpperTrim(txt_article);
+        }
+        String store = nz(p.getStore());
+        if (store.isEmpty()) {
+            store = UIFuncs.toUpperTrim(txt_proposed_store);
+        }
+        String floor = p.getFloor() == null ? "" : nz(p.getFloor());
+        if (floor.isEmpty()) {
+            floor = UIFuncs.toUpperTrim(txt_store_floor);
+        }
+
+        if (crateVal.isEmpty() || article.isEmpty() || store.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Crate, article or store is missing. Rescan crate/article.");
+            return null;
+        }
+
+        // Preserve ET row values before mutating for this RFC.
+        String zoneFromRow = nz(p.getZone());
+        double openQty = parseMenge(p.getQuantity());
+        double scanQtyFromRow = parseMenge(p.getScanQty());
+        double scanQtyForRfc = scanQtyFromRow > 0 ? scanQtyFromRow : (openQty > 0 ? openQty : scanQtyFromRow);
+
+        p.setHu(hu);
+        p.setZone(validatedStation);
+
+        JSONObject isData = new JSONObject();
+        try {
+            isData.put("PICKLIST", nz(p.getPicklist()));
+            isData.put("BIN", nz(p.getBin()));
+            isData.put("MSA_CRATE", msaCrateVal);
+            isData.put("ARTICLE", article);
+            isData.put("QUANTITY", sapMenge3(openQty));
+            isData.put("ETYPE", nz(p.getEType()));
+            isData.put("WAVE", nz(p.getWave()));
+            isData.put("TANUM", sapNumc(p.getTanum(), 10));
+            isData.put("PALATE", nz(p.getPalate()));
+            isData.put("CRATE", crateVal);
+            isData.put("STORE", store);
+            isData.put("ITEMNO", sapNumc(p.getItemNo(), 6));
+            isData.put("EBELN", nz(p.getEbeln()));
+            isData.put("EBELP", sapNumc(p.getEbelp(), 5));
+            isData.put("TAG", nz(p.getTag()));
+            isData.put("HU", hu);
+            isData.put("ZONE", zoneFromRow);
+            isData.put("PLANT", nz(p.getPlant()));
+            isData.put("SCAN_QTY", sapMenge3(scanQtyForRfc));
+            isData.put("ZONE_STATION", nz(validatedStation));
+            isData.put("MATKL", nz(p.getMatkl()));
+            isData.put("DIVISION", nz(p.getDivision()));
+            isData.put("FLOOR", floor);
+        } catch (JSONException e) {
+            handleException(e);
+            return null;
+        }
+        return isData;
+    }
+
+    private void validateZoneHU(String hu) {
+        JSONObject args = new JSONObject();
+        try {
+            lastHuSubmitted = "";
+            JSONObject isData = buildIsDataObjectForZoneHuValidate(hu);
+            if (isData == null) {
+                endHuValidateInFlight();
+                return;
+            }
+            args.put("bapiname", Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3);
+            args.put("IM_USER", USER);
+            args.put("IM_WERKS", WERKS);
+            args.put("IS_DATA", isData);
+            lastHuSubmitted = isData.optString("HU", "");
+            Log.d(TAG, "ZWM_PTL_ZONE_HU_VALIDATE_V3 IS_DATA -> " + isData.toString());
+            showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3, REQUEST_VALIDATE_ZONE_HU, args);
+        } catch (JSONException e) {
+            endHuValidateInFlight();
+            handleException(e);
+        }
+    }
+
+    private void onHuPutawaySuccess(String scannedHu) {
+        endHuValidateInFlight();
+        if (currentScan == null) {
+            // Defensive — should not happen because Scan HU is gated on currentScan.
+            txt_scan_article.setText("");
+            txt_scan_hu.setText("");
+            UIFuncs.enableInput(con, txt_scan_article);
+            UIFuncs.disableInput(con, txt_scan_hu);
+            txt_scan_article.requestFocus();
+            return;
+        }
+        txt_hu.setText(scannedHu);
+
+        double remaining = Double.parseDouble(currentScan.getQuantity()) - 1;
+        if (remaining <= 0) {
+            currentScan.setSqty(1);
+            remaining = 0;
+        }
+        currentScan.setQuantity(Util.formatDouble(remaining));
+        calculatePendingQty(remaining);
+
+        // Whole crate finished? → reset back to "Scan Crate".
+        if (isCrateFullyScanned()) {
+            box.getBox("Crate Done", "All articles for this crate have been put away. Please scan next Crate.",
+                    (d, w) -> clearForNextCrate());
+            return;
+        }
+
+        currentScan = null;
+        txt_scan_article.setText("");
+        txt_scan_hu.setText("");
+        UIFuncs.disableInput(con, txt_scan_hu);
+        UIFuncs.enableInput(con, txt_scan_article);
+        txt_scan_article.requestFocus();
+    }
+
+    private boolean isCrateFullyScanned() {
+        if (etDataMap == null || etDataMap.isEmpty()) {
+            return false;
+        }
+        for (PicklistData d : etDataMap.values()) {
+            if (d.getSqty() != 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ─── Networking ────────────────────────────────────────────────────────────
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
 
@@ -578,7 +842,10 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 try {
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
-                    dialog.dismiss();
+                    if (dialog != null) {
+                        dialog.dismiss();
+                        dialog = null;
+                    }
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
                 }
@@ -589,7 +856,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private void submitRequest(String rfc, int request, JSONObject args) {
 
         final RequestQueue mRequestQueue;
-        JsonObjectRequest mJsonRequest = null;
+        JsonObjectRequest mJsonRequest;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
@@ -609,55 +876,58 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 Log.d(TAG, "response ->" + responsebody);
 
                 if (responsebody == null) {
-                    UIFuncs.errorSound(con);
-                    AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "No response from Server");
-                } else if (responsebody.equals("") || responsebody.equals("null") || responsebody.equals("{}")) {
-                    UIFuncs.errorSound(con);
-                    AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "Unable to Connect Server/ Empty Response");
-                    return;
-                } else {
-                    try {
-                        if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
-                            JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
-                            if (returnobj != null) {
-                                String type = returnobj.getString("TYPE");
-                                if (type != null) {
-                                    if (type.equals("E")) {
-                                        UIFuncs.errorSound(getContext());
-                                        AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"));
-                                        if (request == REQUEST_VALIDATE_ZONE_CRATE) {
-                                            txt_scan_crate.setText("");
-                                            txt_scan_crate.requestFocus();
-                                        }
-                                        else if(request == REQUEST_VALIDATE_ZONE_HU){
-                                            txt_scan_hu.setText("");
-                                            txt_scan_hu.requestFocus();
-                                        }
-                                    } else {
-                                        if(request == REQUEST_ZONE_LIST){
-                                            setZoneList(responsebody);
-                                        }
-                                        else if (request == REQUEST_VALIDATE_ZONE_CRATE) {
-                                            setEtEanData(responsebody);
-                                            return;
-                                        }
-                                        else if (request == REQUEST_VALIDATE_ZONE_HU) {
-                                            clear(false);
-                                            return;
-                                        }
-                                    }
-                                }
-                                return;
-                            }
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        AlertBox box = new AlertBox(getContext());
-                        box.getErrBox(e);
+                    if (request == REQUEST_VALIDATE_ZONE_HU) {
+                        endHuValidateInFlight();
                     }
+                    UIFuncs.errorSound(con);
+                    new AlertBox(getContext()).getBox("Err", "No response from Server");
+                    return;
+                }
+                String asString = responsebody.toString();
+                if (asString.equals("") || asString.equals("null") || asString.equals("{}")) {
+                    if (request == REQUEST_VALIDATE_ZONE_HU) {
+                        endHuValidateInFlight();
+                    }
+                    UIFuncs.errorSound(con);
+                    new AlertBox(getContext()).getBox("Err", "Unable to Connect Server/ Empty Response");
+                    return;
+                }
+                try {
+                    if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
+                        JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
+                        if (returnobj == null) {
+                            if (request == REQUEST_VALIDATE_ZONE_HU) {
+                                endHuValidateInFlight();
+                            }
+                            return;
+                        }
+                        String type = returnobj.optString("TYPE", "");
+                        if ("E".equals(type)) {
+                            UIFuncs.errorSound(getContext());
+                            new AlertBox(getContext()).getBox("Err", returnobj.optString("MESSAGE", "Server error"));
+                            handleErrorReset(request);
+                            return;
+                        }
+                        // Success path
+                        if (request == REQUEST_VALIDATE_STATION) {
+                            String scanned = UIFuncs.toUpperTrim(txt_scan_station);
+                            onStationValidated(scanned, responsebody);
+                        } else if (request == REQUEST_VALIDATE_STATION_CRATE) {
+                            setEtEanData(responsebody);
+                        } else if (request == REQUEST_VALIDATE_ZONE_HU) {
+                            onHuPutawaySuccess(lastHuSubmitted);
+                        }
+                    } else if (request == REQUEST_VALIDATE_ZONE_HU) {
+                        endHuValidateInFlight();
+                        UIFuncs.errorSound(con);
+                        new AlertBox(getContext()).getBox("Err", "Invalid server response (missing EX_RETURN).");
+                    }
+                } catch (JSONException e) {
+                    if (request == REQUEST_VALIDATE_ZONE_HU) {
+                        endHuValidateInFlight();
+                    }
+                    e.printStackTrace();
+                    new AlertBox(getContext()).getErrBox(e);
                 }
             }
         }, volleyErrorListener()) {
@@ -673,10 +943,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
             @Override
             protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
-
                 Response<JSONObject> res = super.parseNetworkResponse(response);
                 Log.d(TAG, "Network response -> " + res.toString());
-
                 return res;
             }
         };
@@ -692,14 +960,12 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             }
 
             @Override
-            public void retry(VolleyError error) throws VolleyError {
-
-            }
+            public void retry(VolleyError error) throws VolleyError { }
         });
         mRequestQueue.add(mJsonRequest);
         Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         Log.d(TAG, "jsonRequest getBodyContentType->" + mJsonRequest.getBodyContentType());
-        Log.d(TAG, "jsonRequest getBody->" + mJsonRequest.getBody().toString());
+        Log.d(TAG, "jsonRequest getBody->" + new String(mJsonRequest.getBody()));
         Log.d(TAG, "jsonRequest getMethod->" + mJsonRequest.getMethod());
         try {
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
@@ -709,9 +975,31 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 dialog.dismiss();
                 dialog = null;
             }
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(authFailureError);
+            new AlertBox(getContext()).getErrBox(authFailureError);
         }
+    }
+
+    private void handleErrorReset(int request) {
+        if (request == REQUEST_VALIDATE_STATION) {
+            txt_scan_station.setText("");
+            txt_scan_station.requestFocus();
+        } else if (request == REQUEST_VALIDATE_STATION_CRATE) {
+            txt_scan_crate.setText("");
+            txt_scan_crate.requestFocus();
+        } else if (request == REQUEST_VALIDATE_ZONE_HU) {
+            endHuValidateInFlight();
+            txt_scan_hu.requestFocus();
+        }
+    }
+
+    private void handleException(Exception e) {
+        e.printStackTrace();
+        UIFuncs.errorSound(con);
+        if (dialog != null) {
+            dialog.dismiss();
+            dialog = null;
+        }
+        new AlertBox(getContext()).getErrBox(e);
     }
 
     Response.ErrorListener volleyErrorListener() {
@@ -720,11 +1008,10 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             public void onErrorResponse(VolleyError error) {
 
                 Log.i(TAG, "Error :" + error.toString());
-                String err = "";
+                String err;
 
                 if (error instanceof TimeoutError || error instanceof NoConnectionError) {
                     err = "Communication Error!";
-
                 } else if (error instanceof AuthFailureError) {
                     err = "Authentication Error!";
                 } else if (error instanceof ServerError) {
@@ -733,14 +1020,18 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                     err = "Network Error!";
                 } else if (error instanceof ParseError) {
                     err = "Parse Error!";
-                } else err = error.toString();
+                } else {
+                    err = error.toString();
+                }
 
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
                 }
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("Err", err);
+                if (huValidateInFlight) {
+                    endHuValidateInFlight();
+                }
+                new AlertBox(getContext()).getBox("Err", err);
             }
         };
     }

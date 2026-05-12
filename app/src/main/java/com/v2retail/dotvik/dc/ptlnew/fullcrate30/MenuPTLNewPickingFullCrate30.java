@@ -118,7 +118,7 @@ public class MenuPTLNewPickingFullCrate30 extends Fragment implements View.OnCli
                 fragment = FragmentPTLNewHUZoneStoreMapping.newInstance("full-crate");
                 break;
             case R.id.ptl_new_full_crate_receive_at_zone:
-                fragment = FragmentPTLNewFullCrateReceiveAtZone.newInstance("Receive at Zone");
+                fragment = FragmentPTLNewReceiveAtZone.newInstance();
                 break;
         }
         if (fragment != null) {

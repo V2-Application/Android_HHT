@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentManager;
 
 import android.os.Handler;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -19,7 +20,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -53,31 +53,43 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * PTL — Receive at FLR STA. User scans pallet → {@link Vars#ZWM_PTL_PLT_VAL_AT_ZONE_FL} returns
+ * HUB, crate count, and hub station list / default station to bind on screen → {@link Vars#ZWM_PTL_PLT_REC_AT_ZONE_FL} saves.
+ */
 public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClickListener {
 
-    private static final int REQUEST_ZONE_LIST = 1500;
-    private static final int REQUEST_VALIDATE_ZONE_PALLATE = 1501;
+    private static final int REQUEST_VALIDATE_PALLET = 1501;
+    private static final int REQUEST_SAVE = 1502;
 
     private static final String TAG = FragmentPTLNewReceiveAtZone.class.getName();
 
     View rootView;
-    String URL="";
-    String WERKS="";
-    String USER="";
+    String URL = "";
+    String WERKS = "";
+    String USER = "";
     Context con;
     AlertBox box;
     ProgressDialog dialog;
     FragmentManager fm;
 
-    List<String> zones = new ArrayList<String>();
-    ArrayAdapter<String> zoneAdapter;
+    List<String> stations = new ArrayList<>();
+    ArrayAdapter<String> stationsAdapter;
 
     boolean spinnerTouched = false;
+    /** True while updating the hub-station spinner from the validate RFC (avoid treating as user change). */
+    boolean bindingStationFromServer = false;
 
-    Spinner dd_zone_list;
-
+    Spinner dd_hub_station;
     Button btn_back;
-    EditText txt_scan_pallate, txt_pallate, txt_scanned_pallate, txt_crate_in_pallate;
+    Button btn_save;
+    EditText txt_scan_pallate;
+    EditText txt_pallate;
+    EditText txt_hub;
+    EditText txt_crate_in_pallate;
+
+    /** Pallet confirmed by validate RFC; required for SAVE. */
+    String validatedPalette = "";
 
     public FragmentPTLNewReceiveAtZone() {
     }
@@ -95,7 +107,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
     @Override
     public void onResume() {
         super.onResume();
-        ((Process_Selection_Activity) getActivity()).setActionBarTitle("PTL-Receive at Zone");
+        ((Process_Selection_Activity) getActivity()).setActionBarTitle("PTL- Receive at FLR STA");
     }
 
     @Override
@@ -103,45 +115,50 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                              Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_ptl_new_receive_at_zone, container, false);
         con = getContext();
-        box=new AlertBox(con);
-        dialog=new ProgressDialog(con);
-        SharedPreferencesData data=new SharedPreferencesData(con);
-        URL=data.read("URL");
-        WERKS=data.read("WERKS");
-        USER=data.read("USER");
+        box = new AlertBox(con);
+        dialog = new ProgressDialog(con);
+        SharedPreferencesData data = new SharedPreferencesData(con);
+        URL = data.read("URL");
+        WERKS = data.read("WERKS");
+        USER = data.read("USER");
         FragmentActivity activity = getActivity();
 
-        dd_zone_list = rootView.findViewById(R.id.ptl_new_receive_at_zone_dd_zone);
-        dd_zone_list.setSelection(0);
+        dd_hub_station = rootView.findViewById(R.id.ptl_new_receive_at_zone_dd_hub_station);
+        dd_hub_station.setSelection(0);
 
         txt_scan_pallate = rootView.findViewById(R.id.txt_ptl_new_receive_at_zone_scan_pallate);
         txt_pallate = rootView.findViewById(R.id.txt_ptl_new_receive_at_zone_pallate);
-        txt_scanned_pallate = rootView.findViewById(R.id.txt_ptl_new_receive_at_zone_scanned_pallate);
+        txt_hub = rootView.findViewById(R.id.txt_ptl_new_receive_at_zone_hub);
         txt_crate_in_pallate = rootView.findViewById(R.id.txt_ptl_new_receive_at_zone_crate_in_pallate);
 
         btn_back = rootView.findViewById(R.id.btn_ptl_new_receive_at_zone_back);
+        btn_save = rootView.findViewById(R.id.btn_ptl_new_receive_at_zone_save);
 
         btn_back.setOnClickListener(this);
+        btn_save.setOnClickListener(this);
 
-        zoneAdapter = new ArrayAdapter<String>(activity,android.R.layout.simple_list_item_1, zones);
-        zoneAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        dd_zone_list.setAdapter(zoneAdapter);
-        dd_zone_list.setOnTouchListener((v,me) -> {spinnerTouched = true; v.performClick(); return false;});
+        stationsAdapter = new ArrayAdapter<>(activity, android.R.layout.simple_list_item_1, stations);
+        stationsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dd_hub_station.setAdapter(stationsAdapter);
+        dd_hub_station.setOnTouchListener((v, me) -> {
+            spinnerTouched = true;
+            v.performClick();
+            return false;
+        });
 
-        dd_zone_list.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        dd_hub_station.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (spinnerTouched) {
-                    if(dd_zone_list.getSelectedItem() != null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                        UIFuncs.enableInput(con, txt_scan_pallate);
-                    }
-                    spinnerTouched = false;
+                if (bindingStationFromServer) {
+                    return;
                 }
+                // Do NOT clear fields on hub-station selection.
+                // User requested: clear only after Save success → OK click.
+                spinnerTouched = false;
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-
             }
         });
 
@@ -152,9 +169,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_pallate);
                     if (!value.isEmpty()) {
-                        if(dd_zone_list.getSelectedItem() !=null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                            validateZonePallate();
-                        }
+                        validatePalette(value);
                         return true;
                     }
                 }
@@ -166,7 +181,6 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
             }
 
             @Override
@@ -182,37 +196,135 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
-                    if(dd_zone_list.getSelectedItem() !=null && !dd_zone_list.getSelectedItem().toString().isEmpty()){
-                        validateZonePallate();
-                    }
+                    validatePalette(value);
                 }
             }
         });
 
-        getZoneList();
-        UIFuncs.disableInput(con, txt_scan_pallate);
+        stations.clear();
+        stations.add("Select");
+        stationsAdapter.notifyDataSetChanged();
+        dd_hub_station.setSelection(0);
+        UIFuncs.enableInput(con, txt_scan_pallate);
         return rootView;
+    }
+
+    private boolean hasHubStationSelected() {
+        if (dd_hub_station.getSelectedItem() == null) {
+            return false;
+        }
+        String st = dd_hub_station.getSelectedItem().toString().trim();
+        return !st.isEmpty() && !"Select".equalsIgnoreCase(st);
+    }
+
+    private void clearValidationFields() {
+        validatedPalette = "";
+        txt_scan_pallate.setText("");
+        txt_pallate.setText("");
+        txt_hub.setText("");
+        txt_crate_in_pallate.setText("");
+        bindingStationFromServer = true;
+        stations.clear();
+        stations.add("Select");
+        stationsAdapter.notifyDataSetChanged();
+        dd_hub_station.setSelection(0);
+        bindingStationFromServer = false;
     }
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_ptl_new_receive_at_zone_back:
-                box.confirmBack(fm, con);
-                break;
+        int id = view.getId();
+        if (id == R.id.btn_ptl_new_receive_at_zone_back) {
+            box.confirmBack(fm, con);
+        } else if (id == R.id.btn_ptl_new_receive_at_zone_save) {
+            saveReceiveAtFlrSta();
         }
     }
 
-    private void getZoneList(){
+    /**
+     * Fills HUB Station spinner from validate RFC.
+     *
+     * RFC table (per SAP): ET_ST_ZONE-ZONE_STATION
+     * Fallbacks: ET_DATA-HUB_STN, exports EX_HUBSTN / EX_HUB_STN / ZONE_STATION.
+     */
+    private void bindHubStationFromValidateResponse(JSONObject responsebody) throws JSONException {
+        List<String> list = new ArrayList<>();
+        list.add("Select");
+
+        String preferred = responsebody.optString("EX_HUBSTN", "").trim();
+        if (preferred.isEmpty()) {
+            preferred = responsebody.optString("EX_HUB_STN", "").trim();
+        }
+        if (preferred.isEmpty()) {
+            preferred = responsebody.optString("ZONE_STATION", "").trim();
+        }
+
+        if (responsebody.has("ET_ST_ZONE") && responsebody.get("ET_ST_ZONE") instanceof JSONArray) {
+            JSONArray et = responsebody.getJSONArray("ET_ST_ZONE");
+            for (int i = 0; i < et.length(); i++) {
+                JSONObject row = et.optJSONObject(i);
+                if (row == null) {
+                    continue;
+                }
+                String stn = row.optString("ZONE_STATION", "").trim();
+                if (!stn.isEmpty() && !list.contains(stn)) {
+                    list.add(stn);
+                }
+            }
+        }
+
+        if (responsebody.has("ET_DATA") && responsebody.get("ET_DATA") instanceof JSONArray) {
+            JSONArray et = responsebody.getJSONArray("ET_DATA");
+            for (int i = 0; i < et.length(); i++) {
+                JSONObject row = et.optJSONObject(i);
+                if (row == null) {
+                    continue;
+                }
+                String stn = row.optString("HUB_STN", "").trim();
+                if (stn.isEmpty()) {
+                    stn = row.optString("HUBSTN", "").trim();
+                }
+                if (!stn.isEmpty() && !list.contains(stn)) {
+                    list.add(stn);
+                }
+            }
+        }
+
+        if (!preferred.isEmpty() && !list.contains(preferred)) {
+            list.add(preferred);
+        }
+
+        bindingStationFromServer = true;
+        stations.clear();
+        stations.addAll(list);
+        stationsAdapter.notifyDataSetChanged();
+        dd_hub_station.setEnabled(true);
+
+        int selectIdx = 0;
+        if (!preferred.isEmpty()) {
+            int idx = stations.indexOf(preferred);
+            if (idx >= 0) {
+                selectIdx = idx;
+            }
+        } else if (stations.size() == 2) {
+            selectIdx = 1;
+        }
+        dd_hub_station.setSelection(selectIdx);
+        bindingStationFromServer = false;
+    }
+
+    private void validatePalette(String palette) {
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_PTL_GET_ZONE);
+            args.put("bapiname", Vars.ZWM_PTL_PLT_VAL_AT_ZONE_FL);
             args.put("IM_USER", USER);
-            args.put("IM_ZONE", null);
-            showProcessingAndSubmit(Vars.ZWM_PTL_GET_ZONE, REQUEST_ZONE_LIST, args);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_PALETTE", palette);
+            showProcessingAndSubmit(Vars.ZWM_PTL_PLT_VAL_AT_ZONE_FL, REQUEST_VALIDATE_PALLET, args);
         } catch (JSONException e) {
             e.printStackTrace();
-            if(dialog!=null) {
+            UIFuncs.errorSound(con);
+            if (dialog != null) {
                 dialog.dismiss();
                 dialog = null;
             }
@@ -221,40 +333,27 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
         }
     }
 
-    public void setZoneList(JSONObject responsebody){
-        try
-        {
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_ZONE");
-            int totalEtRecords = ET_DATA_ARRAY.length() - 1;
-            if(totalEtRecords > 0){
-                zones.clear();
-                zones.add("Select");
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    zones.add(ET_RECORD.getString("ZONE"));
-                }
-                ((BaseAdapter) dd_zone_list.getAdapter()).notifyDataSetChanged();
-                dd_zone_list.setEnabled(true);
-                dd_zone_list.invalidate();
-                dd_zone_list.setSelection(0);
-                dd_zone_list.requestFocus();
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
+    private void saveReceiveAtFlrSta() {
+        if (TextUtils.isEmpty(validatedPalette)) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Validate pallet by scanning first");
+            return;
         }
-    }
-
-    private void validateZonePallate(){
+        if (!hasHubStationSelected()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Select HUB Station");
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_PTL_ZONE_REC);
-            args.put("IM_PLANT", WERKS);
+            args.put("bapiname", Vars.ZWM_PTL_PLT_REC_AT_ZONE_FL);
             args.put("IM_USER", USER);
-            args.put("IM_PALATTE", UIFuncs.toUpperTrim(txt_scan_pallate));
-            args.put("IM_ZONE", dd_zone_list.getSelectedItem().toString());
-            showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_REC, REQUEST_VALIDATE_ZONE_PALLATE, args);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_PALETTE", validatedPalette);
+            // Selected ZONE_STATION from dropdown
+            args.put("IM_ZONE_STATION", dd_hub_station.getSelectedItem().toString());
+            args.put("IM_HUB", WERKS);
+            showProcessingAndSubmit(Vars.ZWM_PTL_PLT_REC_AT_ZONE_FL, REQUEST_SAVE, args);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);
@@ -293,7 +392,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
     private void submitRequest(String rfc, int request, JSONObject args) {
 
         final RequestQueue mRequestQueue;
-        JsonObjectRequest mJsonRequest = null;
+        JsonObjectRequest mJsonRequest;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
@@ -320,7 +419,6 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                     UIFuncs.errorSound(con);
                     AlertBox box = new AlertBox(getContext());
                     box.getBox("Err", "Unable to Connect Server/ Empty Response");
-                    return;
                 } else {
                     try {
                         if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
@@ -328,29 +426,41 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                             if (returnobj != null) {
                                 String type = returnobj.getString("TYPE");
                                 if (type != null) {
-                                    if (type.equals("E")) {
+                                        if (type.equals("E")) {
                                         UIFuncs.errorSound(getContext());
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
-                                        if (request == REQUEST_VALIDATE_ZONE_PALLATE) {
-                                            txt_scan_pallate.setText("");
+                                        if (request == REQUEST_VALIDATE_PALLET) {
+                                            clearValidationFields();
                                             txt_scan_pallate.requestFocus();
                                         }
                                     } else {
-                                        if(request == REQUEST_ZONE_LIST){
-                                            setZoneList(responsebody);
-                                        }
-                                        else if (request == REQUEST_VALIDATE_ZONE_PALLATE) {
-                                            txt_pallate.setText(UIFuncs.toUpperTrim(txt_scan_pallate));
+                                        if (request == REQUEST_VALIDATE_PALLET) {
+                                            validatedPalette = UIFuncs.toUpperTrim(txt_scan_pallate);
+                                            txt_pallate.setText(validatedPalette);
+                                            txt_hub.setText(responsebody.optString("EX_HUB", "").trim());
+                                            String countRaw = "";
+                                            if (responsebody.has("EX_COUNT")) {
+                                                Object c = responsebody.get("EX_COUNT");
+                                                countRaw = c != null ? String.valueOf(c) : "";
+                                            }
+                                            txt_crate_in_pallate.setText(UIFuncs.removeLeadingZeros(countRaw));
+                                            try {
+                                                bindHubStationFromValidateResponse(responsebody);
+                                            } catch (JSONException e) {
+                                                Log.e(TAG, "bindHubStationFromValidateResponse", e);
+                                                bindingStationFromServer = false;
+                                            }
                                             txt_scan_pallate.setText("");
-                                            txt_scanned_pallate.setText("1");
-                                            txt_crate_in_pallate.setText(UIFuncs.removeLeadingZeros(responsebody.getString("EX_COUNT")));
-                                            dd_zone_list.requestFocus();
-                                            return;
+                                            txt_scan_pallate.requestFocus();
+                                        } else if (request == REQUEST_SAVE) {
+                                            box.getBox("Ok", returnobj.optString("MESSAGE", "Saved"), (d, w) -> {
+                                                clearValidationFields();
+                                                txt_scan_pallate.requestFocus();
+                                            });
                                         }
                                     }
                                 }
-                                return;
                             }
                         }
                     } catch (JSONException e) {
@@ -420,7 +530,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
             public void onErrorResponse(VolleyError error) {
 
                 Log.i(TAG, "Error :" + error.toString());
-                String err = "";
+                String err;
 
                 if (error instanceof TimeoutError || error instanceof NoConnectionError) {
                     err = "Communication Error!";

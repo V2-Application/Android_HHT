@@ -25,7 +25,7 @@ android {
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
             def versionName = variant.versionName.replace('.', '_')
-            def customText = "V2R"
+            def customText = "V2_HHT_Azure"
             def newName = "${customText}_${versionName}.apk"
             outputFileName = newName
         }

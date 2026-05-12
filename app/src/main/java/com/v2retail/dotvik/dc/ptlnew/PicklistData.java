@@ -52,6 +52,18 @@ public class PicklistData {
     @SerializedName("STORE")
     private String store;
 
+    @SerializedName("FLOOR")
+    private String floor;
+
+    @SerializedName("MATKL")
+    private String matkl;
+
+    @SerializedName("DIVISION")
+    private String division;
+
+    @SerializedName("PLANT")
+    private String plant;
+
     @SerializedName("TAG")
     private String tag;
 
@@ -123,6 +135,18 @@ public class PicklistData {
     public String getStore() { return store; }
     public void setStore(String store) { this.store = store; }
 
+    public String getFloor() { return floor; }
+    public void setFloor(String floor) { this.floor = floor; }
+
+    public String getMatkl() { return matkl; }
+    public void setMatkl(String matkl) { this.matkl = matkl; }
+
+    public String getDivision() { return division; }
+    public void setDivision(String division) { this.division = division; }
+
+    public String getPlant() { return plant; }
+    public void setPlant(String plant) { this.plant = plant; }
+
     public String getTag() { return tag; }
     public void setTag(String tag) { this.tag = tag; }
 
@@ -164,7 +188,12 @@ public class PicklistData {
         copy.setArticle(source.getArticle());
         copy.setCrate(source.getCrate());
         copy.setStore(source.getStore());
+        copy.setFloor(source.getFloor());
+        copy.setMatkl(source.getMatkl());
+        copy.setDivision(source.getDivision());
+        copy.setPlant(source.getPlant());
         copy.setTag(source.getTag());
+        copy.setScanQty(source.getScanQty());
         copy.setSqty(0);
         copy.setShortScan(false);
         copy.setConfirmShortScan(false);
@@ -197,6 +226,10 @@ public class PicklistData {
                 ", article='" + article + '\'' +
                 ", crate='" + crate + '\'' +
                 ", store='" + store + '\'' +
+                ", floor='" + floor + '\'' +
+                ", matkl='" + matkl + '\'' +
+                ", division='" + division + '\'' +
+                ", plant='" + plant + '\'' +
                 ", tag='" + tag + '\'' +
                 '}';
     }
