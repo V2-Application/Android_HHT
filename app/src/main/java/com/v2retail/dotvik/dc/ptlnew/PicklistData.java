@@ -67,6 +67,14 @@ public class PicklistData {
     @SerializedName("TAG")
     private String tag;
 
+    // v12.115 (2026-05-08): Added to match ZWM_PTL_MSA_CRATE_ST fields 20 + 24.
+    // ZWM_PTL_ZONE_HU_VALIDATE_V3 requires ZONE_STATION (zone-station code) and HUB (plant).
+    @SerializedName("ZONE_STATION")
+    private String zoneStation;
+
+    @SerializedName("HUB")
+    private String hub;
+
     private int sqty;
     @SerializedName("SCAN_QTY")
     private String scanQty;
@@ -150,6 +158,12 @@ public class PicklistData {
     public String getTag() { return tag; }
     public void setTag(String tag) { this.tag = tag; }
 
+    public String getZoneStation() { return zoneStation; }
+    public void setZoneStation(String zoneStation) { this.zoneStation = zoneStation; }
+
+    public String getHub() { return hub; }
+    public void setHub(String hub) { this.hub = hub; }
+
     public int getSqty() {
         return sqty;
     }
@@ -193,6 +207,8 @@ public class PicklistData {
         copy.setDivision(source.getDivision());
         copy.setPlant(source.getPlant());
         copy.setTag(source.getTag());
+        copy.setZoneStation(source.getZoneStation());
+        copy.setHub(source.getHub());
         copy.setScanQty(source.getScanQty());
         copy.setSqty(0);
         copy.setShortScan(false);
@@ -231,6 +247,8 @@ public class PicklistData {
                 ", division='" + division + '\'' +
                 ", plant='" + plant + '\'' +
                 ", tag='" + tag + '\'' +
+                ", zoneStation='" + zoneStation + '\'' +
+                ", hub='" + hub + '\'' +
                 '}';
     }
 }
