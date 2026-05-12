@@ -594,16 +594,85 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
         txt_scan_qty.setText(String.valueOf(qty));
     }
 
+    /** Null/blank → empty string. JSON RFC adapter prefers "" over missing keys. */
+    private static String safe(String s){
+        return s == null ? "" : s.trim();
+    }
+
+    /**
+     * v12.115 (2026-05-08): Build IS_DATA payload MANUALLY field-by-field for all
+     * 24 fields of ZWM_PTL_MSA_CRATE_ST. Previous Gson-based serialization
+     * caused SAP to return "HU Cannot Be Blank" because some fields were dropped
+     * or mapped under wrong keys. Manual JSONObject.put() guarantees:
+     *  - HU is always set explicitly from the scanned `hu` parameter
+     *  - ZONE_STATION is sent (V3 RFC reads it; PicklistData field added in this build)
+     *  - HUB defaults to WERKS (PicklistData field added in this build)
+     *  - All 24 fields are present, no nulls, no Gson surprises
+     */
     private JSONObject getScanDataToSubmit(String hu){
         try {
             if (currentScan == null) {
-                box.getBox("Empty Request", "Noting to submit, please scan some articles");
+                box.getBox("Empty Request", "Nothing to submit, please scan some articles");
                 txt_scan_article.requestFocus();
                 return null;
             }
-            this.currentScan.setHu(hu);
-            this.currentScan.setZone(dd_zone_list.getSelectedItem().toString());
-            return new JSONObject(new Gson().toJson(this.currentScan));
+            String huNorm  = hu == null ? "" : hu.trim().toUpperCase();
+            String zoneSel = dd_zone_list.getSelectedItem() != null
+                    ? dd_zone_list.getSelectedItem().toString().trim() : "";
+
+            if (huNorm.isEmpty()) {
+                Log.w(TAG, "getScanDataToSubmit called with empty HU — aborting");
+                box.getBox("HU Missing", "HU is empty. Re-scan the HU.");
+                return null;
+            }
+
+            // Persist on currentScan so any downstream code sees consistent state.
+            this.currentScan.setHu(huNorm);
+            this.currentScan.setZone(zoneSel);
+            this.currentScan.setZoneStation(zoneSel);
+            if (this.currentScan.getPlant() == null || this.currentScan.getPlant().trim().isEmpty()) {
+                this.currentScan.setPlant(WERKS);
+            }
+            if (this.currentScan.getHub() == null || this.currentScan.getHub().trim().isEmpty()) {
+                this.currentScan.setHub(WERKS);
+            }
+
+            // Build IS_DATA with explicit field-by-field mapping for ZWM_PTL_MSA_CRATE_ST.
+            JSONObject isData = new JSONObject();
+            isData.put("PICKLIST",     safe(currentScan.getPicklist()));
+            isData.put("BIN",          safe(currentScan.getBin()));
+            isData.put("MSA_CRATE",    safe(currentScan.getMsaCrate()));
+            isData.put("ARTICLE",      safe(currentScan.getArticle()));
+            isData.put("QUANTITY",     safe(currentScan.getQuantity()));
+            isData.put("ETYPE",        safe(currentScan.getEType()));
+            isData.put("WAVE",         safe(currentScan.getWave()));
+            isData.put("TANUM",        safe(currentScan.getTanum()));
+            isData.put("PALATE",       safe(currentScan.getPalate()));
+            isData.put("CRATE",        safe(currentScan.getCrate()));
+            isData.put("STORE",        safe(currentScan.getStore()));
+            isData.put("ITEMNO",       safe(currentScan.getItemNo()));
+            isData.put("EBELN",        safe(currentScan.getEbeln()));
+            isData.put("EBELP",        safe(currentScan.getEbelp()));
+            isData.put("TAG",          safe(currentScan.getTag()));
+            isData.put("HU",           huNorm);                 // explicit — required
+            isData.put("ZONE",         zoneSel);
+            isData.put("PLANT",        safe(currentScan.getPlant()));
+            isData.put("SCAN_QTY",     safe(currentScan.getScanQty()));
+            isData.put("ZONE_STATION", zoneSel);                // V3 reads this
+            isData.put("MATKL",        safe(currentScan.getMatkl()));
+            isData.put("DIVISION",     safe(currentScan.getDivision()));
+            isData.put("FLOOR",        safe(currentScan.getFloor()));
+            isData.put("HUB",          safe(currentScan.getHub()));
+
+            Log.d(TAG, "IS_DATA payload: HU=" + huNorm + " ZONE=" + zoneSel
+                    + " ZONE_STATION=" + zoneSel
+                    + " STORE=" + safe(currentScan.getStore())
+                    + " PICKLIST=" + safe(currentScan.getPicklist())
+                    + " ARTICLE=" + safe(currentScan.getArticle())
+                    + " BIN=" + safe(currentScan.getBin())
+                    + " CRATE=" + safe(currentScan.getCrate())
+                    + " | full=" + isData.toString());
+            return isData;
         }catch (Exception exce){
             box.getErrBox(exce);
         }
@@ -620,6 +689,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             JSONObject itData = getScanDataToSubmit(hu);
             if(itData != null){
                 args.put("IS_DATA", itData);
+                Log.d(TAG, "validateZoneHU rfc=" + rfc + " sending IS_DATA.HU=" + itData.optString("HU", "(missing)"));
                 showProcessingAndSubmit(rfc, REQUEST_VALIDATE_ZONE_HU, args);
             }
         } catch (JSONException e) {
