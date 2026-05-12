@@ -99,11 +99,11 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
     PicklistData currentScan = null;
 
     boolean isWoPallete = true;
-    
+
     public FragmentPTLNewWithoutPallatePutwayStorewise() {
         // Required empty public constructor
     }
-    
+
     public static FragmentPTLNewWithoutPallatePutwayStorewise newInstance(boolean isWoPallete) {
         FragmentPTLNewWithoutPallatePutwayStorewise newInstance = new FragmentPTLNewWithoutPallatePutwayStorewise();
         newInstance.isWoPallete = isWoPallete;
@@ -196,7 +196,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
                 break;
         }
     }
-    
+
     private void clear(boolean clearAll){
         txt_scan_qty.setText("");
         UIFuncs.disableInput(con, txt_scan_hu);
@@ -409,13 +409,8 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
      * v12.115 (2026-05-07): Three fixes for Zone dropdown — same pattern as the
      * sister fragment FragmentPTLNewArticlePutwayStorewise (withpallate folder).
      *  1. SAFEGUARD: JSON RFC adapter returns clean 0-indexed array with NO header row.
-     *     Loop MUST start at i=0, length is the full array length.
-     *     (Was: i=1 to length-1 — silently dropped the first zone.)
-     *  2. DEDUPE: SAP's ET_ZONE returns the same zone-station for multiple stores —
-     *     resulting in 8+ duplicate "F0-ST1" entries in the dropdown.
-     *     Use a HashSet to keep only unique zones in display order.
-     *  3. FIELD FALLBACK: ZWM_PTL_GET_ZONE returns ZONE; ZWM_PTL_GET_ZONE_STATION_V3
-     *     returns ZONE_STATION. Try ZONE_STATION first, fall back to ZONE.
+     *  2. DEDUPE: SAP's ET_ZONE returns the same zone-station for multiple stores.
+     *  3. FIELD FALLBACK: try ZONE_STATION first, fall back to ZONE.
      */
     public void setZoneList(JSONObject responsebody){
         try
@@ -594,20 +589,22 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
         txt_scan_qty.setText(String.valueOf(qty));
     }
 
-    /** Null/blank → empty string. JSON RFC adapter prefers "" over missing keys. */
+    /** Null/blank → empty string. SAP JSON RFC adapter prefers "" over missing keys. */
     private static String safe(String s){
         return s == null ? "" : s.trim();
     }
 
     /**
-     * v12.115 (2026-05-08): Build IS_DATA payload MANUALLY field-by-field for all
-     * 24 fields of ZWM_PTL_MSA_CRATE_ST. Previous Gson-based serialization
-     * caused SAP to return "HU Cannot Be Blank" because some fields were dropped
-     * or mapped under wrong keys. Manual JSONObject.put() guarantees:
-     *  - HU is always set explicitly from the scanned `hu` parameter
-     *  - ZONE_STATION is sent (V3 RFC reads it; PicklistData field added in this build)
-     *  - HUB defaults to WERKS (PicklistData field added in this build)
-     *  - All 24 fields are present, no nulls, no Gson surprises
+     * v12.115 (2026-05-12): IS_DATA payload trimmed to EXACTLY the 7 fields
+     * required by SAP RFC ZWM_PTL_ZONE_HU_VALIDATE_V3 per ops spec.
+     *
+     * Required SAP structure (ZWM_PTL_MSA_CRATE_ST) fields for this RFC:
+     *     ZONE_STATION, CRATE, ARTICLE, STORE, FLOOR, HU, SCAN_QTY
+     *
+     * No extra fields. No PICKLIST/BIN/MSA_CRATE/PALATE/TANUM/WAVE/EBELN/EBELP/
+     * TAG/ITEMNO/QUANTITY/ETYPE/ZONE/PLANT/MATKL/DIVISION/HUB — even though
+     * these exist in the structure, this specific RFC does not use them and
+     * including them caused JSON→ABAP mapping issues in the SAP RFC adapter.
      */
     private JSONObject getScanDataToSubmit(String hu){
         try {
@@ -620,58 +617,39 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             String zoneSel = dd_zone_list.getSelectedItem() != null
                     ? dd_zone_list.getSelectedItem().toString().trim() : "";
 
+            // HU must never be blank — guard explicitly.
             if (huNorm.isEmpty()) {
-                Log.w(TAG, "getScanDataToSubmit called with empty HU — aborting");
+                Log.w(TAG, "getScanDataToSubmit aborted — HU is blank");
+                UIFuncs.errorSound(con);
                 box.getBox("HU Missing", "HU is empty. Re-scan the HU.");
                 return null;
             }
 
-            // Persist on currentScan so any downstream code sees consistent state.
+            // Persist on currentScan for downstream consistency (no UI/flow change).
             this.currentScan.setHu(huNorm);
             this.currentScan.setZone(zoneSel);
             this.currentScan.setZoneStation(zoneSel);
-            if (this.currentScan.getPlant() == null || this.currentScan.getPlant().trim().isEmpty()) {
-                this.currentScan.setPlant(WERKS);
-            }
-            if (this.currentScan.getHub() == null || this.currentScan.getHub().trim().isEmpty()) {
-                this.currentScan.setHub(WERKS);
-            }
 
-            // Build IS_DATA with explicit field-by-field mapping for ZWM_PTL_MSA_CRATE_ST.
+            // Build IS_DATA as a strict object with ONLY the 7 SAP-required fields.
             JSONObject isData = new JSONObject();
-            isData.put("PICKLIST",     safe(currentScan.getPicklist()));
-            isData.put("BIN",          safe(currentScan.getBin()));
-            isData.put("MSA_CRATE",    safe(currentScan.getMsaCrate()));
-            isData.put("ARTICLE",      safe(currentScan.getArticle()));
-            isData.put("QUANTITY",     safe(currentScan.getQuantity()));
-            isData.put("ETYPE",        safe(currentScan.getEType()));
-            isData.put("WAVE",         safe(currentScan.getWave()));
-            isData.put("TANUM",        safe(currentScan.getTanum()));
-            isData.put("PALATE",       safe(currentScan.getPalate()));
+            isData.put("ZONE_STATION", zoneSel);
             isData.put("CRATE",        safe(currentScan.getCrate()));
+            isData.put("ARTICLE",      safe(currentScan.getArticle()));
             isData.put("STORE",        safe(currentScan.getStore()));
-            isData.put("ITEMNO",       safe(currentScan.getItemNo()));
-            isData.put("EBELN",        safe(currentScan.getEbeln()));
-            isData.put("EBELP",        safe(currentScan.getEbelp()));
-            isData.put("TAG",          safe(currentScan.getTag()));
-            isData.put("HU",           huNorm);                 // explicit — required
-            isData.put("ZONE",         zoneSel);
-            isData.put("PLANT",        safe(currentScan.getPlant()));
-            isData.put("SCAN_QTY",     safe(currentScan.getScanQty()));
-            isData.put("ZONE_STATION", zoneSel);                // V3 reads this
-            isData.put("MATKL",        safe(currentScan.getMatkl()));
-            isData.put("DIVISION",     safe(currentScan.getDivision()));
             isData.put("FLOOR",        safe(currentScan.getFloor()));
-            isData.put("HUB",          safe(currentScan.getHub()));
+            isData.put("HU",           huNorm);
+            isData.put("SCAN_QTY",     safe(currentScan.getScanQty()));
 
-            Log.d(TAG, "IS_DATA payload: HU=" + huNorm + " ZONE=" + zoneSel
-                    + " ZONE_STATION=" + zoneSel
-                    + " STORE=" + safe(currentScan.getStore())
-                    + " PICKLIST=" + safe(currentScan.getPicklist())
-                    + " ARTICLE=" + safe(currentScan.getArticle())
-                    + " BIN=" + safe(currentScan.getBin())
-                    + " CRATE=" + safe(currentScan.getCrate())
-                    + " | full=" + isData.toString());
+            // Verbose pre-RFC payload logs for QA / SAP middleware verification.
+            Log.d(TAG, "=== IS_DATA (7-field strict) ===");
+            Log.d(TAG, "ZONE_STATION = " + zoneSel);
+            Log.d(TAG, "CRATE        = " + safe(currentScan.getCrate()));
+            Log.d(TAG, "ARTICLE      = " + safe(currentScan.getArticle()));
+            Log.d(TAG, "STORE        = " + safe(currentScan.getStore()));
+            Log.d(TAG, "FLOOR        = " + safe(currentScan.getFloor()));
+            Log.d(TAG, "HU           = " + huNorm);
+            Log.d(TAG, "SCAN_QTY     = " + safe(currentScan.getScanQty()));
+            Log.d(TAG, "IS_DATA JSON = " + isData.toString());
             return isData;
         }catch (Exception exce){
             box.getErrBox(exce);
@@ -684,12 +662,16 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
         try {
             String rfc = isWoPallete ? Vars.ZWM_PTL_ZONE_HU_VALIDATE : Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3;
             args.put("bapiname", rfc);
+            args.put("IM_USER",  USER);
             args.put("IM_WERKS", WERKS);
-            args.put("IM_USER", USER);
             JSONObject itData = getScanDataToSubmit(hu);
             if(itData != null){
                 args.put("IS_DATA", itData);
-                Log.d(TAG, "validateZoneHU rfc=" + rfc + " sending IS_DATA.HU=" + itData.optString("HU", "(missing)"));
+                Log.d(TAG, "validateZoneHU RFC=" + rfc
+                        + " | IM_USER=" + USER
+                        + " | IM_WERKS=" + WERKS
+                        + " | IS_DATA.HU=" + itData.optString("HU", "(missing)")
+                        + " | full args=" + args.toString());
                 showProcessingAndSubmit(rfc, REQUEST_VALIDATE_ZONE_HU, args);
             }
         } catch (JSONException e) {
