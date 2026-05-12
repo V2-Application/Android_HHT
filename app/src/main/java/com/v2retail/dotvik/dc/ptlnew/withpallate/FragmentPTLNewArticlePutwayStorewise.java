@@ -92,7 +92,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     ProgressDialog dialog;
     FragmentManager fm;
 
-    Button btn_back;
     EditText txt_scan_station, txt_station, txt_hub;
     EditText txt_scan_crate, txt_crate;
     EditText txt_scan_article, txt_article, txt_proposed_store, txt_store_floor;
@@ -203,9 +202,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_hu);
         txt_pending_qty = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_pending_qty);
 
-        btn_back = rootView.findViewById(R.id.btn_ptl_new_article_putway_storewise_back);
-        btn_back.setOnClickListener(this);
-
         clearAll();
         addInputEvents();
 
@@ -214,10 +210,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     @Override
     public void onClick(View view) {
-        int id = view.getId();
-        if (id == R.id.btn_ptl_new_article_putway_storewise_back) {
-            box.confirmBack(fm, con);
-        }
+        // Footer buttons removed; no-op.
     }
 
     private void endHuValidateInFlight() {
@@ -759,17 +752,21 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         JSONObject args = new JSONObject();
         try {
             lastHuSubmitted = "";
-            JSONObject isData = buildIsDataObjectForZoneHuValidate(hu);
-            if (isData == null) {
+            JSONObject isDataRow = buildIsDataObjectForZoneHuValidate(hu);
+            if (isDataRow == null) {
                 endHuValidateInFlight();
                 return;
             }
+            // SAP param IS_DATA changed to table type (ZWM_PTL_MSA_CRATE_TT) → send as array.
+            JSONArray isData = new JSONArray();
+            isData.put(isDataRow);
+
             args.put("bapiname", Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3);
             args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
             args.put("IS_DATA", isData);
-            lastHuSubmitted = isData.optString("HU", "");
-            Log.d(TAG, "ZWM_PTL_ZONE_HU_VALIDATE_V3 IS_DATA -> " + isData.toString());
+            lastHuSubmitted = isDataRow.optString("HU", "");
+            Log.d(TAG, "ZWM_PTL_ZONE_HU_VALIDATE_V3 payload -> " + args.toString());
             showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3, REQUEST_VALIDATE_ZONE_HU, args);
         } catch (JSONException e) {
             endHuValidateInFlight();
@@ -807,7 +804,11 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
         currentScan = null;
         txt_scan_article.setText("");
+        txt_article.setText("");
+        txt_proposed_store.setText("");
+        txt_store_floor.setText("");
         txt_scan_hu.setText("");
+        txt_hu.setText("");
         UIFuncs.disableInput(con, txt_scan_hu);
         UIFuncs.enableInput(con, txt_scan_article);
         txt_scan_article.requestFocus();
@@ -988,6 +989,9 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_crate.requestFocus();
         } else if (request == REQUEST_VALIDATE_ZONE_HU) {
             endHuValidateInFlight();
+            // After SAP error: clear HU fields and re-focus Scan HU.
+            txt_scan_hu.setText("");
+            txt_hu.setText("");
             txt_scan_hu.requestFocus();
         }
     }
