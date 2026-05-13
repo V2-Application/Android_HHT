@@ -264,6 +264,10 @@ public class Vars {
     public static String ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4 = "ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4";
     public static String ZWM_PTL_ZONE_CRATE_VALIDATE_V3 = "ZWM_PTL_ZONE_CRATE_VALIDATE_V3";
     public static String ZWM_PTL_ZONE_HU_VALIDATE_V3 = "ZWM_PTL_ZONE_HU_VALIDATE_V3";
+    /** PTL HU Packing & Weighing — scan HU validate (IM_USER, IM_WERKS, IM_HU); export EX_DATA (ZWM_PTL_MSA_CRATE_TT row). */
+    public static String ZWM_PTL_HUPACKING_HU_VALIDATE = "ZWM_PTL_HUPACKING_HU_VALIDATE";
+    /** PTL HU Packing & Weighing — persist weight (IM_USER, IM_WERKS, IM_HU, IM_WEIGHT). */
+    public static String ZWM_PTL_HUPACKING_HU_SAVE = "ZWM_PTL_HUPACKING_HU_SAVE";
     public static String ZSTORE_DISCOUNT_GET_EAN_DATA = "ZSTORE_DISCOUNT_GET_EAN_DATA";
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";

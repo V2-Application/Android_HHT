@@ -39,7 +39,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
     String TAG = MenuPTLNewPickingProcess40.class.getName();
     private OnFragmentInteractionListener mListener;
 
-    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise;
+    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise, hu_packing_weighing_area;
 
     public MenuPTLNewPickingProcess40() {
     }
@@ -68,6 +68,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         hu_close = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_close);
         hu_print = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_print);
         article_putway_storewise = view.findViewById(R.id.ptl_new_picking_process_4_0_article_putway_storewise);
+        hu_packing_weighing_area = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_packing_weighing_area);
 
         ptl_picking.setOnClickListener(this);
         flr_bin.setOnClickListener(this);
@@ -77,6 +78,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         hu_close.setOnClickListener(this);
         hu_print.setOnClickListener(this);
         article_putway_storewise.setOnClickListener(this);
+        hu_packing_weighing_area.setOnClickListener(this);
 
         return view;
     }
@@ -146,6 +148,9 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
                 //  Putway Store Wise". The legacy FragmentPTLNewWithoutPallatePutwayStorewise
                 //  is no longer reachable from this menu.)
                 fragment = FragmentPTLNewArticlePutwayStorewise.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_hu_packing_weighing_area:
+                fragment = FragmentPTLHUPackingWeighingArea.newInstance();
                 break;
         }
         if (fragment != null) {

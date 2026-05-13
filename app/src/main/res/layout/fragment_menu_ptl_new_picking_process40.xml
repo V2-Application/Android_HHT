@@ -83,6 +83,15 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PTL HU PACKING &amp; WEIGHING AREA"
+                android:id="@+id/ptl_new_picking_process_4_0_hu_packing_weighing_area"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
         </LinearLayout>
     </ScrollView>
 </FrameLayout>
