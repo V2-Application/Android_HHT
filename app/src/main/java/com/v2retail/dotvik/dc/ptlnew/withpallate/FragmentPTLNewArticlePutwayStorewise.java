@@ -878,7 +878,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
                 if (responsebody == null) {
                     if (request == REQUEST_VALIDATE_ZONE_HU) {
-                        endHuValidateInFlight();
+                        handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                     }
                     UIFuncs.errorSound(con);
                     new AlertBox(getContext()).getBox("Err", "No response from Server");
@@ -887,7 +887,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 String asString = responsebody.toString();
                 if (asString.equals("") || asString.equals("null") || asString.equals("{}")) {
                     if (request == REQUEST_VALIDATE_ZONE_HU) {
-                        endHuValidateInFlight();
+                        handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                     }
                     UIFuncs.errorSound(con);
                     new AlertBox(getContext()).getBox("Err", "Unable to Connect Server/ Empty Response");
@@ -898,7 +898,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                         JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
                         if (returnobj == null) {
                             if (request == REQUEST_VALIDATE_ZONE_HU) {
-                                endHuValidateInFlight();
+                                handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                             }
                             return;
                         }
@@ -919,13 +919,13 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                             onHuPutawaySuccess(lastHuSubmitted);
                         }
                     } else if (request == REQUEST_VALIDATE_ZONE_HU) {
-                        endHuValidateInFlight();
+                        handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                         UIFuncs.errorSound(con);
                         new AlertBox(getContext()).getBox("Err", "Invalid server response (missing EX_RETURN).");
                     }
                 } catch (JSONException e) {
                     if (request == REQUEST_VALIDATE_ZONE_HU) {
-                        endHuValidateInFlight();
+                        handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                     }
                     e.printStackTrace();
                     new AlertBox(getContext()).getErrBox(e);
@@ -989,10 +989,25 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_crate.requestFocus();
         } else if (request == REQUEST_VALIDATE_ZONE_HU) {
             endHuValidateInFlight();
-            // After SAP error: clear HU fields and re-focus Scan HU.
+            // After HU validate error: clear article + HU row and restart from Scan Article.
+            PicklistData scan = currentScan;
+            if (scan != null) {
+                try {
+                    double qty = Double.parseDouble(scan.getQuantity());
+                    calculatePendingQty(qty);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            currentScan = null;
+            txt_scan_article.setText("");
+            txt_article.setText("");
+            txt_proposed_store.setText("");
+            txt_store_floor.setText("");
             txt_scan_hu.setText("");
             txt_hu.setText("");
-            txt_scan_hu.requestFocus();
+            UIFuncs.disableInput(con, txt_scan_hu);
+            UIFuncs.enableInput(con, txt_scan_article);
+            txt_scan_article.requestFocus();
         }
     }
 
@@ -1033,7 +1048,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                     dialog = null;
                 }
                 if (huValidateInFlight) {
-                    endHuValidateInFlight();
+                    handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                 }
                 new AlertBox(getContext()).getBox("Err", err);
             }
