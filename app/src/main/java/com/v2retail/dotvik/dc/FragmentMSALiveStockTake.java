@@ -166,11 +166,16 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         btn_submit    = rootView.findViewById(R.id.btn_msa_live_stock_take_submit);
         btn_empty_bin = rootView.findViewById(R.id.btn_msa_live_stock_take_empty_bin);
 
-        // Prevent hardware Enter/DPAD focus from triggering SUBMIT unintentionally after scans.
-        // Saving must be an explicit tap on SUBMIT.
+        // Prevent hardware Enter / scanner suffix key / DPAD from activating these from focus.
+        // Full save must be an explicit tap on SUBMIT; empty-bin RFC must be an explicit tap on EMPTY BIN.
+        // (Otherwise focus often moves to the next focusable view after IME_ACTION_DONE — e.g. Empty Bin.)
         if (btn_submit != null) {
             btn_submit.setFocusable(false);
             btn_submit.setFocusableInTouchMode(false);
+        }
+        if (btn_empty_bin != null) {
+            btn_empty_bin.setFocusable(false);
+            btn_empty_bin.setFocusableInTouchMode(false);
         }
 
         btn_back.setOnClickListener(this);
@@ -791,15 +796,19 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         if (reqType==REQUEST_LIVE_SCAN)         { updateScanStats(body);  return; }
                         if (reqType==REQUEST_SAVE) {
                             String msg=o.explicit&&!o.message.isEmpty()?o.message:"Stock take saved successfully.";
-                            new AlertBox(getContext()).getBox("Success",msg,(d,w)->afterSave()); return;
+                            afterSave();
+                            new AlertBox(getContext()).getBox("Success", msg, null);
+                            return;
                         }
                         return;
                     }
                     if (reqType==REQUEST_GET_STOCK_ID      &&body.has("IT_DATA")) { populateStockIDs(body); return; }
                     if (reqType==REQUEST_VALIDATE_STOCK_ID &&body.has("IT_DATA")) { setData(body);          return; }
                     if (reqType==REQUEST_LIVE_SCAN         &&body.has("EX_DATA")) { updateScanStats(body);  return; }
-                    if (reqType==REQUEST_SAVE)
-                        new AlertBox(getContext()).getBox("Success","Stock take saved successfully.",(d,w)->afterSave());
+                    if (reqType==REQUEST_SAVE) {
+                        afterSave();
+                        new AlertBox(getContext()).getBox("Success", "Stock take saved successfully.", null);
+                    }
 
                 } catch (JSONException e) { e.printStackTrace(); new AlertBox(getContext()).getErrBox(e); }
             },

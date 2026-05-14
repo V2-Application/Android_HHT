@@ -710,8 +710,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         // Preserve ET row values before mutating for this RFC.
         String zoneFromRow = nz(p.getZone());
         double openQty = parseMenge(p.getQuantity());
-        double scanQtyFromRow = parseMenge(p.getScanQty());
-        double scanQtyForRfc = scanQtyFromRow > 0 ? scanQtyFromRow : (openQty > 0 ? openQty : scanQtyFromRow);
+        // Per RFC contract: SCAN_QTY must be 1 per HU scan.
+        double scanQtyForRfc = 1.0;
 
         p.setHu(hu);
         p.setZone(validatedStation);
@@ -990,14 +990,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         } else if (request == REQUEST_VALIDATE_ZONE_HU) {
             endHuValidateInFlight();
             // After HU validate error: clear article + HU row and restart from Scan Article.
-            PicklistData scan = currentScan;
-            if (scan != null) {
-                try {
-                    double qty = Double.parseDouble(scan.getQuantity());
-                    calculatePendingQty(qty);
-                } catch (NumberFormatException ignored) {
-                }
-            }
             currentScan = null;
             txt_scan_article.setText("");
             txt_article.setText("");
@@ -1005,6 +997,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_store_floor.setText("");
             txt_scan_hu.setText("");
             txt_hu.setText("");
+            txt_pending_qty.setText("");
             UIFuncs.disableInput(con, txt_scan_hu);
             UIFuncs.enableInput(con, txt_scan_article);
             txt_scan_article.requestFocus();

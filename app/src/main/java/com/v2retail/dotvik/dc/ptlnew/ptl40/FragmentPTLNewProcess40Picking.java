@@ -103,7 +103,6 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
     Map<String, ETPickData> picklistDataMap = new HashMap<>();
     Map<String, PicklistData> etDataMap = new HashMap<>();
     Map<String, HUEANData> eanDataMap = new HashMap<>();
-    Map<String, String> crateArticle = new HashMap<>();
 
     int totalScanned = 0;
     int totalBin = 0;
@@ -766,7 +765,6 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         try {
             etDataMap = new LinkedHashMap<>();
             eanDataMap = new LinkedHashMap<>();
-            crateArticle = new HashMap<>();
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
             JSONArray ET_EAN_DATA_ARRAY = responsebody.getJSONArray("ET_EAN_DATA");
 
@@ -877,38 +875,26 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         if(eanDataMap.containsKey(barcode)){
             HUEANData eanData = eanDataMap.get(barcode);
             String matnr = UIFuncs.removeLeadingZeros(eanData.getLgmatnr());
-            if(allowArticleForCrate(matnr)){
-                key = UIFuncs.toUpperTrim(txt_scanned_msa_crate_2) + "-" + UIFuncs.toUpperTrim(txt_scanned_msa_bin_2) + "-" + matnr;
-                if(etDataMap.containsKey(key)){
-                    PicklistData etData = etDataMap.get(key);
-                    if(!"SIN".equals(etData.getEType())){
-                        double maxQty= Double.parseDouble(etData.getQuantity());
-                        if(etData.getSqty() >= maxQty){
-                            box.getBox("Invalid", String.format("Already scanned maximum allowed Qty - %d", etData.getSqty()));
-                        }else{
-                            etData.setSqty(etData.getSqty() + 1);
-                        }
+            key = UIFuncs.toUpperTrim(txt_scanned_msa_crate_2) + "-" + UIFuncs.toUpperTrim(txt_scanned_msa_bin_2) + "-" + matnr;
+            if(etDataMap.containsKey(key)){
+                PicklistData etData = etDataMap.get(key);
+                if(!"SIN".equals(etData.getEType())){
+                    double maxQty= Double.parseDouble(etData.getQuantity());
+                    if(etData.getSqty() >= maxQty){
+                        box.getBox("Invalid", String.format("Already scanned maximum allowed Qty - %d", etData.getSqty()));
+                    }else{
+                        etData.setSqty(etData.getSqty() + 1);
                     }
-                    crateArticle.put(UIFuncs.toUpperTrim(txt_scanned_empty_crate_2), matnr);
-                    populateArticleTableRow(etData, true);
-                }else{
-                    box.getBox("Invalid", String.format("Scanned barcode is not associated with %s and %s",UIFuncs.toUpperTrim(txt_scanned_msa_crate_2), UIFuncs.toUpperTrim(txt_scanned_msa_bin_2)));
                 }
+                populateArticleTableRow(etData, true);
+            }else{
+                box.getBox("Invalid", String.format("Scanned barcode is not associated with %s and %s",UIFuncs.toUpperTrim(txt_scanned_msa_crate_2), UIFuncs.toUpperTrim(txt_scanned_msa_bin_2)));
             }
         }else{
             box.getBox("Invalid", "Scanned barcode is not available");
         }
         generateNonScannedArticleRows(key);
         txt_scan_article.setText("");
-    }
-    private boolean allowArticleForCrate(String matnr){
-        if(crateArticle.containsKey(UIFuncs.toUpperTrim(txt_scanned_empty_crate_2))){
-            if(!matnr.equalsIgnoreCase(crateArticle.get(UIFuncs.toUpperTrim(txt_scanned_empty_crate_2)))){
-                box.getBox("Invalid", String.format("Crate %s already has article %s. Mix articles not allowed in same crate",UIFuncs.toUpperTrim(txt_scanned_empty_crate_2), matnr));
-                return false;
-            }
-        }
-        return true;
     }
     private void generateNonScannedArticleRows(String key){
         for (Map.Entry<String, PicklistData> etDataEntry :etDataMap.entrySet()) {
