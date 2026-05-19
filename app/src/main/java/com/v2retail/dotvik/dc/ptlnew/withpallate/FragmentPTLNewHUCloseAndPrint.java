@@ -69,6 +69,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     String process = null;
     String tvsprinter = null;
     SharedPreferencesData data;
+    private boolean huRequestInFlight = false;
 
     public FragmentPTLNewHUCloseAndPrint() {
     }
@@ -123,7 +124,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_ext_hu);
-                    if (!value.isEmpty()) {
+                    if (!value.isEmpty() && !huRequestInFlight) {
                         validateExtHU(value);
                         return true;
                     }
@@ -151,7 +152,8 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
             @Override
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
-                if (!value.isEmpty() && scannerReading) {
+                if (!value.isEmpty() && scannerReading && !huRequestInFlight) {
+                    scannerReading = false;
                     validateExtHU(value);
                 }
             }
@@ -243,6 +245,10 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     }
 
     private void validateExtHU(String hu){
+        if (huRequestInFlight) {
+            return;
+        }
+        huRequestInFlight = true;
         JSONObject args = new JSONObject();
         boolean isClose = this.process.equalsIgnoreCase("HU Close");
         try {
@@ -258,6 +264,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
             }
             showProcessingAndSubmit(rfc, REQUEST_VALIDATE_EXT_HU, args);
         } catch (JSONException e) {
+            huRequestInFlight = false;
             e.printStackTrace();
             UIFuncs.errorSound(con);
             if (dialog != null) {
@@ -271,7 +278,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
 
     private void printHU(JSONObject huObj){
         TSPLPrinter printer = new TSPLPrinter(getContext(), Vars.PTL_NEW_MODULE_HU_CLOSE);
-        printer.sendPrintCommandToBluetoothPrinter(this.tvsprinter, huObj, "2");
+        printer.sendPrintCommandToBluetoothPrinter(this.tvsprinter, huObj, "1");
     }
 
     private void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -289,6 +296,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
                 try {
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
+                    huRequestInFlight = false;
                     dialog.dismiss();
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
@@ -313,6 +321,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
 
             @Override
             public void onResponse(JSONObject responsebody) {
+                huRequestInFlight = false;
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
@@ -424,6 +433,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
         return new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                huRequestInFlight = false;
 
                 Log.i(TAG, "Error :" + error.toString());
                 String err = "";

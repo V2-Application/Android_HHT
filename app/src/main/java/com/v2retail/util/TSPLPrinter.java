@@ -133,6 +133,7 @@ public class TSPLPrinter {
         String hhtid = "HHT ID XXX";
         String date = "Date:- 01 Jan 1990";
         String weight = "HU Weight:- XXKg P1";
+        String floorValue = "";
         String tvstext = "XXXXXX";
         String huno = "1234567890";
         String hubName = "X-ABC";
@@ -147,7 +148,13 @@ public class TSPLPrinter {
                 qty = String.format("Qty %s", Util.convertToDoubleString(huObj.getString("VEMNG")));
                 hhtid = String.format("HHT ID %s", UIFuncs.removeLeadingZeros(huObj.getString("HHT_ID")));
                 date = String.format("Date:- %s", huObj.getString("DATUM"));
-                weight = String.format("HU Weight:- %s %s", huObj.getString("WEIGHT")+huObj.getString("GEWEI"),huObj.getString("PRIORITY"));
+                weight = String.format("HU Wt:- %s %s", huObj.getString("WEIGHT")+huObj.getString("GEWEI"),huObj.getString("PRIORITY"));
+                if (huObj.has("FLOOR") && !huObj.isNull("FLOOR")) {
+                    String floorVal = huObj.getString("FLOOR").trim();
+                    if (!floorVal.isEmpty()) {
+                        floorValue = floorVal;
+                    }
+                }
                 tvstext = huObj.getString("TVS_TEXT");
                 huno = huObj.getString("SAP_HU");
             }catch (Exception exce){
@@ -166,6 +173,7 @@ public class TSPLPrinter {
                     "TEXT 20, 120, \"3\", 0, 1, 1, \"" + hhtid + "\"\n" +
                     generateRTLTextCommand(date, labelWidthInDots, 12, 120, 80) +
                     "TEXT 20, 160, \"3\", 0, 1, 1, \"" + weight + "\"\n" +
+                    (floorValue.isEmpty() ? "" : generateRTLFloorCommand(floorValue, labelWidthInDots, 160, 80)) +
                     generateRTLTextCommand(tvstext, labelWidthInDots, 12, 160, 30) +
                     "BARCODE 110, 210, \"128\", 100, 0, 0, 4, 8, \"" + huno + "\"\n" +
                     "TEXT 210, 320, \"3\", 0, 1, 1, \"" + huno + "\"\n" +
@@ -199,6 +207,21 @@ public class TSPLPrinter {
                     1
             );
         }
+    }
+
+    /** Right-aligned floor: bold label and value. */
+    private String generateRTLFloorCommand(String floorValue, double labelWidthInDots, int y, int exwidth) {
+        String label = "FLR:-  ";
+        int fontSizeInDots = 12;
+        int totalWidth = (label.length() + floorValue.length()) * fontSizeInDots;
+        int startX = Math.max((int) (labelWidthInDots - (totalWidth + exwidth)), 0);
+        int valueX = startX + label.length() * fontSizeInDots;
+        return tsplBoldText(startX, y, label) + tsplBoldText(valueX, y, floorValue);
+    }
+
+    private String tsplBoldText(int x, int y, String text) {
+        return String.format("TEXT %d, %d, \"3\", 0, 1, 1, \"%s\"\n", x, y, text) +
+                String.format("TEXT %d, %d, \"3\", 0, 1, 1, \"%s\"\n", x + 1, y, text);
     }
 
     public String generateRTLTextCommand(String text, double labelWidthInDots, int fontSizeInDots, int y, int exwidth) {
