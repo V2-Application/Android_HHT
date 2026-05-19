@@ -72,7 +72,8 @@ public class Home_Activity extends AppCompatActivity
         EcommFragmentProcess.OnFragmentInteractionListener,
         MenuFragmentStoreDisplayInernalIRODToIROD.OnFragmentInteractionListener,
         MenuFragmentStoreDisplayReports.OnFragmentInteractionListener,
-        MenuDirectPickingV01To0001.OnFragmentInteractionListener {
+        MenuDirectPickingV01To0001.OnFragmentInteractionListener,
+        FragmentStoreStockTrack.OnFragmentInteractionListener {
 
     String werks;
     String user;

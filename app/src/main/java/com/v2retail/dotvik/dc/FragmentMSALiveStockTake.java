@@ -567,10 +567,17 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         return null;
     }
 
-    private void resetAfterScanError() {
-        txt_scan_crate.setText(""); txt_scan_article.setText("");
-        UIFuncs.enableInput(con, txt_scan_crate); UIFuncs.enableInput(con, txt_scan_article);
-        txt_scan_crate.requestFocus();
+    /** After a failed Art. No. scan — clear scan field and refocus for re-scan (crate/bin unchanged). */
+    private void resetAfterArticleScanError() {
+        txt_scan_article.setText("");
+        txt_scan_sqty.setText("");
+        UIFuncs.enableInput(con, txt_scan_article);
+        txt_scan_article.requestFocus();
+    }
+
+    private void showArticleScanError(String title, String message) {
+        UIFuncs.errorSound(con);
+        new AlertBox(getContext()).getBox(title, message, (d, w) -> resetAfterArticleScanError());
     }
 
     private void populateStockIDs(JSONObject body) {
@@ -678,7 +685,10 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             String matKey=effectiveMaterial(raw);
             if (matKey.isEmpty()&&ex.has("MATNR")&&!ex.isNull("MATNR"))   matKey=ex.getString("MATNR").trim();
             if (matKey.isEmpty()&&ex.has("ARTICLE")&&!ex.isNull("ARTICLE")) matKey=ex.getString("ARTICLE").trim();
-            if (matKey.isEmpty()) { showError("Scan Error","Server did not return article."); return; }
+            if (matKey.isEmpty()) {
+                showArticleScanError("Scan Error", "Server did not return article.");
+                return;
+            }
 
             LiveScanData row=scanData.get(matKey);
             if (row==null) {
@@ -695,7 +705,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
             txt_cur_article.setText(UIFuncs.removeLeadingZeros(matKey));
             txt_cur_sqty.setText(Util.formatDouble(prev+qty));
             txt_scan_sqty.setText(Util.formatDouble(qty));
-        } catch (Exception e) { e.printStackTrace(); new AlertBox(getContext()).getErrBox(e); }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showArticleScanError("Scan Error", e.getMessage() != null ? e.getMessage() : "Invalid response.");
+            return;
+        }
         txt_scan_article.setText(""); txt_scan_article.requestFocus();
     }
 
@@ -777,17 +791,26 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 if (dialog!=null){dialog.dismiss();dialog=null;}
                 if (reqType==REQUEST_SAVE) unlockSave();
                 if (body==null||body.equals("")||body.equals("null")||body.equals("{}")) {
-                    UIFuncs.errorSound(con); new AlertBox(getContext()).getBox("Err","No response from server"); return;
+                    UIFuncs.errorSound(con);
+                    if (reqType==REQUEST_LIVE_SCAN) {
+                        new AlertBox(getContext()).getBox("Err", "No response from server",
+                                (d, w) -> resetAfterArticleScanError());
+                    } else {
+                        new AlertBox(getContext()).getBox("Err", "No response from server");
+                    }
+                    return;
                 }
                 try {
                     BapiOutcome o=evaluateBapiReturn(body);
-                    if (o==null&&reqType==REQUEST_SAVE) o=outcomeFromExMessage(body);
+                    if (o==null && (reqType==REQUEST_SAVE || reqType==REQUEST_LIVE_SCAN)) {
+                        o=outcomeFromExMessage(body);
+                    }
 
                     if (o!=null) {
                         if (!o.success) {
                             UIFuncs.errorSound(getContext());
                             AlertBox eb=new AlertBox(getContext());
-                            if (reqType==REQUEST_LIVE_SCAN) eb.getBox("Err",o.message,(d,w)->resetAfterScanError());
+                            if (reqType==REQUEST_LIVE_SCAN) eb.getBox("Err", o.message, (d, w) -> resetAfterArticleScanError());
                             else                            eb.getBox("Err",o.message);
                             return;
                         }
@@ -810,7 +833,14 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                         new AlertBox(getContext()).getBox("Success", "Stock take saved successfully.", null);
                     }
 
-                } catch (JSONException e) { e.printStackTrace(); new AlertBox(getContext()).getErrBox(e); }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    if (reqType==REQUEST_LIVE_SCAN) {
+                        showArticleScanError("Err", "Invalid response from server.");
+                    } else {
+                        new AlertBox(getContext()).getErrBox(e);
+                    }
+                }
             },
             err->{
                 if (dialog!=null){dialog.dismiss();dialog=null;}
@@ -822,7 +852,11 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
                 else if (err instanceof NetworkError)     msg="Network Error!";
                 else if (err instanceof ParseError)       msg="Parse Error!";
                 else                                      msg=err.toString();
-                new AlertBox(getContext()).getBox("Err",msg);
+                if (reqType==REQUEST_LIVE_SCAN) {
+                    new AlertBox(getContext()).getBox("Err", msg, (d, w) -> resetAfterArticleScanError());
+                } else {
+                    new AlertBox(getContext()).getBox("Err", msg);
+                }
             }) {
             @Override public String getBodyContentType() { return "application/json"; }
             @Override public byte[] getBody() { return params.toString().getBytes(StandardCharsets.UTF_8); }

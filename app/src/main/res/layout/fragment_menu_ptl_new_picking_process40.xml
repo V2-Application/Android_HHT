@@ -53,6 +53,14 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:text="Proposed Hub/Station"
+                android:id="@+id/ptl_new_picking_process_4_0_proposed_hub_station"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:text="HU-Zone-Store Mapping"
                 android:id="@+id/ptl_new_picking_process_4_0_hu_zone_store_mapping"
                 android:layout_margin="5dp"

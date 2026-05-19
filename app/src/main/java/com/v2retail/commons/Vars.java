@@ -157,6 +157,11 @@ public class Vars {
     public static String ZWM_STORE_GRT_FROM_DISP_AREA = "ZWM_STORE_GRT_FROM_DISP_AREA";
     public static String ZWM_GET_PACKING_MATERIAL = "ZWM_GET_PACKING_MATERIAL";
     public static String ZWM_STORE_GET_STOCK = "ZWM_STORE_GET_STOCK";
+    /**
+     * Store Stock Track — FM in SE37: ZWM_STORE_PUSHDATATOSAP_1STOCK.
+     * Row structure: ZWM_ST_PUSHTOSAP_1STOCK (EMP_CODE, SITE, GANDOLA, ARTICLE, QUANTITY, …).
+     */
+    public static String ZWM_STORE_PUSHDATATOSAP_1STOCK = "ZWM_STORE_PUSHDATATOSAP_1STOCK";
 
     public static String ZGRT_VALIDATE_HU = "ZGRT_VALIDATE_HU";
     public static String ZGRT_VALIDATE_HU_BIN = "ZGRT_VALIDATE_HU_BIN";

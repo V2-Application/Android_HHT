@@ -12,7 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
@@ -39,7 +38,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
     String TAG = MenuPTLNewPickingProcess40.class.getName();
     private OnFragmentInteractionListener mListener;
 
-    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise, hu_packing_weighing_area;
+    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, proposed_hub_station, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise, hu_packing_weighing_area;
 
     public MenuPTLNewPickingProcess40() {
     }
@@ -64,6 +63,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         flr_bin = view.findViewById(R.id.ptl_new_picking_process_4_0_flr_bin);
         flr_stagging = view.findViewById(R.id.ptl_new_picking_process_4_0_crate_tag_plt_flr_stagging);
         receive_at_zone = view.findViewById(R.id.ptl_new_picking_process_4_0_receive_at_zone);
+        proposed_hub_station = view.findViewById(R.id.ptl_new_picking_process_4_0_proposed_hub_station);
         hu_zone_store_mapping = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_zone_store_mapping);
         hu_close = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_close);
         hu_print = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_print);
@@ -74,6 +74,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         flr_bin.setOnClickListener(this);
         flr_stagging.setOnClickListener(this);
         receive_at_zone.setOnClickListener(this);
+        proposed_hub_station.setOnClickListener(this);
         hu_zone_store_mapping.setOnClickListener(this);
         hu_close.setOnClickListener(this);
         hu_print.setOnClickListener(this);
@@ -132,6 +133,9 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
                 break;
             case R.id.ptl_new_picking_process_4_0_receive_at_zone:
                 fragment = FragmentPTLNewReceiveAtZone.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_proposed_hub_station:
+                fragment = FragmentPTLNewProcess40ProposedHubStation.newInstance();
                 break;
             case R.id.ptl_new_picking_process_4_0_hu_zone_store_mapping:
                 fragment = FragmentPTLNewProcess40ZoneStoreHUMapping.newInstance();

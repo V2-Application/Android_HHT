@@ -51,11 +51,11 @@ public class GRTPickListAdapter extends ArrayAdapter<ETPickList> {
 
     public void changeFragmentFromAdapter(ETPickList pickList)
     {
-        Bundle args=new Bundle();
-        args.putSerializable("picklistno", pickList.getLgtanum());
-        args.putSerializable("section", pickList.getSection());
-        //This field is used in PTL Pick process not for GRT
-        args.putSerializable("picktype", pickList.getPicktype());
+        Bundle args = new Bundle();
+        args.putString("picklistno", pickList.getLgtanum() != null ? pickList.getLgtanum() : "");
+        args.putString("section", pickList.getSection() != null ? pickList.getSection() : "");
+        // PTL only: full vs partial mode
+        args.putString("picktype", pickList.getPicktype() != null ? pickList.getPicktype() : "");
         Fragment fragment =  new GRT_Pick_Crate_Bin();
         if(pickList.isPtl()){
             fragment = new PTLPickCrateBin();

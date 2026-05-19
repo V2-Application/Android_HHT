@@ -127,7 +127,7 @@ public class GRTCratePickingProcess extends Fragment implements View.OnClickList
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-        fm = getFragmentManager();
+        fm = getParentFragmentManager();
 
     }
 
@@ -306,6 +306,17 @@ public class GRTCratePickingProcess extends Fragment implements View.OnClickList
                                 }
                             }
                         }
+                        // Some gateway responses omit EX_RETURN or use a different shape; still parse tables.
+                        if (request == REQUEST_SECTION_LIST && responsebody.has("ET_SECTION")
+                                && responsebody.get("ET_SECTION") instanceof JSONArray) {
+                            SetSectionETData(responsebody);
+                            return;
+                        }
+                        if (request == REQUEST_PICK_LIST && responsebody.has("ET_DATA")
+                                && responsebody.get("ET_DATA") instanceof JSONArray) {
+                            SetPickListETData(responsebody);
+                            return;
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         AlertBox box = new AlertBox(getContext());
@@ -367,22 +378,53 @@ public class GRTCratePickingProcess extends Fragment implements View.OnClickList
         }
     }
 
+    /**
+     * SAP sometimes returns a dummy/header row as ET_DATA[0]. Older code always skipped index 0,
+     * which hid the list when only one real TO row existed (common for a single pending picklist).
+     */
+    private static boolean isGrtPickListHeaderRow(JSONObject row) {
+        if (row == null) return true;
+        String tanum = row.optString("TANUM", "").trim();
+        String erdat = row.optString("ERDAT", "").trim();
+        if ("TANUM".equalsIgnoreCase(tanum)) return true;
+        if ("TRANSFER ORDER".equalsIgnoreCase(tanum) || "TO NUMBER".equalsIgnoreCase(tanum)) return true;
+        if ("ERDAT".equalsIgnoreCase(erdat) && (tanum.isEmpty() || "TANUM".equalsIgnoreCase(tanum))) return true;
+        return false;
+    }
+
+    private static int pickListDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() <= 1) return 0;
+        return isGrtPickListHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     private void SetPickListETData(JSONObject responsebody) {
-        try
-        {
+        try {
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
-            int totalEtRecords = ET_DATA_ARRAY.length()-1;
-            if(totalEtRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    ETPickList ET_DATA = new ETPickList();
-                    ET_DATA.setLgtanum(ET_RECORD.getString("TANUM"));
-                    ET_DATA.setLgerdat(ET_RECORD.getString("ERDAT"));
-                    ET_DATA.setSection(section_list.getSelectedItem().toString());
-                    ET_PICK_LIST.put(ET_RECORD.getString("TANUM"),ET_DATA);
-                    picklistitems.add(ET_DATA);
-                }
-                ((BaseAdapter) grt_pick_list.getAdapter()).notifyDataSetChanged();
+            picklistitems.clear();
+            ET_PICK_LIST.clear();
+
+            int start = pickListDataStartIndex(ET_DATA_ARRAY);
+            String section = section_list.getSelectedItem() != null
+                    ? section_list.getSelectedItem().toString() : "";
+
+            for (int i = start; i < ET_DATA_ARRAY.length(); i++) {
+                JSONObject ET_RECORD = ET_DATA_ARRAY.getJSONObject(i);
+                if (isGrtPickListHeaderRow(ET_RECORD)) continue;
+                String tanum = ET_RECORD.optString("TANUM", "").trim();
+                if (tanum.isEmpty()) continue;
+
+                ETPickList ET_DATA = new ETPickList();
+                ET_DATA.setLgtanum(tanum);
+                ET_DATA.setLgerdat(ET_RECORD.optString("ERDAT", ""));
+                ET_DATA.setSection(section);
+                ET_PICK_LIST.put(tanum, ET_DATA);
+                picklistitems.add(ET_DATA);
+            }
+
+            ((BaseAdapter) grt_pick_list.getAdapter()).notifyDataSetChanged();
+            if (picklistitems.isEmpty()) {
+                new AlertBox(getContext()).getBox("No pick lists",
+                        "No transfer orders found for this section.");
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -391,29 +433,45 @@ public class GRTCratePickingProcess extends Fragment implements View.OnClickList
         }
     }
 
-    public void SetSectionETData(JSONObject responsebody){
-        try
-        {
+    private static boolean isGrtSectionHeaderRow(JSONObject row) {
+        if (row == null) return true;
+        String merge = row.optString("MERGE", "").trim();
+        if ("MERGE".equalsIgnoreCase(merge) || "SECTION".equalsIgnoreCase(merge)) return true;
+        return false;
+    }
+
+    private static int sectionDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() <= 1) return 0;
+        return isGrtSectionHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
+    public void SetSectionETData(JSONObject responsebody) {
+        try {
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_SECTION");
-            int totalEtRecords = ET_DATA_ARRAY.length() - 1;
-            if(totalEtRecords > 0){
-                sections.clear();
-                sections.add("Select");
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    ETSection ET_DATA = new ETSection();
-                    ET_DATA.setLgmandt(ET_RECORD.getString("MANDT"));
-                    ET_DATA.setLglgnum(ET_RECORD.getString("LGNUM"));
-                    ET_DATA.setLgzsection(ET_RECORD.getString("ZSECTION"));
-                    ET_DATA.setLgmerge(ET_RECORD.getString("MERGE"));
-                    ET_DATA.setLgbinmerge(ET_RECORD.getString("BIN_MERGE"));
-                    ET_SECTION.put(ET_RECORD.getString("MERGE"),ET_DATA);
-                    sections.add(ET_RECORD.getString("MERGE"));
-                }
-                ((BaseAdapter) section_list.getAdapter()).notifyDataSetChanged();
-                section_list.invalidate();
-                section_list.setSelection(0);
+            int start = sectionDataStartIndex(ET_DATA_ARRAY);
+            sections.clear();
+            sections.add("Select");
+            for (int i = start; i < ET_DATA_ARRAY.length(); i++) {
+                JSONObject ET_RECORD = ET_DATA_ARRAY.getJSONObject(i);
+                if (isGrtSectionHeaderRow(ET_RECORD)) continue;
+                String merge = ET_RECORD.optString("MERGE", "").trim();
+                if (merge.isEmpty()) continue;
+                ETSection ET_DATA = new ETSection();
+                ET_DATA.setLgmandt(ET_RECORD.optString("MANDT", ""));
+                ET_DATA.setLglgnum(ET_RECORD.optString("LGNUM", ""));
+                ET_DATA.setLgzsection(ET_RECORD.optString("ZSECTION", ""));
+                ET_DATA.setLgmerge(merge);
+                ET_DATA.setLgbinmerge(ET_RECORD.optString("BIN_MERGE", ""));
+                ET_SECTION.put(merge, ET_DATA);
+                sections.add(merge);
             }
+            if (sections.size() <= 1) {
+                new AlertBox(getContext()).getBox("No sections", "No warehouse sections returned from server.");
+                return;
+            }
+            ((BaseAdapter) section_list.getAdapter()).notifyDataSetChanged();
+            section_list.invalidate();
+            section_list.setSelection(0);
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox box = new AlertBox(getContext());

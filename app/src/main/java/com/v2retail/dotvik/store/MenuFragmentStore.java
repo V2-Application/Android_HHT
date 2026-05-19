@@ -31,6 +31,7 @@ public class MenuFragmentStore extends Fragment implements
         OutboundFragment.OnFragmentInteractionListener,
         InboundFragment.OnFragmentInteractionListener,
         StockTakeFragment.OnFragmentInteractionListener,
+        FragmentStoreStockTrack.OnFragmentInteractionListener,
         Retail_App_Fragment.OnFragmentInteractionListener,
         MenuFragmentStoreDisplayInernal.OnFragmentInteractionListener,
         MenuFragmentStoreDisplayInernalIRODToIROD.OnFragmentInteractionListener {
@@ -41,7 +42,7 @@ public class MenuFragmentStore extends Fragment implements
 
     private OnFragmentInteractionListener mListener;
 
-    Button display_0001,msa_0002;
+    Button display_0001, msa_0002, stock_take_store;
     public MenuFragmentStore() {
         // Required empty public constructor
     }
@@ -66,9 +67,11 @@ public class MenuFragmentStore extends Fragment implements
 
         display_0001 = view.findViewById(R.id.display_0001);
         msa_0002 = view.findViewById(R.id.msa_0002);
+        stock_take_store = view.findViewById(R.id.stock_take_store);
 
         display_0001.setOnClickListener(this);
         msa_0002.setOnClickListener(this);
+        stock_take_store.setOnClickListener(this);
 
         return view;
     }
@@ -136,6 +139,9 @@ public class MenuFragmentStore extends Fragment implements
                 break;
             case R.id.display_0001:
                 fragment = new MenuFragmentStoreDisplay();
+                break;
+            case R.id.stock_take_store:
+                fragment = FragmentStoreStockTrack.newInstance();
                 break;
         }
         clearStack();

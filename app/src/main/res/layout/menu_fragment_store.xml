@@ -36,6 +36,15 @@ android:id="@+id/storeMenu">
             android:id="@+id/msa_0002"
             android:background="@color/buttonColor" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Stock Track"
+            android:layout_margin="5dp"
+            android:textColor="@color/white"
+            android:id="@+id/stock_take_store"
+            android:background="@color/buttonColor" />
+
     </LinearLayout>
 </ScrollView>
 </FrameLayout>

@@ -118,7 +118,7 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
             mPicklistno = getArguments().getString(ARG_PICKLISTNO);
             mSection = getArguments().getString(ARG_SECTION);
         }
-        fm = getFragmentManager();
+        fm = getParentFragmentManager();
     }
 
 
@@ -281,8 +281,8 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
         try {
 
             args.put("bapiname", Vars.GRT_GET_PICK_DATA);
-            args.put("IM_TANUM", mPicklistno);
-            args.put("IM_USER", mSection);
+            args.put("IM_TANUM", mPicklistno != null ? mPicklistno : "");
+            args.put("IM_USER", USER);
 
             ET_PICK_DATA = new TreeMap<>();
             showProcessingAndSubmit(Vars.GRT_GET_PICK_DATA, REQUEST_PICK_DATA, args);
@@ -380,6 +380,11 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
                                 }
                             }
                         }
+                        if (request == REQUEST_PICK_DATA && responsebody.has("ET_PICKDATA")
+                                && responsebody.get("ET_PICKDATA") instanceof JSONArray) {
+                            SetPickData(responsebody);
+                            return;
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         AlertBox box = new AlertBox(getContext());
@@ -438,32 +443,56 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
         }
     }
 
-    private void SetPickData(JSONObject responsebody) {
-        try
-        {
-            JSONArray ET_PICK_DATA_ARRAY = responsebody.getJSONArray("ET_PICKDATA");
-            int totalEtRecords = ET_PICK_DATA_ARRAY.length()-1;
-            if(totalEtRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_PICK_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    ETPickData ET_DATA = new ETPickData();
-                    ET_DATA.setLgvbeln(ET_RECORD.getString("VBELN"));
-                    ET_DATA.setLgmatnr(ET_RECORD.getString("MATNR"));
-                    ET_DATA.setLgvgbel(ET_RECORD.getString("VGBEL"));
-                    ET_DATA.setLgmeins(ET_RECORD.getString("MEINS"));
-                    ET_DATA.setLgsammg(ET_RECORD.getString("SAMMG"));
-                    ET_DATA.setLgmaterial(ET_RECORD.getString("MATERIAL"));
-                    ET_DATA.setLgposnr(ET_RECORD.getString("POSNR"));
-                    ET_DATA.setLggnature(ET_RECORD.getString("GNATURE"));
-                    ET_DATA.setLgbin(ET_RECORD.getString("BIN"));
-                    ET_DATA.setLgcrate(ET_RECORD.getString("CRATE"));
-                    ET_DATA.setLgmc_descr(ET_RECORD.getString("MC_DESCR"));
-                    ET_DATA.setLgurl(ET_RECORD.getString("URL"));
-                    ET_PICK_DATA.put(ET_RECORD.getString("BIN"),ET_DATA);
-                }
+    /**
+     * Same pattern as {@link GRTCratePickingProcess}: SAP may send a dummy row at index 0, or only one data row.
+     * Old {@code length - 1} + {@code recordIndex + 1} logic hid all lines when exactly one row was returned.
+     */
+    private static boolean isPickDataHeaderRow(JSONObject row) {
+        if (row == null) return true;
+        String bin = row.optString("BIN", "").trim();
+        if ("BIN".equalsIgnoreCase(bin) || "STORAGE BIN".equalsIgnoreCase(bin)) return true;
+        String matnr = row.optString("MATNR", "").trim();
+        if ("MATNR".equalsIgnoreCase(matnr) && (bin.isEmpty() || "BIN".equalsIgnoreCase(bin))) return true;
+        return false;
+    }
 
-                loadData();
+    private static int pickDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() <= 1) return 0;
+        return isPickDataHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
+    private void SetPickData(JSONObject responsebody) {
+        try {
+            JSONArray ET_PICK_DATA_ARRAY = responsebody.getJSONArray("ET_PICKDATA");
+            ET_PICK_DATA = new TreeMap<>();
+            int start = pickDataStartIndex(ET_PICK_DATA_ARRAY);
+            for (int i = start; i < ET_PICK_DATA_ARRAY.length(); i++) {
+                JSONObject ET_RECORD = ET_PICK_DATA_ARRAY.getJSONObject(i);
+                if (isPickDataHeaderRow(ET_RECORD)) continue;
+                String bin = ET_RECORD.optString("BIN", "").trim();
+                if (bin.isEmpty()) continue;
+
+                ETPickData ET_DATA = new ETPickData();
+                ET_DATA.setLgvbeln(ET_RECORD.optString("VBELN", ""));
+                ET_DATA.setLgmatnr(ET_RECORD.optString("MATNR", ""));
+                ET_DATA.setLgvgbel(ET_RECORD.optString("VGBEL", ""));
+                ET_DATA.setLgmeins(ET_RECORD.optString("MEINS", ""));
+                ET_DATA.setLgsammg(ET_RECORD.optString("SAMMG", ""));
+                ET_DATA.setLgmaterial(ET_RECORD.optString("MATERIAL", ""));
+                ET_DATA.setLgposnr(ET_RECORD.optString("POSNR", ""));
+                ET_DATA.setLggnature(ET_RECORD.optString("GNATURE", ""));
+                ET_DATA.setLgbin(bin);
+                ET_DATA.setLgcrate(ET_RECORD.optString("CRATE", ""));
+                ET_DATA.setLgmc_descr(ET_RECORD.optString("MC_DESCR", ""));
+                ET_DATA.setLgurl(ET_RECORD.optString("URL", ""));
+                ET_PICK_DATA.put(bin, ET_DATA);
             }
+            if (ET_PICK_DATA.isEmpty()) {
+                new AlertBox(getContext()).getBox("No data",
+                        "No open pick lines for this transfer order.");
+                return;
+            }
+            loadData();
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox box = new AlertBox(getContext());
