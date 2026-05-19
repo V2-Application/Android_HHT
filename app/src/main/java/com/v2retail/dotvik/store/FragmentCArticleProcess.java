@@ -239,7 +239,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
             try {
                 args.put("bapiname", Vars.ZSTORE_DISCOUNT_GET_EAN_DATA);
                 args.put("IM_WERKS", WERKS);
-                args.put("IM_USER", USER);
+                args.put("IM_USER", WERKS);
                 args.put("IM_EAN", barcode);
                 showProcessingAndSubmit(Vars.ZSTORE_DISCOUNT_GET_EAN_DATA, REQUEST_VALIDATE_BARCODE, args);
             } catch (JSONException e) {
@@ -290,7 +290,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 DiscountArticleScan articleScan = new DiscountArticleScan();
                 articleScan.setEan11(discData.getEan11());
                 articleScan.setErname(discData.getErname());
-                articleScan.setHhtuser(USER);
+                articleScan.setHhtuser(WERKS);
                 articleScan.setMatnr(discData.getMatnr());
                 articleScan.setMandt(discData.getMandt());
                 articleScan.setSqnty(Util.formatDouble(sqty));
@@ -325,7 +325,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
             try {
                 args.put("bapiname", Vars.ZSTORE_DISCOUNT_SAVE_EAN_DATA);
                 args.put("IM_PLANT", WERKS);
-                args.put("IM_USER", USER);
+                args.put("IM_USER", WERKS);
                 args.put("IM_0001", radio_0001.isChecked() ? "X":"");
                 args.put("IM_0006", radio_0006.isChecked() ? "X":"");
                 args.put("IT_DATA", dataToSave);
