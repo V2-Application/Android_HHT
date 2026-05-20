@@ -100,6 +100,60 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Packed HU PND TRF Floor DCLA"
+                android:id="@+id/ptl_new_picking_process_4_0_packed_hu_pnd_trf_floor_dcla"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Floor DCLA"
+                android:id="@+id/ptl_new_picking_process_4_0_floor_dcla"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ground floor DCLA"
+                android:id="@+id/ptl_new_picking_process_4_0_ground_floor_dcla"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CLA Area"
+                android:id="@+id/ptl_new_picking_process_4_0_cla_area"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PND Lorry Loading Staging Area"
+                android:id="@+id/ptl_new_picking_process_4_0_pnd_lorry_loading_staging_area"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lorry Loading Processing Area"
+                android:id="@+id/ptl_new_picking_process_4_0_lorry_loading_processing_area"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
         </LinearLayout>
     </ScrollView>
 </FrameLayout>

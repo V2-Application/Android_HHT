@@ -242,6 +242,38 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
     }
 
     /**
+     * True when {@code stn} is not a real station (SAP/JSON adaptor header noise).
+     */
+    private static boolean isInvalidHubStationToken(String stn) {
+        if (stn == null || stn.isEmpty()) {
+            return true;
+        }
+        // Header/metadata row often exposes this literal; not a floor station.
+        if ("ZZONE_STATION".equalsIgnoreCase(stn)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Hub on an ET_ST_ZONE / ET_DATA row, when SAP sends it (optional).
+     */
+    private static String hubFromTableRow(JSONObject row) {
+        return row.optString("HUB", "").trim();
+    }
+
+    /**
+     * First index to read for SAP ET_* arrays: index 0 is often a template/header row
+     * (see {@link com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateReceiveAtHubStation#setStationsList}).
+     */
+    private static int firstDataRowIndex(JSONArray et) {
+        if (et == null) {
+            return 0;
+        }
+        return et.length() > 1 ? 1 : 0;
+    }
+
+    /**
      * Fills HUB Station spinner from validate RFC.
      *
      * RFC table (per SAP): ET_ST_ZONE-ZONE_STATION
@@ -251,6 +283,8 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
         List<String> list = new ArrayList<>();
         list.add("Select");
 
+        String exHub = responsebody.optString("EX_HUB", "").trim();
+
         String preferred = responsebody.optString("EX_HUBSTN", "").trim();
         if (preferred.isEmpty()) {
             preferred = responsebody.optString("EX_HUB_STN", "").trim();
@@ -258,16 +292,25 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
         if (preferred.isEmpty()) {
             preferred = responsebody.optString("ZONE_STATION", "").trim();
         }
+        if (isInvalidHubStationToken(preferred)) {
+            preferred = "";
+        }
 
         if (responsebody.has("ET_ST_ZONE") && responsebody.get("ET_ST_ZONE") instanceof JSONArray) {
             JSONArray et = responsebody.getJSONArray("ET_ST_ZONE");
-            for (int i = 0; i < et.length(); i++) {
+            for (int i = firstDataRowIndex(et); i < et.length(); i++) {
                 JSONObject row = et.optJSONObject(i);
                 if (row == null) {
                     continue;
                 }
+                if (!exHub.isEmpty()) {
+                    String rowHub = hubFromTableRow(row);
+                    if (!rowHub.isEmpty() && !exHub.equalsIgnoreCase(rowHub)) {
+                        continue;
+                    }
+                }
                 String stn = row.optString("ZONE_STATION", "").trim();
-                if (!stn.isEmpty() && !list.contains(stn)) {
+                if (!isInvalidHubStationToken(stn) && !list.contains(stn)) {
                     list.add(stn);
                 }
             }
@@ -275,16 +318,22 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
 
         if (responsebody.has("ET_DATA") && responsebody.get("ET_DATA") instanceof JSONArray) {
             JSONArray et = responsebody.getJSONArray("ET_DATA");
-            for (int i = 0; i < et.length(); i++) {
+            for (int i = firstDataRowIndex(et); i < et.length(); i++) {
                 JSONObject row = et.optJSONObject(i);
                 if (row == null) {
                     continue;
+                }
+                if (!exHub.isEmpty()) {
+                    String rowHub = hubFromTableRow(row);
+                    if (!rowHub.isEmpty() && !exHub.equalsIgnoreCase(rowHub)) {
+                        continue;
+                    }
                 }
                 String stn = row.optString("HUB_STN", "").trim();
                 if (stn.isEmpty()) {
                     stn = row.optString("HUBSTN", "").trim();
                 }
-                if (!stn.isEmpty() && !list.contains(stn)) {
+                if (!isInvalidHubStationToken(stn) && !list.contains(stn)) {
                     list.add(stn);
                 }
             }

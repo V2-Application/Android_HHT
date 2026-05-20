@@ -614,7 +614,10 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     // ─── Step 4: validate the scanned HU and post the put-away ─────────────────
-    // IS_DATA = single JSON object (RFC adaptor contract), same shape as SAP ZWM_PTL_MSA_CRATE_ST export.
+    // IS_DATA is declared on the SAP Tables tab of ZWM_PTL_ZONE_HU_VALIDATE_V3
+    // (TYPE ZWM_PTL_MSA_CRATE_TT) and is REQUIRED (Optional flag unticked on SAP).
+    // → must be sent as a non-empty JSONArray, each element matching ZWM_PTL_MSA_CRATE_ST.
+    // If we send an empty array or omit the key, SAP rejects the call before any validation.
 
     private static String nz(String s) {
         return s == null ? "" : s.trim();
@@ -653,8 +656,9 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     /**
-     * Builds {@code IS_DATA} as one JSON object (not an array), matching the adaptor payload
-     * shape used for {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3}.
+     * Builds one row of the {@code IS_DATA} table (TYPE {@code ZWM_PTL_MSA_CRATE_TT}) for
+     * {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3}. {@link #validateZoneHU(String)} wraps the
+     * returned object in a {@link JSONArray} since IS_DATA is declared on the SAP Tables tab.
      */
     private JSONObject buildIsDataObjectForZoneHuValidate(String huRaw) {
         if (currentScan == null) {
@@ -716,6 +720,11 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         p.setHu(hu);
         p.setZone(validatedStation);
 
+        String hubVal = nz(p.getHub());
+        if (hubVal.isEmpty()) {
+            hubVal = nz(validatedHub);
+        }
+
         JSONObject isData = new JSONObject();
         try {
             isData.put("PICKLIST", nz(p.getPicklist()));
@@ -741,6 +750,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             isData.put("MATKL", nz(p.getMatkl()));
             isData.put("DIVISION", nz(p.getDivision()));
             isData.put("FLOOR", floor);
+            isData.put("HUB", hubVal);
         } catch (JSONException e) {
             handleException(e);
             return null;
@@ -754,12 +764,20 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             lastHuSubmitted = "";
             JSONObject isDataRow = buildIsDataObjectForZoneHuValidate(hu);
             if (isDataRow == null) {
+                // buildIsDataObjectForZoneHuValidate already showed an AlertBox; just abort.
                 endHuValidateInFlight();
                 return;
             }
-            // SAP param IS_DATA changed to table type (ZWM_PTL_MSA_CRATE_TT) → send as array.
+            // IS_DATA lives on the SAP Tables tab and is REQUIRED — wrap the row in a
+            // JSONArray and verify it's non-empty before submitting.
             JSONArray isData = new JSONArray();
             isData.put(isDataRow);
+            if (isData.length() == 0) {
+                endHuValidateInFlight();
+                UIFuncs.errorSound(con);
+                box.getBox("Err", "IS_DATA is empty — cannot call SAP. Rescan article and HU.");
+                return;
+            }
 
             args.put("bapiname", Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3);
             args.put("IM_USER", USER);

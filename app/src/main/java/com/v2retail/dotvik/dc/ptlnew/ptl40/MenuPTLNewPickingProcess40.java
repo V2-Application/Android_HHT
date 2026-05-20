@@ -38,7 +38,7 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
     String TAG = MenuPTLNewPickingProcess40.class.getName();
     private OnFragmentInteractionListener mListener;
 
-    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, proposed_hub_station, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise, hu_packing_weighing_area;
+    Button ptl_picking, flr_bin, flr_stagging, receive_at_zone, proposed_hub_station, hu_zone_store_mapping, hu_close, hu_print, article_putway_storewise, hu_packing_weighing_area, packed_hu_pnd_trf_floor_dcla, floor_dcla, ground_floor_dcla, cla_area, pnd_lorry_loading_staging_area, lorry_loading_processing_area;
 
     public MenuPTLNewPickingProcess40() {
     }
@@ -69,6 +69,12 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         hu_print = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_print);
         article_putway_storewise = view.findViewById(R.id.ptl_new_picking_process_4_0_article_putway_storewise);
         hu_packing_weighing_area = view.findViewById(R.id.ptl_new_picking_process_4_0_hu_packing_weighing_area);
+        packed_hu_pnd_trf_floor_dcla = view.findViewById(R.id.ptl_new_picking_process_4_0_packed_hu_pnd_trf_floor_dcla);
+        floor_dcla = view.findViewById(R.id.ptl_new_picking_process_4_0_floor_dcla);
+        ground_floor_dcla = view.findViewById(R.id.ptl_new_picking_process_4_0_ground_floor_dcla);
+        cla_area = view.findViewById(R.id.ptl_new_picking_process_4_0_cla_area);
+        pnd_lorry_loading_staging_area = view.findViewById(R.id.ptl_new_picking_process_4_0_pnd_lorry_loading_staging_area);
+        lorry_loading_processing_area = view.findViewById(R.id.ptl_new_picking_process_4_0_lorry_loading_processing_area);
 
         ptl_picking.setOnClickListener(this);
         flr_bin.setOnClickListener(this);
@@ -80,6 +86,12 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
         hu_print.setOnClickListener(this);
         article_putway_storewise.setOnClickListener(this);
         hu_packing_weighing_area.setOnClickListener(this);
+        packed_hu_pnd_trf_floor_dcla.setOnClickListener(this);
+        floor_dcla.setOnClickListener(this);
+        ground_floor_dcla.setOnClickListener(this);
+        cla_area.setOnClickListener(this);
+        pnd_lorry_loading_staging_area.setOnClickListener(this);
+        lorry_loading_processing_area.setOnClickListener(this);
 
         return view;
     }
@@ -155,6 +167,24 @@ public class MenuPTLNewPickingProcess40 extends Fragment implements View.OnClick
                 break;
             case R.id.ptl_new_picking_process_4_0_hu_packing_weighing_area:
                 fragment = FragmentPTLHUPackingWeighingArea.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_packed_hu_pnd_trf_floor_dcla:
+                fragment = FragmentPTLPackedHuPndTrfFloorDcla.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_floor_dcla:
+                fragment = FragmentPTLFloorDcla.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_ground_floor_dcla:
+                fragment = FragmentPTLGroundFloorDcla.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_cla_area:
+                fragment = FragmentPTLClaArea.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_pnd_lorry_loading_staging_area:
+                fragment = FragmentPTLPndLorryLoadingStagingArea.newInstance();
+                break;
+            case R.id.ptl_new_picking_process_4_0_lorry_loading_processing_area:
+                fragment = FragmentPTLLorryLoadingProcessingArea.newInstance();
                 break;
         }
         if (fragment != null) {

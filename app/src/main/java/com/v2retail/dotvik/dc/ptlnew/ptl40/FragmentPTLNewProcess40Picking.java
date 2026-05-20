@@ -392,7 +392,13 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         switch (view.getId()) {
             case R.id.btn_ptl_new_picking_process_40_back:
                 if(currentStep == 3){
+                    etDataMap.clear();
+                    eanDataMap.clear();
+                    step3(0);
+                    txt_scan_msa_crate.setText("");
+                    txt_scanned_msa_crate.setText("");
                     step2(1);
+                    txt_scan_msa_crate.requestFocus();
                 }else{
                     box.confirmBack(fm, con);
                 }
@@ -479,13 +485,20 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             txt_scanned_floor.setText(UIFuncs.toUpperTrim(txt_floor));
             txt_scanned_floor_bin.setText(UIFuncs.toUpperTrim(txt_scan_bin));
             txt_scanned_section.setText(UIFuncs.toUpperTrim(txt_section));
-            txt_scan_msa_crate.requestFocus();
+            txt_empty_crate.requestFocus();
         }
         txt_scanned_bin.setText(totalScanned + " / " + totalBin);
         if(mode == 2){
-            txt_scanned_msa_crate.setText("");
+            etDataMap.clear();
+            eanDataMap.clear();
+            txt_empty_crate.setText("");
+            txt_scanned_empty_crate.setText("");
+            txt_scan_msa_bin.setText("");
             txt_scanned_msa_bin.setText("");
-            txt_scanned_msa_bin.requestFocus();
+            txt_scan_msa_crate.setText("");
+            txt_scanned_msa_crate.setText("");
+            txt_scanned_bin.setText(totalScanned + " / " + totalBin);
+            txt_empty_crate.requestFocus();
         }
     }
 
@@ -543,7 +556,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             int totalEtRecords = ET_DATA_ARRAY.length();
             boolean firstRowSet = false;
             if(totalEtRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
+                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
                     BinCrateData binCrateData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), BinCrateData.class);
                     if(binCrateData == null){
                         continue;
@@ -743,6 +756,11 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
     private void validateMSACrate(String value){
+        if(UIFuncs.toUpperTrim(txt_scanned_msa_bin).isEmpty()){
+            box.getBox("Invalid", "Please scan MSA BIN first");
+            txt_scan_msa_bin.requestFocus();
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_MSA_CRATE_VALIDATE_V4);
@@ -762,45 +780,61 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
     private void clearFieldsForNextScan(JSONObject responsebody){
+        if(!isAdded()){
+            return;
+        }
         try {
             etDataMap = new LinkedHashMap<>();
             eanDataMap = new LinkedHashMap<>();
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
-            JSONArray ET_EAN_DATA_ARRAY = responsebody.getJSONArray("ET_EAN_DATA");
+            JSONArray ET_DATA_ARRAY = responsebody.optJSONArray("ET_DATA");
+            JSONArray ET_EAN_DATA_ARRAY = responsebody.optJSONArray("ET_EAN_DATA");
 
-            int totalEtRecords = ET_DATA_ARRAY.length();
-            int totalEanRecords = ET_EAN_DATA_ARRAY.length();
+            int totalEtRecords = ET_DATA_ARRAY != null ? ET_DATA_ARRAY.length() : 0;
+            int totalEanRecords = ET_EAN_DATA_ARRAY != null ? ET_EAN_DATA_ARRAY.length() : 0;
 
-            if (totalEtRecords > 0) {
-                for (int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++) {
-                    PicklistData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
-                    if(picklistData == null || picklistData.getArticle() == null || picklistData.getArticle().trim().isEmpty()){
-                        continue;
-                    }
-                    etDataMap.put(picklistData.getMsaCrate() + "-" + picklistData.getBin() + "-" + UIFuncs.removeLeadingZeros(picklistData.getArticle()), picklistData);
+            // ET_DATA[0] / ET_EAN_DATA[0] are SAP column-header rows (same as other PTL RFCs).
+            for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
+                PicklistData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
+                if(picklistData == null){
+                    continue;
                 }
-            }
-            if (totalEanRecords > 0) {
-                for (int recordIndex = 0; recordIndex < totalEanRecords; recordIndex++) {
-                    HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
-                    if(eanData == null || eanData.getLgean11() == null || eanData.getLgean11().trim().isEmpty()){
-                        continue;
-                    }
-                    eanDataMap.put(eanData.getLgean11(), eanData);
+                String article = picklistData.getArticle();
+                String msaCrate = picklistData.getMsaCrate();
+                String bin = picklistData.getBin();
+                if(article == null || article.trim().isEmpty()
+                        || msaCrate == null || msaCrate.trim().isEmpty()
+                        || bin == null || bin.trim().isEmpty()){
+                    continue;
                 }
+                picklistData.setShortScan(false);
+                String key = msaCrate.trim() + "-" + bin.trim() + "-" + UIFuncs.removeLeadingZeros(article.trim());
+                etDataMap.put(key, picklistData);
             }
-            if (!etDataMap.isEmpty()) {
-                txt_scanned_msa_crate.setText(UIFuncs.toUpperTrim((txt_scan_msa_crate)));
+            for (int recordIndex = 1; recordIndex < totalEanRecords; recordIndex++) {
+                HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
+                if(eanData == null || eanData.getLgean11() == null || eanData.getLgean11().trim().isEmpty()){
+                    continue;
+                }
+                eanDataMap.put(eanData.getLgean11().trim(), eanData);
+            }
+            if (!etDataMap.isEmpty() && !eanDataMap.isEmpty()) {
+                txt_scanned_msa_crate.setText(UIFuncs.toUpperTrim(txt_scan_msa_crate));
                 txt_scan_msa_crate.setText("");
                 totalScanned = totalScanned + 1;
+                txt_scanned_bin.setText(totalScanned + " / " + totalBin);
                 step3(1);
+                txt_scan_article.requestFocus();
             } else {
-                box.getBox("Empty", "Picklist Data is Empty");
+                box.getBox("Empty", "Picklist / barcode data is empty");
+                txt_scan_msa_crate.setText("");
+                txt_scan_msa_crate.requestFocus();
             }
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox box = new AlertBox(getContext());
             box.getErrBox(e);
+            txt_scan_msa_crate.setText("");
+            txt_scan_msa_crate.requestFocus();
         }
 
     }
@@ -945,7 +979,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         tr.addView(cbSelect);
         tr.addView(tvBin);
 
-        if(data.getEType().equals("SIN") && isScanned){
+        if("SIN".equals(data.getEType()) && isScanned){
             LinearLayout qtyCell = new LinearLayout(getContext());
             qtyCell.setOrientation(LinearLayout.HORIZONTAL);
             qtyCell.setGravity(Gravity.CENTER_VERTICAL);
@@ -1245,7 +1279,8 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                             box.getBox("Success", responsebody.get("EX_TANUM").toString(), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    step2(1);
+                                                    step3(0);
+                                                    step2(2);
                                                 }
                                             });
                                         }
