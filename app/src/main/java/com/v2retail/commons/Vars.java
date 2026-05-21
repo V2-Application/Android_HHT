@@ -283,6 +283,10 @@ public class Vars {
     public static String ZWM_PTL_HU_V61_V62 = "ZWM_PTL_HU_V61_V62";
     /** PTL V62/V63 — CLA Area save (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_HU_V62_V63 = "ZWM_PTL_HU_V62_V63";
+    /** PTL V63/V64 — PND Lorry Loading Staging Area save (IM_USER, IM_PLANT, IM_PALETTE). */
+    public static String ZWM_PTL_HU_V63_V64 = "ZWM_PTL_HU_V63_V64";
+    /** PTL V64/V65 — Lorry Loading Processing Area save (IM_USER, IM_PLANT, IM_PALETTE). */
+    public static String ZWM_PTL_HU_V64_V65 = "ZWM_PTL_HU_V64_V65";
     public static String ZSTORE_DISCOUNT_GET_EAN_DATA = "ZSTORE_DISCOUNT_GET_EAN_DATA";
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
