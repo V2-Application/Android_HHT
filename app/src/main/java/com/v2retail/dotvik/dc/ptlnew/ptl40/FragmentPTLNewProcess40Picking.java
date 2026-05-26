@@ -429,16 +429,12 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                         txt_scan_msa_crate.requestFocus();
                         break;
                     }
-                    if(isMsaCrateRequiredForScannedBin() && (etDataMap == null || etDataMap.isEmpty())){
+                    if(etDataMap == null || etDataMap.isEmpty()){
                         box.getBox("Invalid", "MSA Crate details not loaded. Please re-scan MSA Crate");
                         txt_scan_msa_crate.requestFocus();
                         break;
                     }
-                    if(!isMsaCrateRequiredForScannedBin()){
-                        advanceAfterMsaBinWithoutCrate();
-                    } else {
-                        step3(1);
-                    }
+                    step3(1);
                 }
                 break;
             case R.id.btn_ptl_new_picking_process_40_save:
@@ -688,19 +684,8 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             txt_scan_msa_crate.setText("");
             txt_scanned_msa_crate.setText("");
             UIFuncs.disableInput(con, txt_scan_msa_crate);
-            btn_next.requestFocus();
+            validateMSACrate("");
         }
-    }
-
-    /** Step 2 → 3 when ListView has no crate: skip ZWM_PTL_MSA_CRATE_VALIDATE_V4. */
-    private void advanceAfterMsaBinWithoutCrate() {
-        String binCrateKey = UIFuncs.toUpperTrim(txt_scanned_msa_bin) + "-";
-        picklistDataMap.remove(binCrateKey);
-        populateBinCrateTable();
-        totalScanned = totalScanned + 1;
-        txt_scanned_bin.setText(totalScanned + " / " + totalBin);
-        step3(1);
-        txt_scan_article.requestFocus();
     }
 
     /** When SAP returns BIN but empty CRATE, still show one line on step 2 (floor bin). */
@@ -917,7 +902,10 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
     }
     private void validateMSACrate(String value){
         if (!txt_scan_msa_crate.isEnabled()) {
-            return;
+            String trimmed = value == null ? "" : value.trim();
+            if (!trimmed.isEmpty()) {
+                return;
+            }
         }
         if(UIFuncs.toUpperTrim(txt_scanned_msa_bin).isEmpty()){
             box.getBox("Invalid", "Please scan MSA BIN first");
