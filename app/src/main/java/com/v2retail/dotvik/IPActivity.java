@@ -36,6 +36,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.v2retail.ApplicationController;
@@ -235,7 +236,7 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
         Log.v("Version",minorVersion+"////"+majorVersion);
 
 
-        JsonObjectRequest strreq = new JsonObjectRequest(Request.Method.GET,
+        JsonObjectRequest strreq = new SapJsonObjectRequest(Request.Method.GET,
                 URL+ "/appversion?appName=V2RetailOps&platform=Android&majorVersion="+majorVersion+"&minorVersion="+minorVersion, null,
                 new Response.Listener<JSONObject>() {
                     @Override

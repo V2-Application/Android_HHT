@@ -35,6 +35,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -318,7 +319,7 @@ public class Article_Sale_Scan_Fragment extends Fragment implements View.OnClick
         //RequestQueue initialized
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
 
-        mJsonRequest = new JsonObjectRequest( Request.Method.POST, URL, params,new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest( Request.Method.POST, URL, params,new Response.Listener<JSONObject>() {
 
 
             @Override
@@ -497,7 +498,7 @@ public class Article_Sale_Scan_Fragment extends Fragment implements View.OnClick
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
 
-        mJsonRequest = new JsonObjectRequest( Request.Method.POST, URL, params,new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest( Request.Method.POST, URL, params,new Response.Listener<JSONObject>() {
 
 
             @Override

@@ -35,6 +35,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -634,7 +635,7 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

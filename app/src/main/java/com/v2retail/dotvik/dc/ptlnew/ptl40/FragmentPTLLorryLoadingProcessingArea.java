@@ -34,6 +34,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -222,7 +223,7 @@ public class FragmentPTLLorryLoadingProcessingArea extends Fragment implements V
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+        JsonObjectRequest jsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
                 responsebody -> {
                     dismissDialog();
                     Log.d(TAG, "response -> " + responsebody);

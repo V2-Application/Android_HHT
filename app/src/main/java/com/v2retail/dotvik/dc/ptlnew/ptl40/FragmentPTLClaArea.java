@@ -35,6 +35,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -50,7 +51,7 @@ import org.json.JSONObject;
  * PTL 4.0 — CLA Area.
  * <ul>
  *   <li>Scan Pallet validate: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HU_V62_V63} — IM_USER, IM_PLANT, IM_PALETTE</li>
+ *   <li>Save: no RFC — local confirm and reset after pallet validate</li>
  * </ul>
  */
 public class FragmentPTLClaArea extends Fragment implements View.OnClickListener {
@@ -58,7 +59,6 @@ public class FragmentPTLClaArea extends Fragment implements View.OnClickListener
     private static final String TAG = FragmentPTLClaArea.class.getSimpleName();
     private static final String ACTION_BAR_TITLE = "CLA Area";
     private static final int REQUEST_VALIDATE_PALLET = 5721;
-    private static final int REQUEST_SAVE = 5722;
 
     private FragmentManager fm;
     private Context con;
@@ -186,18 +186,7 @@ public class FragmentPTLClaArea extends Fragment implements View.OnClickListener
             txtScanPallet.requestFocus();
             return;
         }
-        JSONObject args = new JSONObject();
-        try {
-            args.put("bapiname", Vars.ZWM_PTL_HU_V62_V63);
-            args.put("IM_USER", USER);
-            args.put("IM_PLANT", WERKS);
-            args.put("IM_PALETTE", validatedPallet);
-            showProcessingAndSubmit(Vars.ZWM_PTL_HU_V62_V63, REQUEST_SAVE, args);
-        } catch (JSONException e) {
-            Log.e(TAG, "requestSave", e);
-            box.getErrBox(e);
-            UIFuncs.errorSound(con);
-        }
+        box.getBox("Ok", "Saved", (d, w) -> resetScreen());
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -223,7 +212,7 @@ public class FragmentPTLClaArea extends Fragment implements View.OnClickListener
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+        JsonObjectRequest jsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
                 responsebody -> {
                     dismissDialog();
                     Log.d(TAG, "response -> " + responsebody);
@@ -305,16 +294,6 @@ public class FragmentPTLClaArea extends Fragment implements View.OnClickListener
                 }
                 txtScanPallet.setText("");
                 txtScanPallet.requestFocus();
-            } else if (request == REQUEST_SAVE) {
-                String hub = responsebody.optString("EX_HUB", "").trim();
-                if (!TextUtils.isEmpty(hub)) {
-                    txtHub.setText(hub);
-                }
-                String cnt = responsebody.optString("EX_PALETTE_CNT", "").trim();
-                if (!TextUtils.isEmpty(cnt)) {
-                    txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
-                }
-                box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message, (d, w) -> resetScreen());
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);

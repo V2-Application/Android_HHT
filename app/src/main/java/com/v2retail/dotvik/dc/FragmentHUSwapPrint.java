@@ -32,6 +32,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -380,7 +381,7 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
                 + "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, args,
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, args,
                 responsebody -> {
                     if (dialog != null) { dialog.dismiss(); dialog = null; }
                     Log.d(TAG, "response -> " + responsebody);

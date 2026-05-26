@@ -27,6 +27,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
@@ -166,7 +167,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
             return;
         }
 
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, params,
             new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
@@ -236,7 +237,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
             return;
         }
 
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, params,
             new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
@@ -309,7 +310,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
             return;
         }
 
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, rfcUrl, params,
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, params,
             new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {

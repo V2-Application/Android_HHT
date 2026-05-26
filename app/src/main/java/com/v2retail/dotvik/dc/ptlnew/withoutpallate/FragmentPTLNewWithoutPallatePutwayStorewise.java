@@ -41,6 +41,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.lidroid.xutils.db.sqlite.SqlInfo;
 import com.v2retail.ApplicationController;
@@ -505,24 +506,34 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
 
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
             JSONArray ET_EAN_DATA_ARRAY = responsebody.getJSONArray("ET_EAN_DATA");
-            int totalEtRecords = ET_DATA_ARRAY.length();
-            int totalEanRecords = ET_EAN_DATA_ARRAY.length();
-            if(totalEtRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
-                    PicklistData etData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
-                    etDataMap.put(etData.getArticle() + "-" + etData.getStore(), etData);
+            int etStart = com.v2retail.commons.SapJsonRows.startIndex(ET_DATA_ARRAY);
+            int eanStart = com.v2retail.commons.SapJsonRows.startIndex(ET_EAN_DATA_ARRAY, "LGEAN11");
+            for (int recordIndex = etStart; recordIndex < ET_DATA_ARRAY.length(); recordIndex++) {
+                JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                if (com.v2retail.commons.SapJsonRows.isMetadataRow(row, "ARTICLE", "STORE")) {
+                    continue;
                 }
-            }
-            if(totalEanRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEanRecords; recordIndex++){
-                    HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
-                    eanDataMap.put(eanData.getLgean11(), eanData);
+                PicklistData etData = new Gson().fromJson(row.toString(), PicklistData.class);
+                if (etData == null || etData.getArticle() == null) {
+                    continue;
                 }
+                etDataMap.put(etData.getArticle() + "-" + etData.getStore(), etData);
             }
-            if(totalEtRecords > 0 && totalEanRecords > 0){
+            for (int recordIndex = eanStart; recordIndex < ET_EAN_DATA_ARRAY.length(); recordIndex++) {
+                JSONObject row = ET_EAN_DATA_ARRAY.getJSONObject(recordIndex);
+                if (com.v2retail.commons.SapJsonRows.isMetadataRow(row, "LGEAN11")) {
+                    continue;
+                }
+                HUEANData eanData = new Gson().fromJson(row.toString(), HUEANData.class);
+                if (eanData == null || eanData.getLgean11() == null) {
+                    continue;
+                }
+                eanDataMap.put(eanData.getLgean11(), eanData);
+            }
+            if (!etDataMap.isEmpty() && !eanDataMap.isEmpty()) {
                 UIFuncs.enableInput(con, txt_scan_article);
                 return;
-            }else{
+            } else {
                 box.getBox("No Records Found", "No data available for scan");
             }
         } catch (JSONException e) {
@@ -595,7 +606,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
     }
 
     /**
-     * v12.115 (2026-05-12): IS_DATA payload trimmed to EXACTLY the 7 fields
+     * v12.115 (2026-05-12): IT_DATA payload trimmed to EXACTLY the 7 fields
      * required by SAP RFC ZWM_PTL_ZONE_HU_VALIDATE_V3 per ops spec.
      *
      * Required SAP structure (ZWM_PTL_MSA_CRATE_ST) fields for this RFC:
@@ -630,7 +641,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             this.currentScan.setZone(zoneSel);
             this.currentScan.setZoneStation(zoneSel);
 
-            // Build IS_DATA as a strict object with ONLY the 7 SAP-required fields.
+            // Build one IT_DATA row (ZWM_PTL_MSA_CRATE_ST).
             JSONObject isData = new JSONObject();
             isData.put("ZONE_STATION", zoneSel);
             isData.put("CRATE",        safe(currentScan.getCrate()));
@@ -641,7 +652,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             isData.put("SCAN_QTY",     safe(currentScan.getScanQty()));
 
             // Verbose pre-RFC payload logs for QA / SAP middleware verification.
-            Log.d(TAG, "=== IS_DATA (7-field strict) ===");
+            Log.d(TAG, "=== IT_DATA (7-field strict) ===");
             Log.d(TAG, "ZONE_STATION = " + zoneSel);
             Log.d(TAG, "CRATE        = " + safe(currentScan.getCrate()));
             Log.d(TAG, "ARTICLE      = " + safe(currentScan.getArticle()));
@@ -649,7 +660,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             Log.d(TAG, "FLOOR        = " + safe(currentScan.getFloor()));
             Log.d(TAG, "HU           = " + huNorm);
             Log.d(TAG, "SCAN_QTY     = " + safe(currentScan.getScanQty()));
-            Log.d(TAG, "IS_DATA JSON = " + isData.toString());
+            Log.d(TAG, "IT_DATA JSON = " + isData.toString());
             return isData;
         }catch (Exception exce){
             box.getErrBox(exce);
@@ -666,11 +677,17 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
             args.put("IM_WERKS", WERKS);
             JSONObject itData = getScanDataToSubmit(hu);
             if(itData != null){
-                args.put("IS_DATA", itData);
+                if (Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3.equals(rfc)) {
+                    JSONArray itDataTable = new JSONArray();
+                    itDataTable.put(itData);
+                    args.put(Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3_TABLE, itDataTable);
+                } else {
+                    args.put("IT_DATA", itData);
+                }
                 Log.d(TAG, "validateZoneHU RFC=" + rfc
                         + " | IM_USER=" + USER
                         + " | IM_WERKS=" + WERKS
-                        + " | IS_DATA.HU=" + itData.optString("HU", "(missing)")
+                        + " | IT_DATA.HU=" + itData.optString("HU", "(missing)")
                         + " | full args=" + args.toString());
                 showProcessingAndSubmit(rfc, REQUEST_VALIDATE_ZONE_HU, args);
             }
@@ -721,7 +738,7 @@ public class FragmentPTLNewWithoutPallatePutwayStorewise extends Fragment implem
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

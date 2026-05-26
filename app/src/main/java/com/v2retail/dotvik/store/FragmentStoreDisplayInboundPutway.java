@@ -34,6 +34,8 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -49,6 +51,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -293,36 +296,50 @@ public class FragmentStoreDisplayInboundPutway extends Fragment implements View.
         }
     }
 
-    private void setData(JSONObject rsponse){
-        try{
+    private void setData(JSONObject rsponse) {
+        loadResponseData(rsponse, true);
+    }
+
+    private void loadResponseData(JSONObject rsponse, boolean incrementScannedEan) {
+        try {
             JSONArray arrEtData = rsponse.getJSONArray("ET_DATA");
             JSONArray arrEtEanData = rsponse.getJSONArray("ET_EAN_DATA");
             String binno = UIFuncs.toUpperTrim(txt_scanbin);
 
-            int arrlength = arrEtData.length();
-            if(arrlength > 0){
-                for(int recordIndex = 1; recordIndex < arrlength; recordIndex++){
-                    JSONObject ET_RECORD  = arrEtData.getJSONObject(recordIndex);
-                    ETDataStorePutway etRecord = ETDataStorePutway.newInstance(ET_RECORD,UIFuncs.toUpperTrim(txt_sloc),WERKS,binno);
-                    if(!etData.containsKey(etRecord.getMatnr())){
-                        etData.put(ET_RECORD.getString("MATNR"),etRecord);
-                    }
+            int dataStart = SapJsonRows.startIndex(arrEtData, "MATNR");
+            for (int recordIndex = dataStart; recordIndex < arrEtData.length(); recordIndex++) {
+                JSONObject ET_RECORD = arrEtData.getJSONObject(recordIndex);
+                if (SapJsonRows.isMetadataRow(ET_RECORD, "MATNR")) {
+                    continue;
                 }
+                ETDataStorePutway etRecord = ETDataStorePutway.newInstance(ET_RECORD, UIFuncs.toUpperTrim(txt_sloc), WERKS, binno);
+                String matnr = ET_RECORD.optString("MATNR", "").trim();
+                if (matnr.isEmpty() || etData.containsKey(matnr)) {
+                    continue;
+                }
+                etData.put(matnr, etRecord);
             }
-            arrlength = arrEtEanData.length();
-            if(arrlength > 0){
-                HashMap<String, ETEanDataStorePutway> mapEtEanData = new HashMap<>();
-                for(int recordIndex = 1; recordIndex < arrlength; recordIndex++){
-                    JSONObject ET_EAN_RECORD  = arrEtEanData.getJSONObject(recordIndex);
-                    ETEanDataStorePutway eanRecord = ETEanDataStorePutway.newInstance(ET_EAN_RECORD);
-                    if(!etEanData.containsKey(eanRecord.getEan11())){
-                        etEanData.put(ET_EAN_RECORD.getString("EAN11"),eanRecord);
-                    }
+            int eanStart = SapJsonRows.startIndex(arrEtEanData, "EAN11", "MATNR");
+            for (int recordIndex = eanStart; recordIndex < arrEtEanData.length(); recordIndex++) {
+                JSONObject ET_EAN_RECORD = arrEtEanData.getJSONObject(recordIndex);
+                if (SapJsonRows.isMetadataRow(ET_EAN_RECORD, "EAN11", "MATNR")) {
+                    continue;
                 }
+                String ean11 = ET_EAN_RECORD.optString("EAN11", "").trim();
+                if (ean11.isEmpty()) {
+                    continue;
+                }
+                String eanKey = ean11.toUpperCase(Locale.ROOT);
+                if (etEanData.containsKey(eanKey)) {
+                    continue;
+                }
+                etEanData.put(eanKey, ETEanDataStorePutway.newInstance(ET_EAN_RECORD));
             }
             calculateTotalQty();
-            incrementCount(UIFuncs.toUpperTrim(txt_ean));
-        }catch (Exception exce){
+            if (incrementScannedEan) {
+                incrementCount(UIFuncs.toUpperTrim(txt_ean));
+            }
+        } catch (Exception exce) {
             box.getErrBox(exce);
         }
     }
@@ -476,7 +493,7 @@ public class FragmentStoreDisplayInboundPutway extends Fragment implements View.
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {
@@ -520,6 +537,9 @@ public class FragmentStoreDisplayInboundPutway extends Fragment implements View.
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
                                     } else {
                                         if(request == REQUEST_VALIDATE_BIN){
+                                            if (responsebody.has("ET_DATA") || responsebody.has("ET_EAN_DATA")) {
+                                                loadResponseData(responsebody, false);
+                                            }
                                             resetBinScanFields();
                                             return;
                                         }

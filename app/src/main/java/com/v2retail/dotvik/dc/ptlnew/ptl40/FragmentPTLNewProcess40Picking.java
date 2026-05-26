@@ -43,6 +43,8 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -142,7 +144,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         SharedPreferencesData data=new SharedPreferencesData(con);
         URL=data.read("URL");
         WERKS=data.read("WERKS");
-        USER=data.read("USER");
+        USER = data.getSapUserId();
         activity = getActivity();
 
         txt_scan_bin = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_scan_floor_bin);
@@ -422,17 +424,21 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                         txt_scan_msa_bin.requestFocus();
                         break;
                     }
-                    if(UIFuncs.toUpperTrim(txt_scanned_msa_crate).isEmpty()){
+                    if(isMsaCrateRequiredForScannedBin() && UIFuncs.toUpperTrim(txt_scanned_msa_crate).isEmpty()){
                         box.getBox("Invalid", "Please scan MSA Crate");
                         txt_scan_msa_crate.requestFocus();
                         break;
                     }
-                    if(etDataMap == null || etDataMap.isEmpty()){
+                    if(isMsaCrateRequiredForScannedBin() && (etDataMap == null || etDataMap.isEmpty())){
                         box.getBox("Invalid", "MSA Crate details not loaded. Please re-scan MSA Crate");
                         txt_scan_msa_crate.requestFocus();
                         break;
                     }
-                    step3(1);
+                    if(!isMsaCrateRequiredForScannedBin()){
+                        advanceAfterMsaBinWithoutCrate();
+                    } else {
+                        step3(1);
+                    }
                 }
                 break;
             case R.id.btn_ptl_new_picking_process_40_save:
@@ -468,6 +474,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         ll_screen_3.setVisibility(View.GONE);
         btn_next.setVisibility(View.VISIBLE);
         btn_save.setVisibility(View.INVISIBLE);
+        UIFuncs.enableInput(con, txt_scan_msa_crate);
         if(mode == 0){
             totalScanned = 0;
             totalBin = 0;
@@ -528,8 +535,23 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         UIFuncs.enableInput(con, txt_scan_article);
     }
 
+    private boolean ensureSapUserId() {
+        if (con == null) {
+            return false;
+        }
+        USER = new SharedPreferencesData(con).getSapUserId();
+        if (USER == null || USER.isEmpty()) {
+            box.getBox("Err", "User ID is missing. Please log out and log in again.");
+            return false;
+        }
+        return true;
+    }
+
     //Step 1
     private void validateBin(String bin){
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZPTL_GET_DATA_FROM_BIN_RFC);
@@ -548,16 +570,54 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
 
+    /**
+     * Dev JSON RFC adapter returns 0-indexed data rows only; production SAP often
+     * prefixes ET_* tables with a column-name template row at index 0.
+     */
+    private static boolean isSapTableHeaderRow(JSONObject row, String... fieldKeys) {
+        if (row == null) {
+            return true;
+        }
+        for (String key : fieldKeys) {
+            String val = row.optString(key, "").trim();
+            if (!val.isEmpty() && val.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ZPTL_GET_DATA_FROM_BIN_RFC ET_DATA template row (production SAP).
+     * Example: BIN="Storage Bin", PICKLIST="Transfer Order Number", FLOOR="Floor", etc.
+     */
+    private static boolean isBinCrateEtDataHeaderRow(JSONObject row) {
+        return SapJsonRows.isPtlBinCrateMetadataRow(row);
+    }
+
+    private static int binCrateEtDataStartIndex(JSONArray arr) throws JSONException {
+        return SapJsonRows.startIndex(arr, "BIN", "PICKLIST");
+    }
+
+    private static int etArrayStartIndex(JSONArray arr, String... headerFieldKeys) throws JSONException {
+        return SapJsonRows.startIndex(arr, headerFieldKeys);
+    }
+
     private void setBinData(JSONObject responsebody){
         try
         {
             binDataMap = new LinkedHashMap<>();
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
             int totalEtRecords = ET_DATA_ARRAY.length();
+            int startIndex = binCrateEtDataStartIndex(ET_DATA_ARRAY);
             boolean firstRowSet = false;
             if(totalEtRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
-                    BinCrateData binCrateData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), BinCrateData.class);
+                for(int recordIndex = startIndex; recordIndex < totalEtRecords; recordIndex++){
+                    JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                    if (isBinCrateEtDataHeaderRow(row)) {
+                        continue;
+                    }
+                    BinCrateData binCrateData = new Gson().fromJson(row.toString(), BinCrateData.class);
                     if(binCrateData == null){
                         continue;
                     }
@@ -575,7 +635,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                     }
                 }
             }
-            if(!binDataMap.isEmpty()){
+            if(!binDataMap.isEmpty() || !UIFuncs.toUpperTrim(txt_picklist).isEmpty()){
                 btn_next.requestFocus();
             }else{
                 box.getBox("Empty", "Picklist Data is Empty");
@@ -587,7 +647,84 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
 
+    /** True when the scanned MSA BIN row in the bin/crate table has a crate value. */
+    private boolean isMsaCrateRequiredForScannedBin() {
+        String scannedBin = UIFuncs.toUpperTrim(txt_scanned_msa_bin);
+        if (scannedBin.isEmpty()) {
+            scannedBin = UIFuncs.toUpperTrim(txt_scan_msa_bin);
+        }
+        boolean foundMatchingRow = false;
+        boolean matchingRowHasCrate = false;
+        for (ETPickData data : picklistDataMap.values()) {
+            String bin = data.getLgbin() == null ? "" : data.getLgbin().trim();
+            if (bin.isEmpty()) {
+                continue;
+            }
+            String crate = data.getLgcrate() == null ? "" : data.getLgcrate().trim();
+            if (!scannedBin.isEmpty() && bin.equalsIgnoreCase(scannedBin)) {
+                foundMatchingRow = true;
+                if (!crate.isEmpty()) {
+                    matchingRowHasCrate = true;
+                }
+            }
+        }
+        if (foundMatchingRow) {
+            return matchingRowHasCrate;
+        }
+        for (ETPickData data : picklistDataMap.values()) {
+            String crate = data.getLgcrate() == null ? "" : data.getLgcrate().trim();
+            if (!crate.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void applyMsaCrateFieldStateAfterBinScan() {
+        if (isMsaCrateRequiredForScannedBin()) {
+            UIFuncs.enableInput(con, txt_scan_msa_crate);
+            txt_scan_msa_crate.requestFocus();
+        } else {
+            txt_scan_msa_crate.setText("");
+            txt_scanned_msa_crate.setText("");
+            UIFuncs.disableInput(con, txt_scan_msa_crate);
+            btn_next.requestFocus();
+        }
+    }
+
+    /** Step 2 → 3 when ListView has no crate: skip ZWM_PTL_MSA_CRATE_VALIDATE_V4. */
+    private void advanceAfterMsaBinWithoutCrate() {
+        String binCrateKey = UIFuncs.toUpperTrim(txt_scanned_msa_bin) + "-";
+        picklistDataMap.remove(binCrateKey);
+        populateBinCrateTable();
+        totalScanned = totalScanned + 1;
+        txt_scanned_bin.setText(totalScanned + " / " + totalBin);
+        step3(1);
+        txt_scan_article.requestFocus();
+    }
+
+    /** When SAP returns BIN but empty CRATE, still show one line on step 2 (floor bin). */
+    private void seedPicklistFromFloorBinWhenCrateEmpty() {
+        String floorBin = UIFuncs.toUpperTrim(txt_scan_bin);
+        if (floorBin.isEmpty()) {
+            return;
+        }
+        ETPickData row = new ETPickData();
+        row.setLgbin(floorBin);
+        row.setLgcrate("");
+        picklistDataMap.put(floorBin + "-", row);
+    }
+
+    private void advanceToPickStep2() {
+        totalBin = Math.max(1, picklistDataMap.size());
+        step2(1);
+        populateBinCrateTable();
+    }
+
     private void getPicklistListData(String value){
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZGRT_PICK_GET_PICK_DATA_V4);
@@ -610,18 +747,35 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             picklistDataMap = new LinkedHashMap<>();
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_PICKDATA");
             int totalEtRecords = ET_DATA_ARRAY.length();
+            int startIndex = etArrayStartIndex(ET_DATA_ARRAY, "BIN", "MATNR");
             if (totalEtRecords > 0) {
-                for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
-                    ETPickData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), ETPickData.class);
-                    if(!(picklistData.getLgbin() == null || picklistData.getLgbin().isEmpty()) && !(picklistData.getLgcrate() == null || picklistData.getLgcrate().isEmpty())){
-                        picklistDataMap.put(picklistData.getLgbin() + "-" + picklistData.getLgcrate(), picklistData);
+                for (int recordIndex = startIndex; recordIndex < totalEtRecords; recordIndex++) {
+                    JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                    if (isSapTableHeaderRow(row, "BIN", "MATNR")) {
+                        continue;
                     }
+                    ETPickData picklistData = new Gson().fromJson(row.toString(), ETPickData.class);
+                    if (picklistData == null) {
+                        continue;
+                    }
+                    String bin = picklistData.getLgbin() == null ? "" : picklistData.getLgbin().trim();
+                    if (bin.isEmpty()) {
+                        continue;
+                    }
+                    String crate = picklistData.getLgcrate() == null ? "" : picklistData.getLgcrate().trim();
+                    picklistData.setLgcrate(crate);
+                    picklistDataMap.put(bin + "-" + crate, picklistData);
                 }
             }
+            if (picklistDataMap.isEmpty()) {
+                seedPicklistFromFloorBinWhenCrateEmpty();
+            }
             if (!picklistDataMap.isEmpty()) {
-                totalBin = picklistDataMap.size();
-                step2(1);
-                populateBinCrateTable();
+                advanceToPickStep2();
+            } else if (!UIFuncs.toUpperTrim(txt_picklist).isEmpty()) {
+                // Picklist known from floor-bin scan; SAP lines had empty CRATE — continue without blocking
+                totalBin = 1;
+                advanceToPickStep2();
             } else {
                 box.getBox("Empty", "Picklist Data is Empty");
             }
@@ -720,6 +874,9 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
 
     //Step 2
     private void validateEmptyCrate(String crate){
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_CRATE_VALIDATE_V4);
@@ -738,6 +895,9 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
     private void validateMsaBin(String bin){
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_BIN_VALIDATE_V3);
@@ -756,9 +916,15 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         }
     }
     private void validateMSACrate(String value){
+        if (!txt_scan_msa_crate.isEnabled()) {
+            return;
+        }
         if(UIFuncs.toUpperTrim(txt_scanned_msa_bin).isEmpty()){
             box.getBox("Invalid", "Please scan MSA BIN first");
             txt_scan_msa_bin.requestFocus();
+            return;
+        }
+        if (!ensureSapUserId()) {
             return;
         }
         JSONObject args = new JSONObject();
@@ -792,9 +958,14 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             int totalEtRecords = ET_DATA_ARRAY != null ? ET_DATA_ARRAY.length() : 0;
             int totalEanRecords = ET_EAN_DATA_ARRAY != null ? ET_EAN_DATA_ARRAY.length() : 0;
 
-            // ET_DATA[0] / ET_EAN_DATA[0] are SAP column-header rows (same as other PTL RFCs).
-            for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
-                PicklistData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
+            int etStartIndex = etArrayStartIndex(ET_DATA_ARRAY, "ARTICLE", "BIN");
+            int eanStartIndex = etArrayStartIndex(ET_EAN_DATA_ARRAY, "LGEAN11");
+            for (int recordIndex = etStartIndex; recordIndex < totalEtRecords; recordIndex++) {
+                JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                if (isSapTableHeaderRow(row, "ARTICLE", "BIN")) {
+                    continue;
+                }
+                PicklistData picklistData = new Gson().fromJson(row.toString(), PicklistData.class);
                 if(picklistData == null){
                     continue;
                 }
@@ -802,22 +973,33 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                 String msaCrate = picklistData.getMsaCrate();
                 String bin = picklistData.getBin();
                 if(article == null || article.trim().isEmpty()
-                        || msaCrate == null || msaCrate.trim().isEmpty()
                         || bin == null || bin.trim().isEmpty()){
                     continue;
                 }
+                boolean crateRequired = isMsaCrateRequiredForScannedBin();
+                if(crateRequired && (msaCrate == null || msaCrate.trim().isEmpty())){
+                    continue;
+                }
                 picklistData.setShortScan(false);
-                String key = msaCrate.trim() + "-" + bin.trim() + "-" + UIFuncs.removeLeadingZeros(article.trim());
+                String crateKey = (msaCrate == null || msaCrate.trim().isEmpty()) ? "" : msaCrate.trim();
+                String key = crateKey + "-" + bin.trim() + "-" + UIFuncs.removeLeadingZeros(article.trim());
                 etDataMap.put(key, picklistData);
             }
-            for (int recordIndex = 1; recordIndex < totalEanRecords; recordIndex++) {
-                HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(recordIndex).toString(), HUEANData.class);
+            for (int recordIndex = eanStartIndex; recordIndex < totalEanRecords; recordIndex++) {
+                JSONObject row = ET_EAN_DATA_ARRAY.getJSONObject(recordIndex);
+                if (isSapTableHeaderRow(row, "LGEAN11")) {
+                    continue;
+                }
+                HUEANData eanData = new Gson().fromJson(row.toString(), HUEANData.class);
                 if(eanData == null || eanData.getLgean11() == null || eanData.getLgean11().trim().isEmpty()){
                     continue;
                 }
                 eanDataMap.put(eanData.getLgean11().trim(), eanData);
             }
             if (!etDataMap.isEmpty() && !eanDataMap.isEmpty()) {
+                String binCrateKey = UIFuncs.toUpperTrim(txt_scanned_msa_bin) + "-" + UIFuncs.toUpperTrim(txt_scan_msa_crate);
+                picklistDataMap.remove(binCrateKey);
+                populateBinCrateTable();
                 txt_scanned_msa_crate.setText(UIFuncs.toUpperTrim(txt_scan_msa_crate));
                 txt_scan_msa_crate.setText("");
                 totalScanned = totalScanned + 1;
@@ -827,14 +1009,22 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             } else {
                 box.getBox("Empty", "Picklist / barcode data is empty");
                 txt_scan_msa_crate.setText("");
-                txt_scan_msa_crate.requestFocus();
+                if (txt_scan_msa_crate.isEnabled()) {
+                    txt_scan_msa_crate.requestFocus();
+                } else {
+                    btn_next.requestFocus();
+                }
             }
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox box = new AlertBox(getContext());
             box.getErrBox(e);
             txt_scan_msa_crate.setText("");
-            txt_scan_msa_crate.requestFocus();
+            if (txt_scan_msa_crate.isEnabled()) {
+                txt_scan_msa_crate.requestFocus();
+            } else {
+                btn_next.requestFocus();
+            }
         }
 
     }
@@ -876,7 +1066,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         headerRQty.setPadding(5,5,5,5);
         headerRQty.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
         headerRQty.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
-        headerRQty.setText(" R.QTY ");
+        headerRQty.setText(" R.Q ");
 
         headerSQty.setGravity(Gravity.CENTER);
         headerSQty.setPadding(0,5,0,5);
@@ -914,10 +1104,15 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                 PicklistData etData = etDataMap.get(key);
                 if(!"SIN".equals(etData.getEType())){
                     double maxQty= Double.parseDouble(etData.getQuantity());
-                    if(etData.getSqty() >= maxQty){
-                        box.getBox("Invalid", String.format("Already scanned maximum allowed Qty - %d", etData.getSqty()));
+                    int umrezQty = (int) eanData.getLgumrez();
+                    if(umrezQty <= 0){
+                        umrezQty = 1;
+                    }
+                    if(etData.getSqty() + umrezQty > maxQty){
+                        int pendingScanQty = (int) maxQty - etData.getSqty();
+                        box.getBox("Invalid", String.format("Already scanned maximum allowed Qty : %d", pendingScanQty));
                     }else{
-                        etData.setSqty(etData.getSqty() + 1);
+                        etData.setSqty(etData.getSqty() + umrezQty);
                     }
                 }
                 populateArticleTableRow(etData, true);
@@ -1128,6 +1323,9 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         return;
     }
     private void saveScannedData(){
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_V06_V09);
@@ -1213,7 +1411,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {
@@ -1254,7 +1452,11 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                         }
                                         else if (request == REQUEST_VALIDATE_MSA_CRATE) {
                                             txt_scan_msa_crate.setText("");
-                                            txt_scan_msa_crate.requestFocus();
+                                            if (txt_scan_msa_crate.isEnabled()) {
+                                                txt_scan_msa_crate.requestFocus();
+                                            } else {
+                                                txt_scan_msa_bin.requestFocus();
+                                            }
                                         }
                                     } else {
                                         if (request == REQUEST_BIN_DATA) {
@@ -1271,7 +1473,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                         else if (request == REQUEST_VALIDATE_MSA_BIN) {
                                             txt_scanned_msa_bin.setText(UIFuncs.toUpperTrim(txt_scan_msa_bin));
                                             txt_scan_msa_bin.setText("");
-                                            txt_scan_msa_crate.requestFocus();
+                                            applyMsaCrateFieldStateAfterBinScan();
                                         }
                                         else if (request == REQUEST_VALIDATE_MSA_CRATE) {
                                             clearFieldsForNextScan(responsebody);

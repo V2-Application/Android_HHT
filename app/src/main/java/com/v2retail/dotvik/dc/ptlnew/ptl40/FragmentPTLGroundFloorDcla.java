@@ -35,6 +35,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -50,7 +51,7 @@ import org.json.JSONObject;
  * PTL 4.0 — Ground floor DCLA.
  * <ul>
  *   <li>Scan Pallet validate: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HU_V61_V62} — IM_USER, IM_PLANT, IM_PALETTE</li>
+ *   <li>Save: {@link Vars#ZWM_PTL_HU_V62_V63} — IM_USER, IM_PLANT, IM_PALETTE</li>
  * </ul>
  */
 public class FragmentPTLGroundFloorDcla extends Fragment implements View.OnClickListener {
@@ -188,11 +189,11 @@ public class FragmentPTLGroundFloorDcla extends Fragment implements View.OnClick
         }
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_PTL_HU_V61_V62);
+            args.put("bapiname", Vars.ZWM_PTL_HU_V62_V63);
             args.put("IM_USER", USER);
             args.put("IM_PLANT", WERKS);
             args.put("IM_PALETTE", validatedPallet);
-            showProcessingAndSubmit(Vars.ZWM_PTL_HU_V61_V62, REQUEST_SAVE, args);
+            showProcessingAndSubmit(Vars.ZWM_PTL_HU_V62_V63, REQUEST_SAVE, args);
         } catch (JSONException e) {
             Log.e(TAG, "requestSave", e);
             box.getErrBox(e);
@@ -223,7 +224,7 @@ public class FragmentPTLGroundFloorDcla extends Fragment implements View.OnClick
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+        JsonObjectRequest jsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
                 responsebody -> {
                     dismissDialog();
                     Log.d(TAG, "response -> " + responsebody);

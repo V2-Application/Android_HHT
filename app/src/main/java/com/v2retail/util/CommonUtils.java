@@ -5,6 +5,8 @@ import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
+import com.v2retail.commons.SapJsonRows;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,7 +35,12 @@ public class CommonUtils {
         JSONArray sortedJsonArray = new JSONArray();
 
         List<JSONObject> jsonValues = new ArrayList<>();
-        int startIndex = ignoreTopElement ? 1 : 0;
+        int startIndex;
+        try {
+            startIndex = ignoreTopElement ? SapJsonRows.startIndex(jsonArrToSort) : 0;
+        } catch (JSONException e) {
+            startIndex = ignoreTopElement ? 1 : 0;
+        }
         for (int i = startIndex; i < jsonArrToSort.length(); i++) {
             jsonValues.add(jsonArrToSort.getJSONObject(i));
         }

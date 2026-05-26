@@ -31,6 +31,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -209,7 +210,7 @@ public class FragmentPTLNewProcess40ProposedHubStation extends Fragment implemen
         Log.d(TAG, "payload ->" + params);
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+        JsonObjectRequest mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
                 responsebody -> {
                     dismissDialog();
                     Log.d(TAG, "response ->" + responsebody);

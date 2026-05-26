@@ -269,6 +269,8 @@ public class Vars {
     public static String ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4 = "ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4";
     public static String ZWM_PTL_ZONE_CRATE_VALIDATE_V3 = "ZWM_PTL_ZONE_CRATE_VALIDATE_V3";
     public static String ZWM_PTL_ZONE_HU_VALIDATE_V3 = "ZWM_PTL_ZONE_HU_VALIDATE_V3";
+    /** Import table on {@link #ZWM_PTL_ZONE_HU_VALIDATE_V3} — line type {@code ZWM_PTL_MSA_CRATE_ST}. */
+    public static String ZWM_PTL_ZONE_HU_VALIDATE_V3_TABLE = "IT_DATA";
     /** PTL HU Packing & Weighing — scan HU validate (IM_USER, IM_WERKS, IM_HU); export EX_DATA (ZWM_PTL_MSA_CRATE_TT row). */
     public static String ZWM_PTL_HUPACKING_HU_VALIDATE = "ZWM_PTL_HUPACKING_HU_VALIDATE";
     /** PTL HU Packing & Weighing — persist weight (IM_USER, IM_WERKS, IM_HU, IM_WEIGHT). */
@@ -277,11 +279,11 @@ public class Vars {
     public static String ZWM_PTL_PALATE_V60_V61 = "ZWM_PTL_PALATE_V60_V61";
     /** Packed HU PND TRF Floor DCLA — scan HU validate (IM_USER, IM_PLANT, IM_HU); export EX_HUB, EX_STORE. */
     public static String ZWM_PTL_HU_V6LIDATE_RFC = "ZWM_PTL_HU_V6LIDATE_RFC";
-    /** PTL V60/V61 — Floor DCLA save (RFC name given by SAP team). */
+    /** PTL V60/V61 — Packed HU PND TRF Floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_HU_V60_V61 = "ZWM_PTL_HU_V60_V61";
-    /** PTL V61/V62 — Ground floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V61/V62 — Floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_HU_V61_V62 = "ZWM_PTL_HU_V61_V62";
-    /** PTL V62/V63 — CLA Area save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V62/V63 — Ground floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_HU_V62_V63 = "ZWM_PTL_HU_V62_V63";
     /** PTL V63/V64 — PND Lorry Loading Staging Area save (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_HU_V63_V64 = "ZWM_PTL_HU_V63_V64";

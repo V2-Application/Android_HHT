@@ -27,6 +27,26 @@ public class SharedPreferencesData {
         return data;
     }
 
+    /**
+     * SAP RFCs use {@code IM_USER}. Login stores {@code USER}; some sessions only have {@code USERNAME}.
+     * Falls back to USERNAME and back-fills USER when missing.
+     */
+    public String getSapUserId() {
+        String user = read("USER");
+        if (user == null || user.trim().isEmpty()) {
+            user = read("USERNAME");
+        }
+        if (user == null || user.trim().isEmpty()) {
+            return "";
+        }
+        user = user.trim().toUpperCase();
+        String storedUser = read("USER");
+        if (storedUser == null || storedUser.trim().isEmpty()) {
+            write("USER", user);
+        }
+        return user;
+    }
+
     public boolean isKeyExists(String key){
         if (key != null && !key.isEmpty()) {
             return preferences.contains(key);

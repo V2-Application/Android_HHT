@@ -39,6 +39,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -55,9 +56,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implements View.OnClickListener {
 
@@ -174,23 +177,49 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
         try
         {
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_ZONE");
-            int totalEtRecords = ET_DATA_ARRAY.length() - 1;
+            // RFC adapter returns a clean 0-indexed array (no header row). The old loop
+            // started at 1 and used length()-1 as the bound, which always dropped the last zone.
+            int totalEtRecords = ET_DATA_ARRAY.length();
             if(totalEtRecords > 0){
                 stations.clear();
                 zones.clear();
+                hubZoneDataMap.clear();
                 zones.add("Select");
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
-                    ZoneStation hubZoneCrate = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), ZoneStation.class);
-                    if(hubZoneDataMap.containsKey(hubZoneCrate.getZone())){
-                        Map<String, ZoneStation> hubZoneMap = hubZoneDataMap.get(hubZoneCrate.getZone());
-                        hubZoneMap.put(hubZoneCrate.getZoneStation() + "-" + hubZoneCrate.getZone(), hubZoneCrate);
+                Set<String> seenZones = new HashSet<>();
+                int blanksSkipped = 0;
+                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
+                    JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                    ZoneStation hubZoneCrate = new Gson().fromJson(row.toString(), ZoneStation.class);
+                    String zone = hubZoneCrate.getZone() != null ? hubZoneCrate.getZone().trim() : "";
+                    if(zone.isEmpty()){
+                        zone = row.optString("ZZONE", "").trim();
+                    }
+                    if(zone.isEmpty()){
+                        zone = row.optString("ZONE", "").trim();
+                    }
+                    String zoneStation = hubZoneCrate.getZoneStation() != null ? hubZoneCrate.getZoneStation().trim() : "";
+                    if(zoneStation.isEmpty()){
+                        zoneStation = row.optString("ZONE_STATION", "").trim();
+                    }
+                    if(zone.isEmpty()){
+                        blanksSkipped++;
+                        continue;
+                    }
+                    if(hubZoneDataMap.containsKey(zone)){
+                        Map<String, ZoneStation> hubZoneMap = hubZoneDataMap.get(zone);
+                        hubZoneMap.put(zoneStation + "-" + zone, hubZoneCrate);
                     }else{
                         Map<String, ZoneStation> hubZoneMap = new LinkedHashMap<>();
-                        hubZoneMap.put(hubZoneCrate.getZoneStation() + "-" + hubZoneCrate.getZone(), hubZoneCrate);
-                        hubZoneDataMap.put(hubZoneCrate.getZone(), hubZoneMap);
-                        zones.add(hubZoneCrate.getZone());
+                        hubZoneMap.put(zoneStation + "-" + zone, hubZoneCrate);
+                        hubZoneDataMap.put(zone, hubZoneMap);
+                        if(seenZones.add(zone)){
+                            zones.add(zone);
+                        }
                     }
                 }
+                Log.d(TAG, "setZoneList: ET_ZONE rows=" + totalEtRecords
+                        + " | unique zones loaded=" + (zones.size() - 1)
+                        + " | blanks skipped=" + blanksSkipped);
 
                 ((BaseAdapter) dd_station_list.getAdapter()).notifyDataSetChanged();
                 dd_station_list.setEnabled(false);
@@ -444,7 +473,7 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

@@ -2,6 +2,7 @@ package com.v2retail.dotvik.dc.ptlnew.withpallate;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -37,6 +38,9 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.DataHelper;
+import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -70,10 +74,11 @@ import java.util.Map;
  *     and ET_EAN_DATA (barcodes). Cursor moves to Scan Article.
  *  3. Scan Article (barcode) → validated locally against ET_EAN_DATA-EAN11; the
  *     resolved MATNR is matched against ET_DATA-ARTICLE to populate Article,
- *     Proposed Store and Store Floor. IS_DATA is prepared for the HU step.
- *  4. Scan HU → {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} (IM_USER, IM_WERKS, IS_DATA) immediately
- *     after a valid HU scan (no Submit button). On success the row's pending qty is decremented
- *     and the cursor returns to Scan Article for the next pick.
+ *     Proposed Store and Store Floor. IT_DATA row is prepared for the HU step.
+ *  4. Scan HU → {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} (IM_USER, IM_WERKS, IT_DATA) immediately
+ *     after a valid HU scan (no Submit button). {@code SCAN_QTY} and pending-qty reduction use
+ *     {@code UMREZ} from {@code ET_EAN_DATA} (MARM) for the article barcode scanned in step 3.
+ *     On success the row's pending qty is decremented and the cursor returns to Scan Article.
  */
 public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements View.OnClickListener {
 
@@ -96,6 +101,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     EditText txt_scan_crate, txt_crate;
     EditText txt_scan_article, txt_article, txt_proposed_store, txt_store_floor;
     EditText txt_scan_hu, txt_hu, txt_pending_qty;
+    Button btn_reset;
 
     /** FLR Station confirmed by validate RFC; required for crate/HU calls. */
     private String validatedStation = "";
@@ -109,6 +115,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private String lastHuSubmitted = "";
     /** Prevents double RFC when the scanner sends keystrokes + ENTER. */
     private boolean huValidateInFlight = false;
+    /** EAN11 from the last successful article scan — used for MARM {@code UMREZ} on HU put-away. */
+    private String lastScannedEan11 = "";
 
     /** Brand red used in the screen footer / spec mock-up. */
     private static final int ACTION_BAR_RED = 0xFFE71821;
@@ -130,6 +138,9 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     @Override
     public void onResume() {
         super.onResume();
+        if (con != null) {
+            USER = new SharedPreferencesData(con).getSapUserId();
+        }
         Process_Selection_Activity activity = (Process_Selection_Activity) getActivity();
         if (activity != null) {
             activity.setActionBarTitle("PTL- Article Putway Store Wise");
@@ -184,7 +195,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         SharedPreferencesData data = new SharedPreferencesData(con);
         URL = data.read("URL");
         WERKS = data.read("WERKS");
-        USER = data.read("USER");
+        USER = data.getSapUserId();
 
         txt_scan_station = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_station);
         txt_station = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_station);
@@ -201,6 +212,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_scan_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_hu);
         txt_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_hu);
         txt_pending_qty = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_pending_qty);
+        btn_reset = rootView.findViewById(R.id.btn_ptl_new_article_putway_storewise_reset);
+        btn_reset.setOnClickListener(this);
 
         clearAll();
         addInputEvents();
@@ -210,13 +223,38 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     @Override
     public void onClick(View view) {
-        // Footer buttons removed; no-op.
+        if (view.getId() == R.id.btn_ptl_new_article_putway_storewise_reset) {
+            onResetClicked();
+        }
+    }
+
+    /** RESET — clears crate/article/store/HU/qty; keeps Station and HUB. */
+    private void onResetClicked() {
+        if (validatedStation.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Please scan FLR Station first.");
+            txt_scan_station.requestFocus();
+            return;
+        }
+        resetCrateAndBelow();
     }
 
     private void endHuValidateInFlight() {
         huValidateInFlight = false;
         if (txt_scan_hu != null) {
             UIFuncs.enableInput(con, txt_scan_hu);
+        }
+    }
+
+    /** Clears Scan HU / HU display and returns focus to Scan HU. */
+    private void clearHuScanFields() {
+        if (txt_scan_hu != null) {
+            txt_scan_hu.setText("");
+            UIFuncs.enableInput(con, txt_scan_hu);
+            txt_scan_hu.requestFocus();
+        }
+        if (txt_hu != null) {
+            txt_hu.setText("");
         }
     }
 
@@ -262,6 +300,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
      */
     private void clearAll() {
         currentScan = null;
+        lastScannedEan11 = "";
         validatedStation = "";
         validatedHub = "";
         etDataMap = new LinkedHashMap<>();
@@ -288,15 +327,18 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     /**
-     * Reset everything that depends on a crate (article/store/HU rows + pending qty).
-     * Called when a fresh crate is about to be scanned and after a successful HU put-away
-     * when the crate has been fully consumed.
+     * Clears crate through pending-qty fields and in-memory ET data.
+     * Station, HUB, and {@link #validatedStation} / {@link #validatedHub} are left unchanged.
      */
-    private void clearForNextCrate() {
+    private void resetCrateAndBelow() {
+        endHuValidateInFlight();
         currentScan = null;
+        lastScannedEan11 = "";
+        lastHuSubmitted = "";
         etDataMap = new LinkedHashMap<>();
         eanDataMap = new HashMap<>();
 
+        txt_scan_crate.setText("");
         txt_crate.setText("");
         txt_scan_article.setText("");
         txt_article.setText("");
@@ -310,6 +352,11 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         UIFuncs.disableInput(con, txt_scan_hu);
         UIFuncs.enableInput(con, txt_scan_crate);
         txt_scan_crate.requestFocus();
+    }
+
+    /** @see #resetCrateAndBelow() */
+    private void clearForNextCrate() {
+        resetCrateAndBelow();
     }
 
     private void addInputEvents() {
@@ -456,9 +503,26 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         });
     }
 
+    /** Re-read login prefs so IM_USER is never sent blank to SAP. */
+    private boolean ensureSapUserId() {
+        if (con == null) {
+            return false;
+        }
+        USER = new SharedPreferencesData(con).getSapUserId();
+        if (USER == null || USER.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "User ID is missing. Please log out and log in again.");
+            return false;
+        }
+        return true;
+    }
+
     // ─── Step 1: validate FLR Station ──────────────────────────────────────────
 
     private void validateStation(String station) {
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_STATION_VALIDATE);
@@ -488,9 +552,13 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     // ─── Step 2: validate Crate against Station + HUB ──────────────────────────
 
     private void validateStationCrate(String crate) {
+        if (!ensureSapUserId()) {
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             currentScan = null;
+            lastScannedEan11 = "";
             args.put("bapiname", Vars.ZWM_PTL_STATION_CRATE_VALIDATE);
             args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
@@ -519,26 +587,42 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_hu.setText("");
             txt_hu.setText("");
 
-            JSONArray ET_DATA_ARRAY = responsebody.optJSONArray("ET_DATA");
-            JSONArray ET_EAN_DATA_ARRAY = responsebody.optJSONArray("ET_EAN_DATA");
-            int totalEtRecords = ET_DATA_ARRAY != null ? ET_DATA_ARRAY.length() : 0;
-            int totalEanRecords = ET_EAN_DATA_ARRAY != null ? ET_EAN_DATA_ARRAY.length() : 0;
-
-            // RFC adapter returns clean 0-indexed JSON arrays with NO header row;
-            // loop must start at i=0 (matches the pattern in ZoneList parsing).
-            for (int i = 0; i < totalEtRecords; i++) {
-                PicklistData etData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(i).toString(), PicklistData.class);
-                if (etData == null || etData.getArticle() == null) {
-                    continue;
-                }
-                etDataMap.put(etData.getArticle() + "-" + etData.getStore(), etData);
+            JSONArray etDataArray = responsebody.optJSONArray("ET_DATA");
+            JSONArray etEanDataArray = responsebody.optJSONArray("ET_EAN_DATA");
+            if (etDataArray == null) {
+                etDataArray = new JSONArray();
             }
-            for (int i = 0; i < totalEanRecords; i++) {
-                HUEANData eanData = new Gson().fromJson(ET_EAN_DATA_ARRAY.getJSONObject(i).toString(), HUEANData.class);
-                if (eanData == null || eanData.getLgean11() == null) {
+            if (etEanDataArray == null) {
+                etEanDataArray = new JSONArray();
+            }
+
+            int etStart = SapJsonRows.startIndex(etDataArray, "ARTICLE", "STORE", "CRATE");
+            for (int i = etStart; i < etDataArray.length(); i++) {
+                JSONObject row = etDataArray.getJSONObject(i);
+                if (SapJsonRows.isMetadataRow(row, "ARTICLE", "STORE", "CRATE")) {
                     continue;
                 }
-                eanDataMap.put(eanData.getLgean11(), eanData);
+                PicklistData etData = new Gson().fromJson(row.toString(), PicklistData.class);
+                if (etData == null || etData.getArticle() == null || etData.getArticle().trim().isEmpty()) {
+                    continue;
+                }
+                String store = etData.getStore() == null ? "" : etData.getStore().trim();
+                etDataMap.put(etData.getArticle().trim() + "-" + store, etData);
+            }
+
+            // ET_EAN_DATA → ZMM_MARM_STR_TT (MATNR, MEINH, UMREZ, EAN11)
+            int eanStart = SapJsonRows.startIndex(etEanDataArray, "EAN11", "MATNR");
+            for (int i = eanStart; i < etEanDataArray.length(); i++) {
+                JSONObject row = etEanDataArray.getJSONObject(i);
+                if (SapJsonRows.isMetadataRow(row, "EAN11", "MATNR")) {
+                    continue;
+                }
+                HUEANData eanData = DataHelper.parseZmmMarmStr(row);
+                String ean11 = eanData.getLgean11();
+                if (ean11 == null || ean11.trim().isEmpty()) {
+                    continue;
+                }
+                eanDataMap.put(ean11.trim().toUpperCase(Locale.ROOT), eanData);
             }
 
             if (!etDataMap.isEmpty() && !eanDataMap.isEmpty()) {
@@ -559,11 +643,17 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     // ─── Step 3: validate scanned barcode against the loaded ET data ───────────
 
     private void validateArticleScan(String barcode) {
-        if (eanDataMap.containsKey(barcode)) {
-            String matnr = eanDataMap.get(barcode).getLgmatnr();
+        String barcodeKey = barcode == null ? "" : barcode.trim().toUpperCase(Locale.ROOT);
+        if (barcodeKey.isEmpty()) {
+            txt_scan_article.requestFocus();
+            return;
+        }
+        if (eanDataMap.containsKey(barcodeKey)) {
+            String matnr = eanDataMap.get(barcodeKey).getLgmatnr();
+            String matnrNorm = UIFuncs.removeLeadingZeros(matnr);
             PicklistData scanData = null;
             for (Map.Entry<String, PicklistData> dataEntry : etDataMap.entrySet()) {
-                if (dataEntry.getValue().getArticle().equalsIgnoreCase(matnr)) {
+                if (UIFuncs.removeLeadingZeros(dataEntry.getValue().getArticle()).equalsIgnoreCase(matnrNorm)) {
                     scanData = dataEntry.getValue();
                     if (scanData.getSqty() == 0) {
                         break;
@@ -581,6 +671,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                     txt_scan_hu.setText("");
                     txt_hu.setText("");
                     this.currentScan = scanData;
+                    lastScannedEan11 = barcodeKey;
                     calculatePendingQty(qty);
                     UIFuncs.disableInput(con, txt_scan_article);
                     UIFuncs.enableInput(con, txt_scan_hu);
@@ -614,7 +705,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     // ─── Step 4: validate the scanned HU and post the put-away ─────────────────
-    // IS_DATA is declared on the SAP Tables tab of ZWM_PTL_ZONE_HU_VALIDATE_V3
+    // IT_DATA is declared on the SAP Tables tab of ZWM_PTL_ZONE_HU_VALIDATE_V3
     // (TYPE ZWM_PTL_MSA_CRATE_TT) and is REQUIRED (Optional flag unticked on SAP).
     // → must be sent as a non-empty JSONArray, each element matching ZWM_PTL_MSA_CRATE_ST.
     // If we send an empty array or omit the key, SAP rejects the call before any validation.
@@ -656,9 +747,25 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     /**
-     * Builds one row of the {@code IS_DATA} table (TYPE {@code ZWM_PTL_MSA_CRATE_TT}) for
+     * {@code UMREZ} from {@code ET_EAN_DATA} (MARM) for {@link #lastScannedEan11}.
+     * Falls back to {@code 1} when the barcode or conversion factor is missing.
+     */
+    private double resolveUmrezForLastArticleScan() {
+        if (lastScannedEan11 == null || lastScannedEan11.isEmpty()) {
+            return 1.0;
+        }
+        HUEANData ean = eanDataMap.get(lastScannedEan11.toUpperCase(Locale.ROOT));
+        if (ean == null) {
+            return 1.0;
+        }
+        double umrez = ean.getLgumrez();
+        return umrez > 0 ? umrez : 1.0;
+    }
+
+    /**
+     * Builds one row of the {@code IT_DATA} table (TYPE {@code ZWM_PTL_MSA_CRATE_TT}) for
      * {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3}. {@link #validateZoneHU(String)} wraps the
-     * returned object in a {@link JSONArray} since IS_DATA is declared on the SAP Tables tab.
+     * returned object in a {@link JSONArray} since IT_DATA is declared on the SAP Tables tab.
      */
     private JSONObject buildIsDataObjectForZoneHuValidate(String huRaw) {
         if (currentScan == null) {
@@ -714,8 +821,15 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         // Preserve ET row values before mutating for this RFC.
         String zoneFromRow = nz(p.getZone());
         double openQty = parseMenge(p.getQuantity());
-        // Per RFC contract: SCAN_QTY must be 1 per HU scan.
-        double scanQtyForRfc = 1.0;
+        double scanQtyForRfc = resolveUmrezForLastArticleScan();
+        if (scanQtyForRfc > openQty) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", String.format(Locale.US,
+                    "Scan qty (%.0f) exceeds pending qty (%.0f) for this article.",
+                    scanQtyForRfc, openQty),
+                    (DialogInterface dialog, int which) -> clearHuScanFields());
+            return null;
+        }
 
         p.setHu(hu);
         p.setZone(validatedStation);
@@ -759,6 +873,10 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     private void validateZoneHU(String hu) {
+        if (!ensureSapUserId()) {
+            endHuValidateInFlight();
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             lastHuSubmitted = "";
@@ -768,21 +886,21 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 endHuValidateInFlight();
                 return;
             }
-            // IS_DATA lives on the SAP Tables tab and is REQUIRED — wrap the row in a
+            // IT_DATA lives on the SAP Tables tab and is REQUIRED — wrap the row in a
             // JSONArray and verify it's non-empty before submitting.
-            JSONArray isData = new JSONArray();
-            isData.put(isDataRow);
-            if (isData.length() == 0) {
+            JSONArray itDataTable = new JSONArray();
+            itDataTable.put(isDataRow);
+            if (itDataTable.length() == 0) {
                 endHuValidateInFlight();
                 UIFuncs.errorSound(con);
-                box.getBox("Err", "IS_DATA is empty — cannot call SAP. Rescan article and HU.");
+                box.getBox("Err", "IT_DATA is empty — cannot call SAP. Rescan article and HU.");
                 return;
             }
 
             args.put("bapiname", Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3);
             args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
-            args.put("IS_DATA", isData);
+            args.put(Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3_TABLE, itDataTable);
             lastHuSubmitted = isDataRow.optString("HU", "");
             Log.d(TAG, "ZWM_PTL_ZONE_HU_VALIDATE_V3 payload -> " + args.toString());
             showProcessingAndSubmit(Vars.ZWM_PTL_ZONE_HU_VALIDATE_V3, REQUEST_VALIDATE_ZONE_HU, args);
@@ -805,7 +923,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         }
         txt_hu.setText(scannedHu);
 
-        double remaining = Double.parseDouble(currentScan.getQuantity()) - 1;
+        double umrez = resolveUmrezForLastArticleScan();
+        double remaining = Double.parseDouble(currentScan.getQuantity()) - umrez;
         if (remaining <= 0) {
             currentScan.setSqty(1);
             remaining = 0;
@@ -821,6 +940,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         }
 
         currentScan = null;
+        lastScannedEan11 = "";
         txt_scan_article.setText("");
         txt_article.setText("");
         txt_proposed_store.setText("");
@@ -884,7 +1004,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {
@@ -1009,6 +1129,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             endHuValidateInFlight();
             // After HU validate error: clear article + HU row and restart from Scan Article.
             currentScan = null;
+            lastScannedEan11 = "";
             txt_scan_article.setText("");
             txt_article.setText("");
             txt_proposed_store.setText("");

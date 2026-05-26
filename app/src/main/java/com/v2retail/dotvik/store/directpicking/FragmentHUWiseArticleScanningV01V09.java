@@ -36,6 +36,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
@@ -289,6 +290,63 @@ public class FragmentHUWiseArticleScanningV01V09 extends Fragment implements Vie
         }
     }
 
+    /**
+     * SAP (production) often returns ET_*[0] as a field-description header row.
+     * Dev JSON RFC adapter returns clean 0-indexed rows with no header — older code
+     * always skipped index 0, so EAN/HU data was never loaded in dev.
+     */
+    private static boolean isHuArtHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String hu = row.optString("HU", "").trim();
+        String material = row.optString("MATERIAL", "").trim();
+        String floor = row.optString("FLOOR", "").trim();
+        if ("HU".equalsIgnoreCase(hu) || "MATERIAL".equalsIgnoreCase(material) || "FLOOR".equalsIgnoreCase(floor)) {
+            return true;
+        }
+        if (hu.contains("External Handling Unit")) {
+            return true;
+        }
+        if (material.equalsIgnoreCase("Material Number")) {
+            return true;
+        }
+        return floor.contains("Component of the Version");
+    }
+
+    private static boolean isEanArtHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String ean = row.optString("EAN", "").trim();
+        String material = row.optString("MATERIAL", "").trim();
+        String umrez = row.optString("UMREZ", "").trim();
+        if ("EAN".equalsIgnoreCase(ean) || "MATERIAL".equalsIgnoreCase(material) || "UMREZ".equalsIgnoreCase(umrez)) {
+            return true;
+        }
+        if (ean.contains("International Article Number")) {
+            return true;
+        }
+        if (material.equalsIgnoreCase("Material Number")) {
+            return true;
+        }
+        return umrez.contains("Numerator for Conversion");
+    }
+
+    private static int huArtDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isHuArtHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
+    private static int eanArtDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isEanArtHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     private void setData(JSONObject responsebody) {
         try
         {
@@ -297,14 +355,20 @@ public class FragmentHUWiseArticleScanningV01V09 extends Fragment implements Vie
             scannedData = new ArrayList<>();
             totalScanned = 0;
 
-            JSONArray ET_HU_ART_DATA_ARRAY = responsebody.getJSONArray("ET_HU_ART_DATA");
-            JSONArray ET_EAN_ART_DATA_ARRAY = responsebody.getJSONArray("ET_EAN_ART_DATA");
-            int totalEtRecords = ET_HU_ART_DATA_ARRAY.length() - 1;
-            int totalEanRecords = ET_EAN_ART_DATA_ARRAY.length() - 1;
-            if(totalEtRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_HU_ART_DATA_ARRAY.getJSONObject(recordIndex+1);
+            JSONArray ET_HU_ART_DATA_ARRAY = responsebody.optJSONArray("ET_HU_ART_DATA");
+            JSONArray ET_EAN_ART_DATA_ARRAY = responsebody.optJSONArray("ET_EAN_ART_DATA");
+
+            if (ET_HU_ART_DATA_ARRAY != null) {
+                int start = huArtDataStartIndex(ET_HU_ART_DATA_ARRAY);
+                for (int i = start; i < ET_HU_ART_DATA_ARRAY.length(); i++) {
+                    JSONObject ET_RECORD = ET_HU_ART_DATA_ARRAY.getJSONObject(i);
+                    if (isHuArtHeaderRow(ET_RECORD)) {
+                        continue;
+                    }
                     HUArtData artData = new Gson().fromJson(ET_RECORD.toString(), HUArtData.class);
+                    if (artData == null || artData.getMaterial() == null || artData.getMaterial().trim().isEmpty()) {
+                        continue;
+                    }
                     artData.setSqty("0.00");
                     artData.setPqty("0.00");
                     artData.setTqty(artData.getQty());
@@ -312,13 +376,22 @@ public class FragmentHUWiseArticleScanningV01V09 extends Fragment implements Vie
                 }
             }
 
-            if(totalEanRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEanRecords; recordIndex++){
-                    JSONObject EAN_RECORD  = ET_EAN_ART_DATA_ARRAY.getJSONObject(recordIndex+1);
+            if (ET_EAN_ART_DATA_ARRAY != null) {
+                int start = eanArtDataStartIndex(ET_EAN_ART_DATA_ARRAY);
+                for (int i = start; i < ET_EAN_ART_DATA_ARRAY.length(); i++) {
+                    JSONObject EAN_RECORD = ET_EAN_ART_DATA_ARRAY.getJSONObject(i);
+                    if (isEanArtHeaderRow(EAN_RECORD)) {
+                        continue;
+                    }
                     ArtEANData eanData = new Gson().fromJson(EAN_RECORD.toString(), ArtEANData.class);
-                    eanDataMap.put(eanData.getEan(), eanData);
+                    if (eanData == null || eanData.getEan() == null || eanData.getEan().trim().isEmpty()) {
+                        continue;
+                    }
+                    eanDataMap.put(eanData.getEan().trim().toUpperCase(), eanData);
                 }
             }
+
+            Log.d(TAG, "setData HU rows=" + artDataList.size() + " EAN keys=" + eanDataMap.size());
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox box = new AlertBox(getContext());
@@ -494,7 +567,7 @@ public class FragmentHUWiseArticleScanningV01V09 extends Fragment implements Vie
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

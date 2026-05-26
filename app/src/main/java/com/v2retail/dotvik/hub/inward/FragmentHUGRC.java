@@ -35,6 +35,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
@@ -64,7 +65,7 @@ import java.util.Objects;
 public class FragmentHUGRC extends Fragment implements View.OnClickListener {
 
     private static final int REQUEST_VALIDATE_INVOICE = 1501;
-    private static final int REQUEST_SAVE = 1502;
+    private static final int REQUEST_SAVE_HU = 1502;
 
     private static final String TAG = FragmentHUGRC.class.getName();
 
@@ -84,6 +85,10 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
     Map<String, GRCHU> hus = null;
     Map<String, GRCHU> extHus = null;
     Map<String, GRCHU> scannedHus = null;
+
+    /** True while {@link Vars#ZWM_INV_GRC_HUB_SAVE} is in flight for a scanned HU. */
+    private boolean huSaveInFlight = false;
+    private String pendingSaveHuKey = null;
 
     public FragmentHUGRC() {
     }
@@ -156,7 +161,6 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
                 validateInvoice();
                 break;
             case R.id.btn_hub_inward_hu_grc_save:
-                save();
                 break;
         }
     }
@@ -251,6 +255,8 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
     }
 
     private void clear() {
+        huSaveInFlight = false;
+        pendingSaveHuKey = null;
         hus = new HashMap<>();
         extHus = new HashMap<>();
         scannedHus = new HashMap<>();
@@ -270,7 +276,7 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
         ll_screen2.setVisibility(View.VISIBLE);
         txt_scan_hu.setText("");
         updateCounts();
-        btn_save.setVisibility(View.VISIBLE);
+        btn_save.setVisibility(View.GONE);
         btn_next.setVisibility(View.GONE);
         UIFuncs.enableInput(con, txt_scan_hu);
     }
@@ -321,6 +327,9 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
     }
 
     private void scanHU(String hu){
+        if (huSaveInFlight) {
+            return;
+        }
         hu = UIFuncs.removeLeadingZeros(hu);
         boolean isValid = true;
         GRCHU etData = null;
@@ -343,60 +352,71 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
             etData = hus.get(hu);
         }
         if(isValid && Objects.nonNull(etData)){
-            scannedHus.put(hu, GRCHU.newInstance(etData));
-            updateCounts();
+            saveValidatedHu(hu, etData);
+            return;
         }
         txt_scan_hu.setText("");
         txt_scan_hu.requestFocus();
     }
 
-    private void save(){
-        if(scannedHus.isEmpty()){
-            box.getBox("No Data Scanned", "No data scanned. Please scan some HU");
-            txt_scan_hu.setText("");
-            txt_scan_hu.requestFocus();
-            return;
-        }
-        JSONObject args = new JSONObject();
-        JSONArray dataToSave = getScanDataToSubmit();
-        if(dataToSave != null){
-            try {
-                args.put("bapiname", Vars.ZWM_INV_GRC_HUB_SAVE);
-                args.put("IM_WERKS", WERKS);
-                args.put("IM_USER", USER);
-                args.put("IM_VBELN", UIFuncs.toUpperTrim(txt_invoce));
-                args.put("IT_HU", dataToSave);
-                showProcessingAndSubmit(Vars.ZWM_INV_GRC_HUB_SAVE, REQUEST_SAVE, args);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                UIFuncs.errorSound(con);
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
-            }
+    /** After local HU validation succeeds, persist that HU via {@link Vars#ZWM_INV_GRC_HUB_SAVE}. */
+    private void saveValidatedHu(String hu, GRCHU etData) {
+        try {
+            huSaveInFlight = true;
+            pendingSaveHuKey = hu;
+            UIFuncs.disableInput(con, txt_scan_hu);
+
+            JSONArray itHu = new JSONArray();
+            itHu.put(new JSONObject(new Gson().toJson(etData)));
+
+            JSONObject args = new JSONObject();
+            args.put("bapiname", Vars.ZWM_INV_GRC_HUB_SAVE);
+            args.put("IM_WERKS", WERKS);
+            args.put("IM_USER", USER);
+            args.put("IM_VBELN", UIFuncs.toUpperTrim(txt_invoce));
+            args.put("IT_HU", itHu);
+            showProcessingAndSubmit(Vars.ZWM_INV_GRC_HUB_SAVE, REQUEST_SAVE_HU, args);
+        } catch (JSONException e) {
+            resetHuSaveState();
+            UIFuncs.errorSound(con);
+            box.getErrBox(e);
         }
     }
 
-    private JSONArray getScanDataToSubmit(){
+    private void resetHuSaveState() {
+        huSaveInFlight = false;
+        pendingSaveHuKey = null;
+        UIFuncs.enableInput(con, txt_scan_hu);
+        txt_scan_hu.setText("");
+        txt_scan_hu.requestFocus();
+    }
+
+    private void onHuSaved(JSONObject responsebody) {
         try {
-            JSONArray arrScanData = new JSONArray();
-            for (Map.Entry<String, GRCHU> etEntry : scannedHus.entrySet()) {
-                String scanDataJsonString = new Gson().toJson(etEntry.getValue());
-                JSONObject itDataJson = new JSONObject(scanDataJsonString);
-                arrScanData.put(itDataJson);
+            if (pendingSaveHuKey == null) {
+                resetHuSaveState();
+                return;
             }
-            if (arrScanData.length() == 0) {
-                showError("Empty Request", "Noting to submit, please scan some HU");
-            }else{
-                return arrScanData;
+            GRCHU saved = null;
+            if (hus.containsKey(pendingSaveHuKey)) {
+                saved = GRCHU.newInstance(hus.get(pendingSaveHuKey));
+            } else if (extHus.containsKey(pendingSaveHuKey)) {
+                saved = GRCHU.newInstance(extHus.get(pendingSaveHuKey));
             }
-        }catch (Exception exce){
-            box.getErrBox(exce);
+            if (saved != null) {
+                scannedHus.put(pendingSaveHuKey, saved);
+            }
+            updateCounts();
+            resetHuSaveState();
+
+            if (scannedHus.size() >= hus.size() && hus.size() > 0) {
+                JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
+                box.getBox("Success", returnobj.getString("MESSAGE"), (dialogInterface, i) -> clear());
+            }
+        } catch (JSONException e) {
+            resetHuSaveState();
+            box.getErrBox(e);
         }
-        return null;
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -433,7 +453,7 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {
@@ -465,15 +485,17 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
                                             txt_invoce.requestFocus();
                                             return;
                                         }
+                                        if (request == REQUEST_SAVE_HU) {
+                                            resetHuSaveState();
+                                            return;
+                                        }
                                     } else {
                                         if (request == REQUEST_VALIDATE_INVOICE) {
                                             setData(responsebody);
                                             return;
                                         }
-                                        if (request == REQUEST_SAVE) {
-                                            box.getBox("Success", returnobj.getString("MESSAGE"), (dialogInterface, i) -> {
-                                                clear();
-                                            });
+                                        if (request == REQUEST_SAVE_HU) {
+                                            onHuSaved(responsebody);
                                             return;
                                         }
                                     }
@@ -565,6 +587,9 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
+                }
+                if (huSaveInFlight) {
+                    resetHuSaveState();
                 }
                 AlertBox box = new AlertBox(getContext());
                 box.getBox("Err", err);

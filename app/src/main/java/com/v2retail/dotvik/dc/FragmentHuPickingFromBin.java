@@ -14,6 +14,7 @@ import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
@@ -200,7 +201,7 @@ public class FragmentHuPickingFromBin extends Fragment implements View.OnClickLi
     private interface Cb{void ok(JSONObject r);void err(String e);}
     private void rfc(String name,JSONObject params,final Cb cb){
         String base=URL.contains("/ValueXMW")?URL.replace("/ValueXMW",""):URL;
-        JsonObjectRequest req=new JsonObjectRequest(Request.Method.POST,base+"/noacljsonrfcadaptor?bapiname="+name+"&aclclientid=android",params,
+        JsonObjectRequest req=new SapJsonObjectRequest(Request.Method.POST,base+"/noacljsonrfcadaptor?bapiname="+name+"&aclclientid=android",params,
             new Response.Listener<JSONObject>(){@Override public void onResponse(JSONObject r){dismissProgress();cb.ok(r);}},
             new Response.ErrorListener(){@Override public void onErrorResponse(VolleyError e){dismissProgress();cb.err(e.getMessage()!=null?e.getMessage():"Network error");}});
         req.setRetryPolicy(new DefaultRetryPolicy(90000,0,1f));

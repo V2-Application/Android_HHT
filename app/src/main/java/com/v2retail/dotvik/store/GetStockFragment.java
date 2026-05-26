@@ -41,6 +41,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -451,7 +452,7 @@ public class GetStockFragment extends Fragment implements View.OnClickListener {
 
 		mRequestQueue = ApplicationController.getInstance().getRequestQueue();
 
-		mJsonRequest = new JsonObjectRequest(Request.Method.POST, URL, params, new Response.Listener<JSONObject>() {
+		mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, URL, params, new Response.Listener<JSONObject>() {
 
 
 			@Override

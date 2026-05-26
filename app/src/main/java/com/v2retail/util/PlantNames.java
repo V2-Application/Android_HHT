@@ -3,6 +3,7 @@ package com.v2retail.util;
 import android.util.Log;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import org.json.JSONObject;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ public class PlantNames {
         String url = base + ENDPOINT;
         Log.d(TAG, "Loading plant names from: " + url);
 
-        JsonObjectRequest req = new JsonObjectRequest(
+        JsonObjectRequest req = new SapJsonObjectRequest(
             Request.Method.GET, url, null,
             response -> {
                 try {

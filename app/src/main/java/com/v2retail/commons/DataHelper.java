@@ -7,6 +7,38 @@ import org.json.JSONObject;
 
 public class DataHelper {
 
+    /**
+     * One row of {@code ZMM_MARM_STR} / table type {@code ZMM_MARM_STR_TT}
+     * ({@code ET_EAN_DATA} on {@code ZWM_PTL_STATION_CRATE_VALIDATE}): MATNR, MEINH, UMREZ, EAN11.
+     */
+    public static HUEANData parseZmmMarmStr(JSONObject row) {
+        HUEANData ean = new HUEANData();
+        if (row == null) {
+            return ean;
+        }
+        ean.setLgmatnr(row.optString("MATNR", "").trim());
+        ean.setLgmeinh(row.optString("MEINH", "").trim());
+        ean.setLgumrez(parseSapDecimal(row, "UMREZ"));
+        ean.setLgean11(row.optString("EAN11", "").trim());
+        return ean;
+    }
+
+    private static double parseSapDecimal(JSONObject row, String key) {
+        Object raw = row.opt(key);
+        if (raw instanceof Number) {
+            return ((Number) raw).doubleValue();
+        }
+        String s = row.optString(key, "0").trim();
+        if (s.isEmpty()) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(s.replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
     public static HUEANData initEANData(JSONObject eanDataObj)throws JSONException
     {
         HUEANData EANData = new HUEANData();

@@ -43,6 +43,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
@@ -786,7 +787,7 @@ public class FragmentMSALiveStockTake extends Fragment implements View.OnClickLi
         Log.d(TAG,"POST "+url+" payload="+params);
 
         RequestQueue q=ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest req=new JsonObjectRequest(Request.Method.POST,url,params,
+        JsonObjectRequest req=new SapJsonObjectRequest(Request.Method.POST,url,params,
             body->{
                 if (dialog!=null){dialog.dismiss();dialog=null;}
                 if (reqType==REQUEST_SAVE) unlockSave();

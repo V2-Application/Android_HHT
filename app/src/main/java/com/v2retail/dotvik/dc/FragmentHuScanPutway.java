@@ -14,6 +14,7 @@ import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
@@ -190,7 +191,7 @@ public class FragmentHuScanPutway extends Fragment implements View.OnClickListen
     private void rfc(String name,JSONObject params,final Cb cb){
         String base=URL.contains("/ValueXMW")?URL.replace("/ValueXMW",""):URL;
         String url=base+"/noacljsonrfcadaptor?bapiname="+name+"&aclclientid=android";
-        JsonObjectRequest req=new JsonObjectRequest(Request.Method.POST,url,params,
+        JsonObjectRequest req=new SapJsonObjectRequest(Request.Method.POST,url,params,
             new Response.Listener<JSONObject>(){@Override public void onResponse(JSONObject r){dismissProgress();cb.ok(r);}},
             new Response.ErrorListener(){@Override public void onErrorResponse(VolleyError e){dismissProgress();cb.err(e.getMessage()!=null?e.getMessage():"Network error");}});
         req.setRetryPolicy(new DefaultRetryPolicy(90000,0,1f));

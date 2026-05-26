@@ -34,6 +34,8 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -323,16 +325,19 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
     private void setData(JSONObject rsponse) {
         try {
             JSONArray arrEtEanData = rsponse.getJSONArray("ET_EAN_DATA");
-            int arrlength = arrEtEanData.length();
-            if(arrlength > 0){
-                JSONObject ET_EAN_RECORD  = arrEtEanData.getJSONObject(1);
+            int eanStart = SapJsonRows.startIndex(arrEtEanData, "EAN11", "MATNR");
+            for (int recordIndex = eanStart; recordIndex < arrEtEanData.length(); recordIndex++) {
+                JSONObject ET_EAN_RECORD = arrEtEanData.getJSONObject(recordIndex);
+                if (SapJsonRows.isMetadataRow(ET_EAN_RECORD, "EAN11", "MATNR")) {
+                    continue;
+                }
                 ETEanDataStorePutway eanRecord = ETEanDataStorePutway.newInstance(ET_EAN_RECORD);
                 String matnr = eanRecord.getMatnr();
                 ETDataStorePutway etRecord = new ETDataStorePutway();
 
-                if(etData.containsKey(matnr)){
+                if (etData.containsKey(matnr)) {
                     etRecord = etData.get(matnr);
-                }else{
+                } else {
                     etRecord.setVerme("0");
                     etRecord.setLgnum("SDC");
                     etRecord.setMatnr(matnr);
@@ -351,8 +356,11 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
                 etRecord.setVerme(matnrSqty + "");
 
                 etData.put(matnr, etRecord);
+                break;
             }
-            txt_description.setText(rsponse.getString("EX_MAKTX"));
+            if (rsponse.has("EX_MAKTX")) {
+                txt_description.setText(rsponse.getString("EX_MAKTX"));
+            }
             txt_tqty.setText(totalScannedQty + "");
         } catch (Exception exce) {
             box.getErrBox(exce);
@@ -446,7 +454,7 @@ public class FragmentStoreDisplayInternalIRODToIRODPicking extends Fragment impl
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

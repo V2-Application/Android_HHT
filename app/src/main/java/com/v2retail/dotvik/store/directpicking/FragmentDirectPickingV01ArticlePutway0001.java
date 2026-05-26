@@ -39,6 +39,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -70,7 +71,7 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
     private static final int REQUEST_VALIDATE_BARCODE = 1501;
     private static final int REQUEST_SAVE = 1502;
 
-    private static final String TAG = FragmentPTLNewWithoutPallatePutwayStorewise.class.getName();
+    private static final String TAG = FragmentDirectPickingV01ArticlePutway0001.class.getName();
 
     View rootView;
     String URL="";
@@ -260,24 +261,88 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         }
     }
 
+    /**
+     * Dev JSON RFC adapter returns 0-indexed data rows only; production SAP often
+     * prefixes IT_DATA with a column-name template row at index 0.
+     */
+    private static boolean isFloorItDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String floor = row.optString("FLOOR", "").trim();
+        if ("FLOOR".equalsIgnoreCase(floor)) {
+            return true;
+        }
+        return "Floor".equalsIgnoreCase(floor);
+    }
+
+    private static int floorItDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isFloorItDataHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
+    /**
+     * Dev JSON RFC adapter returns 0-indexed data rows only; production SAP often
+     * prefixes ET_DATA with a column-name template row at index 0.
+     */
+    private static boolean isBarcodeEtDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String barcode = row.optString("BARCODE", "").trim();
+        String matnr = row.optString("MATNR", "").trim();
+        String umrez = row.optString("UMREZ", "").trim();
+        if ("BARCODE".equalsIgnoreCase(barcode) || "MATNR".equalsIgnoreCase(matnr) || "UMREZ".equalsIgnoreCase(umrez)) {
+            return true;
+        }
+        if (barcode.contains("International Article Number")) {
+            return true;
+        }
+        if (matnr.equalsIgnoreCase("Material Number")) {
+            return true;
+        }
+        return umrez.contains("Numerator for Conversion");
+    }
+
+    private static int barcodeEtDataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isBarcodeEtDataHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     public void setFloorList(JSONObject responsebody){
         try
         {
-            JSONArray IT_DATA_ARRAY = responsebody.getJSONArray("IT_DATA");
-            int totalItRecords = IT_DATA_ARRAY.length() - 1;
-            if(totalItRecords > 0){
-                floors.clear();
-                floors.add("Select Floor");
-                for(int recordIndex = 0; recordIndex < totalItRecords; recordIndex++){
-                    JSONObject IT_RECORD  = IT_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    floors.add(IT_RECORD.getString("FLOOR"));
+            JSONArray IT_DATA_ARRAY = responsebody.optJSONArray("IT_DATA");
+            if (IT_DATA_ARRAY == null || IT_DATA_ARRAY.length() == 0) {
+                box.getBox("No Floors Found", "No records returned by the server");
+                return;
+            }
+            int start = floorItDataStartIndex(IT_DATA_ARRAY);
+            floors.clear();
+            floors.add("Select Floor");
+            boolean anyFloor = false;
+            for (int i = start; i < IT_DATA_ARRAY.length(); i++) {
+                JSONObject IT_RECORD = IT_DATA_ARRAY.getJSONObject(i);
+                if (isFloorItDataHeaderRow(IT_RECORD)) {
+                    continue;
                 }
+                String floor = IT_RECORD.optString("FLOOR", "").trim();
+                if (!floor.isEmpty()) {
+                    floors.add(floor);
+                    anyFloor = true;
+                }
+            }
+            if (anyFloor) {
                 ((BaseAdapter) dd_floor_list.getAdapter()).notifyDataSetChanged();
                 dd_floor_list.setEnabled(true);
                 dd_floor_list.invalidate();
                 dd_floor_list.setSelection(0);
                 dd_floor_list.requestFocus();
-            }else{
+            } else {
                 box.getBox("No Floors Found", "No records returned by the server");
             }
         } catch (JSONException e) {
@@ -315,19 +380,40 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         }
     }
 
+    private boolean addBarcodeRecord(JSONObject row) {
+        if (row == null || isBarcodeEtDataHeaderRow(row)) {
+            return false;
+        }
+        FloorBarcode barcodeData = new Gson().fromJson(row.toString(), FloorBarcode.class);
+        if (barcodeData == null || barcodeData.getBarcode() == null || barcodeData.getBarcode().trim().isEmpty()) {
+            return false;
+        }
+        barcodeDataMap.put(barcodeData.getBarcode().trim().toUpperCase(), barcodeData);
+        return true;
+    }
+
     public void setBarcodeData(JSONObject responsebody){
         try
         {
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
-            int totalEtRecords = ET_DATA_ARRAY.length() - 1;
-            if(totalEtRecords > 0){
-                for(int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex+1);
-                    FloorBarcode barcodeData = new Gson().fromJson(ET_RECORD.toString(), FloorBarcode.class);
-                    barcodeDataMap.put(barcodeData.getBarcode(), barcodeData);
+            boolean anyRecord = false;
+            JSONArray ET_DATA_ARRAY = responsebody.optJSONArray("ET_DATA");
+            if (ET_DATA_ARRAY != null && ET_DATA_ARRAY.length() > 0) {
+                int start = barcodeEtDataStartIndex(ET_DATA_ARRAY);
+                for (int i = start; i < ET_DATA_ARRAY.length(); i++) {
+                    if (addBarcodeRecord(ET_DATA_ARRAY.getJSONObject(i))) {
+                        anyRecord = true;
+                    }
                 }
+            }
+            // ZSDC_DIRECT_ART_VAL_BARCOD_RFC may return a single row in EX_BARCODE with empty ET_DATA
+            if (!anyRecord && responsebody.has("EX_BARCODE")
+                    && responsebody.get("EX_BARCODE") instanceof JSONObject) {
+                anyRecord = addBarcodeRecord(responsebody.getJSONObject("EX_BARCODE"));
+            }
+            Log.d(TAG, "setBarcodeData rows=" + barcodeDataMap.size());
+            if (anyRecord) {
                 updateQtyAfterScan(UIFuncs.toUpperTrim(txt_scan_barcode));
-            }else{
+            } else {
                 box.getBox("No Records", "No records returned by the server");
             }
         } catch (JSONException e) {
@@ -355,6 +441,9 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
                 return;
             }
             txt_article.setText(barcodeData.getMatnr());
+            if (barcodeData.getArtType() != null) {
+                txt_article_type.setText(barcodeData.getArtType());
+            }
             txt_scan_qty.setText(Util.formatDouble(sqty));
             barcodeData.setScanQty(Util.formatDouble(sqty));
             return;
@@ -443,7 +532,7 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         Log.d(TAG, "payload ->" + params.toString());
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-        mJsonRequest = new JsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
+        mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
             public void onResponse(JSONObject responsebody) {

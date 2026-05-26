@@ -37,6 +37,7 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -53,7 +54,7 @@ import org.json.JSONObject;
  * <ul>
  *   <li>Pallet scan: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
  *   <li>HU scan: {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — IM_USER, IM_PLANT, IM_HU → EX_HUB, EX_STORE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HUPACKING_HU_SAVE} — IM_USER, IM_WERKS, IM_HU, IM_WEIGHT (blank)</li>
+ *   <li>Save: {@link Vars#ZWM_PTL_HU_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
  * </ul>
  */
 public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View.OnClickListener {
@@ -265,12 +266,11 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         }
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_PTL_HUPACKING_HU_SAVE);
+            args.put("bapiname", Vars.ZWM_PTL_HU_V60_V61);
             args.put("IM_USER", USER);
-            args.put("IM_WERKS", WERKS);
-            args.put("IM_HU", validatedHu);
-            args.put("IM_WEIGHT", "");
-            showProcessingAndSubmit(Vars.ZWM_PTL_HUPACKING_HU_SAVE, REQUEST_SAVE, args);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_PALETTE", validatedPallet);
+            showProcessingAndSubmit(Vars.ZWM_PTL_HU_V60_V61, REQUEST_SAVE, args);
         } catch (JSONException e) {
             Log.e(TAG, "requestSave", e);
             box.getErrBox(e);
@@ -301,7 +301,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
-        JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.POST, url, params,
+        JsonObjectRequest jsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
                 responsebody -> {
                     dismissDialog();
                     Log.d(TAG, "response -> " + responsebody);

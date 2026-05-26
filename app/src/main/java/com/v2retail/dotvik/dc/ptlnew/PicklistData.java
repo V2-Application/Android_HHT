@@ -68,7 +68,7 @@ public class PicklistData {
     private String tag;
 
     // v12.115 (2026-05-08): Added to match ZWM_PTL_MSA_CRATE_ST fields 20 + 24.
-    // ZWM_PTL_ZONE_HU_VALIDATE_V3 requires ZONE_STATION (zone-station code) and HUB (plant).
+    // ZWM_PTL_ZONE_HU_VALIDATE_V3 IT_DATA row requires ZONE_STATION (zone-station code) and HUB (plant).
     @SerializedName("ZONE_STATION")
     private String zoneStation;
 
