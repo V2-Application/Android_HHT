@@ -51,7 +51,8 @@ import org.json.JSONObject;
  * PTL 4.0 — Floor DCLA.
  * <ul>
  *   <li>Scan Pallet validate: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HU_V61_V62} — IM_USER, IM_PLANT, IM_PALETTE</li>
+ *   <li>Save: {@link Vars#ZWM_PTL_HU_V61_V62} — IM_USER, IM_PLANT, IM_PALETTE
+ *       → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN</li>
  * </ul>
  */
 public class FragmentPTLFloorDcla extends Fragment implements View.OnClickListener {
@@ -303,25 +304,31 @@ public class FragmentPTLFloorDcla extends Fragment implements View.OnClickListen
             if (request == REQUEST_VALIDATE_PALLET) {
                 validatedPallet = UIFuncs.toUpperTrim(txtScanPallet);
                 txtPallet.setText(validatedPallet);
-                txtHub.setText(responsebody.optString("EX_HUB", "").trim());
-                txtScanPallet.setText("");
-                txtScanPallet.requestFocus();
-            } else if (request == REQUEST_SAVE) {
-                // RFC exports include EX_HUB + EX_PALETTE_CNT (as per SAP screenshot)
-                String hub = responsebody.optString("EX_HUB", "").trim();
+                String hub = PtlHuTransferRfcResponse.extractHub(responsebody);
                 if (!TextUtils.isEmpty(hub)) {
                     txtHub.setText(hub);
                 }
-                String cnt = responsebody.optString("EX_PALETTE_CNT", "").trim();
-                if (!TextUtils.isEmpty(cnt)) {
-                    txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
-                }
+                txtScanPallet.setText("");
+                txtScanPallet.requestFocus();
+            } else if (request == REQUEST_SAVE) {
+                applyHuTransferSaveSuccess(responsebody);
                 box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message, (d, w) -> resetScreen());
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
+        }
+    }
+
+    private void applyHuTransferSaveSuccess(JSONObject responsebody) {
+        String hub = PtlHuTransferRfcResponse.extractHub(responsebody);
+        if (!TextUtils.isEmpty(hub)) {
+            txtHub.setText(hub);
+        }
+        String cnt = PtlHuTransferRfcResponse.extractPaletteCount(responsebody);
+        if (!TextUtils.isEmpty(cnt)) {
+            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
         }
     }
 

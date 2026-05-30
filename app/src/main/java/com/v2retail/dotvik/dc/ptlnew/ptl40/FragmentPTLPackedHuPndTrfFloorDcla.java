@@ -53,8 +53,8 @@ import org.json.JSONObject;
  * PTL 4.0 — Packed HU PND TRF Floor DCLA.
  * <ul>
  *   <li>Pallet scan: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
- *   <li>HU scan: {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — IM_USER, IM_PLANT, IM_HU → EX_HUB, EX_STORE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HU_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
+ *   <li>HU scan: {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — IM_USER, IM_PLANT, IM_HU → ES_HUB, ES_STORE, EX_RETURN</li>
+ *   <li>Save: {@link Vars#ZWM_PTL_HU_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE, IM_HU → EX_HUB, EX_STORE, EX_PALETTE_CNT</li>
  * </ul>
  */
 public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View.OnClickListener {
@@ -270,6 +270,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
             args.put("IM_USER", USER);
             args.put("IM_PLANT", WERKS);
             args.put("IM_PALETTE", validatedPallet);
+            args.put("IM_HU", validatedHu);
             showProcessingAndSubmit(Vars.ZWM_PTL_HU_V60_V61, REQUEST_SAVE, args);
         } catch (JSONException e) {
             Log.e(TAG, "requestSave", e);
@@ -387,6 +388,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
                 txtScanHu.setText("");
                 txtScanHu.requestFocus();
             } else if (request == REQUEST_SAVE) {
+                applySaveSuccess(responsebody);
                 box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message,
                         (d, w) -> resetScreen());
             }
@@ -399,24 +401,19 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
 
     private void applyPalletValidateSuccess(JSONObject responsebody) {
         String pallet = firstNonEmpty(
+                extractExportString(responsebody, "EX_HUB", "PALETTE", "PALATE"),
                 responsebody.optString("EX_PALATE", "").trim(),
                 responsebody.optString("EX_PALETTE", "").trim(),
                 UIFuncs.toUpperTrim(txtScanPallet));
         validatedPallet = pallet;
         txtPallet.setText(pallet);
 
-        String hub = firstNonEmpty(
-                responsebody.optString("EX_HUB", "").trim(),
-                responsebody.optString("HUB", "").trim());
+        String hub = extractHubFromResponse(responsebody);
         if (!TextUtils.isEmpty(hub)) {
             txtHub.setText(hub);
         }
 
-        String noOfHu = firstNonEmpty(
-                responsebody.optString("EX_NO_OF_HU", "").trim(),
-                responsebody.optString("NO_OF_HU", "").trim(),
-                responsebody.optString("EX_HU_COUNT", "").trim(),
-                responsebody.optString("EX_COUNT", "").trim());
+        String noOfHu = extractPaletteCount(responsebody);
         if (!TextUtils.isEmpty(noOfHu)) {
             txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
         }
@@ -424,24 +421,124 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
 
     private void applyHuValidateSuccess(JSONObject responsebody) {
         String hu = firstNonEmpty(
-                responsebody.optString("EX_HU", "").trim(),
-                responsebody.optString("HU", "").trim(),
-                UIFuncs.toUpperTrim(txtScanHu));
+                UIFuncs.toUpperTrim(txtScanHu),
+                UIFuncs.toUpperTrim(txtHu));
         validatedHu = hu;
         txtHu.setText(hu);
 
-        String hub = firstNonEmpty(
-                responsebody.optString("EX_HUB", "").trim(),
-                responsebody.optString("HUB", "").trim());
+        String hub = extractEsHubWerks(responsebody);
         if (!TextUtils.isEmpty(hub)) {
             txtHub.setText(hub);
         }
 
-        String store = firstNonEmpty(
-                responsebody.optString("EX_STORE", "").trim(),
-                responsebody.optString("STORE", "").trim());
+        String store = extractEsStoreWerks(responsebody);
         if (!TextUtils.isEmpty(store)) {
             txtStore.setText(store);
+        }
+
+        String noOfHu = extractReturnNumber(responsebody);
+        if (!TextUtils.isEmpty(noOfHu)) {
+            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
+        }
+    }
+
+    private void applySaveSuccess(JSONObject responsebody) {
+        String hub = extractHubFromResponse(responsebody);
+        if (!TextUtils.isEmpty(hub)) {
+            txtHub.setText(hub);
+        }
+
+        String store = extractStoreFromResponse(responsebody);
+        if (!TextUtils.isEmpty(store)) {
+            txtStore.setText(store);
+        }
+
+        String noOfHu = extractPaletteCount(responsebody);
+        if (!TextUtils.isEmpty(noOfHu)) {
+            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
+        }
+    }
+
+    /** {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — {@code ES_HUB-WERKS} → HUB field. */
+    private static String extractEsHubWerks(JSONObject responsebody) {
+        return extractExportString(responsebody, "ES_HUB", "WERKS", "HUB");
+    }
+
+    /** {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — {@code ES_STORE-WERKS} → STORE field. */
+    private static String extractEsStoreWerks(JSONObject responsebody) {
+        return extractExportString(responsebody, "ES_STORE", "WERKS", "STORE");
+    }
+
+    /** {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — {@code EX_RETURN-NUMBER} → No Of HU field. */
+    private static String extractReturnNumber(JSONObject responsebody) {
+        if (!responsebody.has("EX_RETURN")) {
+            return "";
+        }
+        try {
+            Object raw = responsebody.get("EX_RETURN");
+            if (raw instanceof JSONObject) {
+                String number = ((JSONObject) raw).optString("NUMBER", "").trim();
+                return "null".equalsIgnoreCase(number) ? "" : number;
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "extractReturnNumber", e);
+        }
+        return "";
+    }
+
+    /** EX_HUB is {@code ZCLA_HU}; adaptor may return a flat string or structure with {@code HUB}. */
+    private static String extractHubFromResponse(JSONObject responsebody) {
+        return firstNonEmpty(
+                extractExportString(responsebody, "EX_HUB", "HUB"),
+                responsebody.optString("HUB", "").trim());
+    }
+
+    /** EX_STORE is {@code ZGRT_ORDCONF}; adaptor may return a flat string or structure with {@code STORE}. */
+    private static String extractStoreFromResponse(JSONObject responsebody) {
+        return firstNonEmpty(
+                extractExportString(responsebody, "EX_STORE", "STORE"),
+                responsebody.optString("STORE", "").trim());
+    }
+
+    /** EX_PALETTE_CNT is type {@code I} on {@link Vars#ZWM_PTL_HU_V60_V61}. */
+    private static String extractPaletteCount(JSONObject responsebody) {
+        if (!responsebody.has("EX_PALETTE_CNT")) {
+            return "";
+        }
+        try {
+            Object raw = responsebody.get("EX_PALETTE_CNT");
+            if (raw instanceof Number) {
+                return String.valueOf(((Number) raw).intValue());
+            }
+            String text = String.valueOf(raw).trim();
+            return "null".equalsIgnoreCase(text) ? "" : text;
+        } catch (JSONException e) {
+            return responsebody.optString("EX_PALETTE_CNT", "").trim();
+        }
+    }
+
+    private static String extractExportString(JSONObject responsebody, String exportKey, String... nestedKeys) {
+        if (!responsebody.has(exportKey)) {
+            return "";
+        }
+        try {
+            Object raw = responsebody.get(exportKey);
+            if (raw instanceof JSONObject) {
+                JSONObject obj = (JSONObject) raw;
+                if (nestedKeys != null) {
+                    for (String key : nestedKeys) {
+                        String value = obj.optString(key, "").trim();
+                        if (!TextUtils.isEmpty(value)) {
+                            return value;
+                        }
+                    }
+                }
+                return "";
+            }
+            String text = String.valueOf(raw).trim();
+            return "null".equalsIgnoreCase(text) ? "" : text;
+        } catch (JSONException e) {
+            return responsebody.optString(exportKey, "").trim();
         }
     }
 
@@ -457,6 +554,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         validatedHu = "";
         txtHu.setText("");
         txtStore.setText("");
+        txtNoOfHu.setText("");
         txtScanHu.requestFocus();
     }
 

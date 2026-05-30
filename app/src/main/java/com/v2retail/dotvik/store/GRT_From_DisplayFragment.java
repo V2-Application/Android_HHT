@@ -296,10 +296,7 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
         if(dialog != null){
             dialog.dismiss();
         }
-        String[] myArr = null;
-        String addrec = null;
-
-        myArr = rcvdData.split("#");
+        String[] myArr = rcvdData.split("#");
 
         String[] arrayRcvdData = null;
         String[] arraySRCData = null;
@@ -310,16 +307,31 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
             arraySRCData = arrayRcvdData[0].split("#");
             arrayDSTData = arrayRcvdData[1].split("#");
 
+            // Refresh lists on each fetch to avoid stale/duplicate values
+            source_bin_table.clear();
+            dest_bin_table.clear();
+
             for (int lk = 0; lk < arraySRCData.length; lk++) {
-                source_bin_table.add(arraySRCData[lk]);
+                String v = arraySRCData[lk] != null ? arraySRCData[lk].trim() : "";
+                if(!v.isEmpty()) source_bin_table.add(v);
             }
             for (int j = 0; j < arrayDSTData.length; j++) {
 
-                dest_bin_table.add(arrayDSTData[j]);
+                String v = arrayDSTData[j] != null ? arrayDSTData[j].trim() : "";
+                if(!v.isEmpty()) dest_bin_table.add(v);
             }
             Log.d(TAG, " source bin table ->" + source_bin_table);
             Log.d(TAG, " dest bin table ->" + dest_bin_table);
         }
+    }
+
+    private static boolean containsTrimmed(List<String> list, String value) {
+        if(list == null || value == null) return false;
+        String target = value.trim();
+        for (String s : list) {
+            if(s != null && s.trim().equals(target)) return true;
+        }
+        return false;
     }
 
     @Override
@@ -447,14 +459,19 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
 
     private void nextScreen() {
 
-        String source = source_sloc_et.getSelectedItem().toString();
-        String dest = dest_sloc_et.getText().toString();
-        if (!source_bin_table.contains(source)) {
+        String source = source_sloc_et.getSelectedItem() != null
+                ? source_sloc_et.getSelectedItem().toString().trim()
+                : "";
+        String dest = dest_sloc_et.getText() != null
+                ? dest_sloc_et.getText().toString().trim()
+                : "";
+
+        if (!containsTrimmed(source_bin_table, source)) {
             box.getBox("Alert", "Invalid Source!");
             return;
         }
 
-        if (!dest_bin_table.contains(dest)) {
+        if (!containsTrimmed(dest_bin_table, dest)) {
             box.getBox("Alert", "Invalid Destination!");
             return;
         }

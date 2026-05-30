@@ -460,8 +460,9 @@
                 android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:visibility="gone"
+                
                 android:weightSum="12">
+                <!-- android:visibility="gone" -->
 
                 <TextView
                     android:layout_width="0dp"

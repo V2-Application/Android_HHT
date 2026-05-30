@@ -38,6 +38,7 @@ import com.android.volley.RetryPolicy;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
@@ -80,6 +81,8 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
     Context con;
     AlertBox box;
     ProgressDialog dialog;
+    boolean requestInFlight = false;
+    ProgressDialog articleLookupDialog;
     FragmentManager fm;
 
     List<String> floors = new ArrayList<String>();
@@ -90,9 +93,30 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
     Spinner dd_floor_list;
 
     Button btn_back, btn_save;
-    EditText txt_store, txt_scan_barcode, txt_article, txt_article_type, txt_scan_qty;
+    EditText txt_store, txt_scan_barcode, txt_article, txt_article_type, txt_article_size, txt_scan_qty;
 
     Map<String, FloorBarcode> barcodeDataMap = new HashMap<>();
+    /**
+     * Cache article metadata by Article No (MATNR) so we don't hit the API repeatedly.
+     * Key: MATNR (trimmed, uppercased)
+     * Value: [articleType, articleSize]
+     */
+    Map<String, String[]> articleLookupMap = new HashMap<>();
+
+    private void clearArticleMeta() {
+        if (txt_article_type != null) txt_article_type.setText("");
+        if (txt_article_size != null) txt_article_size.setText("");
+    }
+
+    private void showScanError(String title, String message) {
+        UIFuncs.errorSound(getContext());
+        AlertBox ab = new AlertBox(getContext());
+        ab.getBox(title, message, (dialog, which) -> {
+            clearArticleMeta();
+            txt_scan_barcode.setText("");
+            txt_scan_barcode.requestFocus();
+        });
+    }
 
     public FragmentDirectPickingV01ArticlePutway0001() {
         // Required empty public constructor
@@ -135,6 +159,7 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         txt_scan_barcode = rootView.findViewById(R.id.txt_direct_picking_v01_article_putway_0001_scan_barcode);
         txt_article = rootView.findViewById(R.id.txt_direct_picking_v01_article_putway_0001_article);
         txt_article_type = rootView.findViewById(R.id.txt_direct_picking_v01_article_putway_0001_article_type);
+        txt_article_size = rootView.findViewById(R.id.txt_direct_picking_v01_article_putway_0001_article_size);
         txt_scan_qty = rootView.findViewById(R.id.txt_direct_picking_v01_article_putway_0001_sqty);
 
         btn_back = rootView.findViewById(R.id.btn_direct_picking_v01_article_putway_0001_back);
@@ -168,11 +193,13 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
 
     private void clear(){
         barcodeDataMap = new HashMap<>();
+        articleLookupMap = new HashMap<>();
         txt_scan_qty.setText("");
         UIFuncs.disableInput(con, txt_scan_barcode);
         txt_store.setText(WERKS);
         txt_article.setText("");
         txt_article_type.setText("");
+        txt_article_size.setText("");
         txt_scan_qty.setText("");
         txt_scan_barcode.setText("");
         getFLoorList();
@@ -353,6 +380,10 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
     }
 
     public void validateBarcode(String barcode, String floor){
+        // Scanner can trigger both TextWatcher + IME action; avoid double network calls/dialogs.
+        if (requestInFlight) {
+            return;
+        }
         if(barcodeDataMap.containsKey(barcode))
         {
             updateQtyAfterScan(UIFuncs.toUpperTrim(txt_scan_barcode));
@@ -374,9 +405,128 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
                     dialog.dismiss();
                     dialog = null;
                 }
+                requestInFlight = false;
                 AlertBox box = new AlertBox(getContext());
                 box.getErrBox(e);
             }
+        }
+    }
+
+    private static String normalizeKey(String value) {
+        if (value == null) return "";
+        return value.trim().toUpperCase();
+    }
+
+    private void showArticleLookupLoading() {
+        try {
+            if (getContext() == null) return;
+            if (articleLookupDialog != null && articleLookupDialog.isShowing()) return;
+            articleLookupDialog = new ProgressDialog(getContext());
+            articleLookupDialog.setMessage("Please wait...");
+            articleLookupDialog.setCancelable(false);
+            articleLookupDialog.show();
+        } catch (Exception ignored) {}
+    }
+
+    private void hideArticleLookupLoading() {
+        try {
+            if (articleLookupDialog != null) {
+                if (articleLookupDialog.isShowing()) {
+                    articleLookupDialog.dismiss();
+                }
+                articleLookupDialog = null;
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void lookupArticle(String articleNo, String barcodeKey) {
+        String articleKey = normalizeKey(articleNo);
+        String bKey = normalizeKey(barcodeKey);
+        if (articleKey.isEmpty()) {
+            return;
+        }
+
+        // Cache hit: apply immediately to the scanned barcode row + UI.
+        if (articleLookupMap.containsKey(articleKey)) {
+            applyArticleLookup(articleKey, bKey);
+            return;
+        }
+
+        try {
+            // Show loader after scan; close it when we receive article-lookup response/error.
+            showArticleLookupLoading();
+
+            JSONObject params = new JSONObject();
+            params.put("store", WERKS);
+            params.put("article", articleNo.trim());
+
+            Log.d(TAG, "article-lookup payload -> " + params);
+
+            JsonObjectRequest request = new JsonObjectRequest(
+                    Request.Method.POST,
+                    Vars.ARTICLE_LOOKUP_URL,
+                    params,
+                    response -> {
+                        hideArticleLookupLoading();
+                        Log.d(TAG, "article-lookup response -> " + response);
+                        if (response != null && response.optBoolean("status", false)) {
+                            String articleType = response.optString("article_type", "").trim();
+                            String articleSize = mapArticleSize(response.optString("article_size", "").trim());
+                            articleLookupMap.put(articleKey, new String[]{articleType, articleSize});
+                            applyArticleLookup(articleKey, bKey);
+                        }
+                    },
+                    error -> {
+                        hideArticleLookupLoading();
+                        Log.w(TAG, "article-lookup error -> " + error);
+                    }
+            );
+            request.setRetryPolicy(new DefaultRetryPolicy(
+                    50000,
+                    1,
+                    DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+            ApplicationController.getInstance().getRequestQueue().add(request);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            hideArticleLookupLoading();
+            Log.w(TAG, "article-lookup payload error -> " + e.getMessage());
+        }
+    }
+
+    private static String mapArticleSize(String articleSize) {
+        if (articleSize == null) return "";
+        String s = articleSize.trim();
+        if (s.equalsIgnoreCase("NORMAL")) {
+            return "A";
+        }
+        return s;
+    }
+
+    private void applyArticleLookup(String articleKey, String barcodeKey) {
+        String aKey = normalizeKey(articleKey);
+        String bKey = normalizeKey(barcodeKey);
+        String[] values = articleLookupMap.get(aKey);
+        if (values == null) {
+            return;
+        }
+
+        // Safety: also map when applying cached values.
+        if (values.length > 1) {
+            values[1] = mapArticleSize(values[1]);
+        }
+
+        // Bind into the scanned barcode row (so subsequent qty scans show meta)
+        FloorBarcode barcodeData = barcodeDataMap.get(bKey);
+        if (barcodeData != null) {
+            if (values[0] != null && !values[0].isEmpty()) barcodeData.setArtType(values[0]);
+            if (values[1] != null && !values[1].isEmpty()) barcodeData.setArtSize(values[1]);
+        }
+
+        // Bind into UI only if this response corresponds to the currently displayed article.
+        String currentArticle = normalizeKey(UIFuncs.toUpperTrim(txt_article));
+        if (!currentArticle.isEmpty() && currentArticle.equals(aKey)) {
+            if (values[0] != null && !values[0].isEmpty()) txt_article_type.setText(values[0]);
+            if (values[1] != null && !values[1].isEmpty()) txt_article_size.setText(values[1]);
         }
     }
 
@@ -412,9 +562,19 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
             }
             Log.d(TAG, "setBarcodeData rows=" + barcodeDataMap.size());
             if (anyRecord) {
-                updateQtyAfterScan(UIFuncs.toUpperTrim(txt_scan_barcode));
+                String scannedBarcode = UIFuncs.toUpperTrim(txt_scan_barcode);
+                FloorBarcode scannedData = barcodeDataMap.get(normalizeKey(scannedBarcode));
+                if (scannedData != null) {
+                    // After barcode validation, call article-lookup with validated Article No (MATNR)
+                    lookupArticle(scannedData.getMatnr(), scannedBarcode);
+                }
+                updateQtyAfterScan(scannedBarcode);
             } else {
-                box.getBox("No Records", "No records returned by the server");
+                box.getBox("No Records", "No records returned by the server", (dialog, which) -> {
+                    clearArticleMeta();
+                    txt_scan_barcode.setText("");
+                    txt_scan_barcode.requestFocus();
+                });
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -437,18 +597,29 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
             if (umrez <= 0) umrez = 1;
             sqty = sqty + umrez;
             if(sqty > rqty){
-                box.getBox("Invalid", "Already scanned maximum allowed Qty " + rqty);
+                box.getBox("Invalid", "Already scanned maximum allowed Qty " + rqty, (dialog, which) -> {
+                    clearArticleMeta();
+                    txt_scan_barcode.setText("");
+                    txt_scan_barcode.requestFocus();
+                });
                 return;
             }
             txt_article.setText(barcodeData.getMatnr());
             if (barcodeData.getArtType() != null) {
                 txt_article_type.setText(barcodeData.getArtType());
             }
+            if (barcodeData.getArtSize() != null) {
+                txt_article_size.setText(barcodeData.getArtSize());
+            }
             txt_scan_qty.setText(Util.formatDouble(sqty));
             barcodeData.setScanQty(Util.formatDouble(sqty));
             return;
         }else{
-            box.getBox("Invalid", "Scanned Barcode is invalid and not available in Records");
+            box.getBox("Invalid", "Scanned Barcode is invalid and not available in Records", (dialog, which) -> {
+                clearArticleMeta();
+                txt_scan_barcode.setText("");
+                txt_scan_barcode.requestFocus();
+            });
         }
         txt_scan_barcode.setText("");
         txt_scan_barcode.requestFocus();
@@ -499,6 +670,13 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
 
+        // Prevent multiple overlapping dialogs (scanner can trigger multiple validate calls).
+        try {
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
+        } catch (Exception ignored) {}
+
         dialog = new ProgressDialog(getContext());
 
         dialog.setMessage("Please wait...");
@@ -510,8 +688,10 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
             @Override
             public void run() {
                 try {
+                    requestInFlight = true;
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
+                    requestInFlight = false;
                     dialog.dismiss();
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
@@ -536,6 +716,7 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
 
             @Override
             public void onResponse(JSONObject responsebody) {
+                requestInFlight = false;
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
@@ -559,13 +740,13 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
                                 String type = returnobj.getString("TYPE");
                                 if (type != null) {
                                     if (type.equals("E")) {
+                                        if (request == REQUEST_VALIDATE_BARCODE) {
+                                            showScanError("Err", returnobj.getString("MESSAGE"));
+                                            return;
+                                        }
                                         UIFuncs.errorSound(getContext());
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
-                                        if (request == REQUEST_VALIDATE_BARCODE) {
-                                            txt_scan_barcode.setText("");
-                                            txt_scan_barcode.requestFocus();
-                                        }
                                     } else {
                                         if(request == REQUEST_FLOOR_LIST){
                                             setFloorList(responsebody);
@@ -671,6 +852,7 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
                     dialog.dismiss();
                     dialog = null;
                 }
+                requestInFlight = false;
                 AlertBox box = new AlertBox(getContext());
                 box.getBox("Err", err);
             }

@@ -50,7 +50,8 @@ import org.json.JSONObject;
  * PTL 4.0 — Lorry Loading Processing Area.
  * <ul>
  *   <li>Scan Pallet validate: {@link Vars#ZWM_PTL_PALATE_V60_V61} — IM_USER, IM_PLANT, IM_PALETTE</li>
- *   <li>Save: {@link Vars#ZWM_PTL_HU_V64_V65} — IM_USER, IM_PLANT, IM_PALETTE</li>
+ *   <li>Save: {@link Vars#ZWM_PTL_HU_V64_V65} — IM_USER, IM_PLANT, IM_PALETTE
+ *       → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN</li>
  * </ul>
  */
 public class FragmentPTLLorryLoadingProcessingArea extends Fragment implements View.OnClickListener {
@@ -299,27 +300,31 @@ public class FragmentPTLLorryLoadingProcessingArea extends Fragment implements V
             if (request == REQUEST_VALIDATE_PALLET) {
                 validatedPallet = UIFuncs.toUpperTrim(txtScanPallet);
                 txtPallet.setText(validatedPallet);
-                String hub = responsebody.optString("EX_HUB", "").trim();
+                String hub = PtlHuTransferRfcResponse.extractHub(responsebody);
                 if (!TextUtils.isEmpty(hub)) {
                     txtHub.setText(hub);
                 }
                 txtScanPallet.setText("");
                 txtScanPallet.requestFocus();
             } else if (request == REQUEST_SAVE) {
-                String hub = responsebody.optString("EX_HUB", "").trim();
-                if (!TextUtils.isEmpty(hub)) {
-                    txtHub.setText(hub);
-                }
-                String cnt = responsebody.optString("EX_PALETTE_CNT", "").trim();
-                if (!TextUtils.isEmpty(cnt)) {
-                    txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
-                }
+                applyHuTransferSaveSuccess(responsebody);
                 box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message, (d, w) -> resetScreen());
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
+        }
+    }
+
+    private void applyHuTransferSaveSuccess(JSONObject responsebody) {
+        String hub = PtlHuTransferRfcResponse.extractHub(responsebody);
+        if (!TextUtils.isEmpty(hub)) {
+            txtHub.setText(hub);
+        }
+        String cnt = PtlHuTransferRfcResponse.extractPaletteCount(responsebody);
+        if (!TextUtils.isEmpty(cnt)) {
+            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
         }
     }
 

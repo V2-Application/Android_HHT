@@ -277,23 +277,25 @@ public class Vars {
     public static String ZWM_PTL_HUPACKING_HU_SAVE = "ZWM_PTL_HUPACKING_HU_SAVE";
     /** PTL V60/V61 — pallet validate (IM_USER, IM_PLANT, IM_PALETTE). */
     public static String ZWM_PTL_PALATE_V60_V61 = "ZWM_PTL_PALATE_V60_V61";
-    /** Packed HU PND TRF Floor DCLA — scan HU validate (IM_USER, IM_PLANT, IM_HU); export EX_HUB, EX_STORE. */
+    /** Packed HU PND TRF Floor DCLA — scan HU validate (IM_USER, IM_PLANT, IM_HU); export ES_HUB, ES_STORE, EX_RETURN. */
     public static String ZWM_PTL_HU_V6LIDATE_RFC = "ZWM_PTL_HU_V6LIDATE_RFC";
-    /** PTL V60/V61 — Packed HU PND TRF Floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V60/V61 — Packed HU PND TRF Floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE, IM_HU)
+     *  → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V60_V61 = "ZWM_PTL_HU_V60_V61";
-    /** PTL V61/V62 — Floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V61/V62 — Floor DCLA (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V61_V62 = "ZWM_PTL_HU_V61_V62";
-    /** PTL V62/V63 — Ground floor DCLA save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V62/V63 — Ground floor DCLA (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V62_V63 = "ZWM_PTL_HU_V62_V63";
-    /** PTL V63/V64 — PND Lorry Loading Staging Area save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V63/V64 — PND Lorry Loading Staging (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V63_V64 = "ZWM_PTL_HU_V63_V64";
-    /** PTL V64/V65 — Lorry Loading Processing Area save (IM_USER, IM_PLANT, IM_PALETTE). */
+    /** PTL V64/V65 — Lorry Loading Processing (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V64_V65 = "ZWM_PTL_HU_V64_V65";
     public static String ZSTORE_DISCOUNT_GET_EAN_DATA = "ZSTORE_DISCOUNT_GET_EAN_DATA";
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
     public static String ZSDC_DIRECT_ART_VAL_BARCOD_RFC = "ZSDC_DIRECT_ART_VAL_BARCOD_RFC";
     public static String ZSDC_DIRECT_ART_VAL1_SAVE1_RFC = "ZSDC_DIRECT_ART_VAL1_SAVE1_RFC";
+    public static String ARTICLE_LOOKUP_URL = "https://sap-api.v2retail.net/api/article-lookup";
     public static String ZBIN_GRT_HU_VALIDATION = "ZBIN_GRT_HU_VALIDATION";
     public static String ZBIN_GRT_PICKLIST_VALIDATION = "ZBIN_GRT_PICKLIST_VALIDATION";
     public static String ZBIN_GRT_BIN_DATA = "ZBIN_GRT_BIN_DATA";

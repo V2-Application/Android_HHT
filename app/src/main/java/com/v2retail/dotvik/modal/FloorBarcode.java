@@ -31,6 +31,9 @@ public class FloorBarcode {
     @SerializedName("ART_TYPE")
     private String artType;
 
+    @SerializedName("ZSIZE")
+    private String artSize;
+
     // --- newInstance method ---
     public static FloorBarcode newInstance(FloorBarcode source) {
         if (source == null) {
@@ -48,6 +51,7 @@ public class FloorBarcode {
         target.setFloorBin(source.getFloorBin());
         target.setScanQty(source.getScanQty());
         target.setArtType(source.getArtType());
+        target.setArtSize(source.getArtSize());
 
         return target;
     }
@@ -123,5 +127,13 @@ public class FloorBarcode {
 
     public void setArtType(String artType) {
         this.artType = artType;
+    }
+
+    public String getArtSize() {
+        return artSize;
+    }
+
+    public void setArtSize(String artSize) {
+        this.artSize = artSize;
     }
 }
