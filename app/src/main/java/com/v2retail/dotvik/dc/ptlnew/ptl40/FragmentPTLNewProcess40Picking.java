@@ -25,6 +25,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -65,6 +66,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -81,6 +83,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
     private static final int REQUEST_VALIDATE_MSA_BIN = 1503;
     private static final int REQUEST_VALIDATE_MSA_CRATE = 1504;
     private static final int REQUEST_SAVE = 1505;
+    private static final int REQUEST_SHORT_CRATE = 1506;
 
     private static final String TAG = FragmentPTLNewProcess40Picking.class.getName();
 
@@ -94,9 +97,9 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
     FragmentManager fm;
     FragmentActivity activity;
 
-    Button btn_back, btn_next, btn_save;
+    Button btn_back, btn_next, btn_save, btn_empty_bin;
     LinearLayout ll_screen_1, ll_screen_2, ll_screen_3;
-    EditText txt_picklist, txt_floor, txt_section, txt_scan_bin;
+    EditText txt_picklist, txt_floor, txt_section, txt_scan_bin, txt_hub;
     EditText txt_picklistno, txt_scanned_floor, txt_scanned_floor_bin, txt_scanned_section, txt_empty_crate, txt_scanned_empty_crate, txt_scanned_bin, txt_scan_msa_bin, txt_scanned_msa_bin, txt_scan_msa_crate, txt_scanned_msa_crate;
     EditText txt_picklistno_2, txt_scanned_empty_crate_2, txt_scanned_msa_bin_2, txt_scanned_msa_crate_2, txt_scan_article;
     TableLayout table_bin_crate, table_article_scan;
@@ -151,6 +154,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         txt_floor = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_floor);
         txt_section = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_section);
         txt_picklist = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_picklist);
+        txt_hub = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_hub);
 
         txt_picklistno = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_picklistno);
         txt_scanned_floor = rootView.findViewById(R.id.txt_ptl_new_picking_process_40_scanned_floor);
@@ -180,10 +184,12 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         btn_back =  rootView.findViewById(R.id.btn_ptl_new_picking_process_40_back);
         btn_next =  rootView.findViewById(R.id.btn_ptl_new_picking_process_40_next);
         btn_save =  rootView.findViewById(R.id.btn_ptl_new_picking_process_40_save);
+        btn_empty_bin =  rootView.findViewById(R.id.btn_ptl_new_picking_process_40_empty_bin);
 
         btn_back.setOnClickListener(this);
         btn_next.setOnClickListener(this);
         btn_save.setOnClickListener(this);
+        btn_empty_bin.setOnClickListener(this);
 
         addInputEvents();
         clear();
@@ -440,7 +446,139 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             case R.id.btn_ptl_new_picking_process_40_save:
                 saveScannedData();
                 break;
+            case R.id.btn_ptl_new_picking_process_40_empty_bin:
+                confirmAndCallShortCrate();
+                break;
         }
+    }
+
+    //Empty Bin -> ZWM_PTL_NEW_SHORT_CRATE_RFC
+    private void confirmAndCallShortCrate(){
+        final String bin = UIFuncs.toUpperTrim(txt_scanned_msa_bin);
+        if(bin.isEmpty()){
+            box.getBox("Invalid", "Please scan MSA BIN");
+            txt_scan_msa_bin.requestFocus();
+            return;
+        }
+        box.getBox("Confirm", "Do you want to proceed with Empty Bin (Short Crate) for " + bin + "?",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        callShortCrate(bin);
+                    }
+                },
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        d.dismiss();
+                    }
+                });
+    }
+
+    private void callShortCrate(String bin){
+        if(!ensureSapUserId()){
+            return;
+        }
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_PTL_NEW_SHORT_CRATE_RFC);
+            args.put("IM_USER", USER);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_BIN", bin);
+            args.put("IM_PICKLIST", UIFuncs.toUpperTrim(txt_picklistno));
+            showProcessingAndSubmit(Vars.ZWM_PTL_NEW_SHORT_CRATE_RFC, REQUEST_SHORT_CRATE, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            if(dialog!=null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+
+    private void handleShortCrateResponse(JSONObject responsebody){
+        try {
+            JSONObject ret = null;
+            if (responsebody.has("ES_RETURN") && responsebody.get("ES_RETURN") instanceof JSONObject) {
+                ret = responsebody.getJSONObject("ES_RETURN");
+            } else if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
+                ret = responsebody.getJSONObject("EX_RETURN");
+            }
+            String type = ret != null ? ret.optString("TYPE", "") : "";
+            if ("E".equalsIgnoreCase(type)) {
+                AlertBox b = new AlertBox(getContext());
+                b.getBox("Err", ret.optString("MESSAGE", "Empty Bin / Short Crate failed"));
+                txt_scan_msa_bin.setText("");
+                txt_scan_msa_bin.requestFocus();
+                return;
+            }
+
+            String message = ret != null ? ret.optString("MESSAGE", "") : "";
+            String tanum = "";
+            JSONArray rows = responsebody.optJSONArray(Vars.ZWM_PTL_NEW_SHORT_CRATE_RFC);
+            if (rows != null) {
+                for (int i = 0; i < rows.length(); i++) {
+                    JSONObject row = rows.optJSONObject(i);
+                    if (row == null) {
+                        continue;
+                    }
+                    if (message.isEmpty()) {
+                        message = row.optString("MESSAGE", "");
+                    }
+                    String t = row.optString("TANUM", "");
+                    if (!t.isEmpty()) {
+                        tanum = t;
+                        break;
+                    }
+                }
+            }
+
+            String toastMsg;
+            if (!tanum.isEmpty()) {
+                toastMsg = (message.isEmpty() ? "" : message + " ") + "TANUM: " + tanum;
+            } else {
+                toastMsg = message;
+            }
+            if (toastMsg == null || toastMsg.trim().isEmpty()) {
+                toastMsg = "Empty Bin / Short Crate processed successfully";
+            }
+            Toast.makeText(getContext(), toastMsg, Toast.LENGTH_LONG).show();
+
+            String shortedBin = UIFuncs.toUpperTrim(txt_scanned_msa_bin);
+            removeScannedBinFromList(shortedBin);
+
+            txt_scan_msa_bin.setText("");
+            txt_scanned_msa_bin.setText("");
+                      txt_scan_msa_bin.requestFocus();
+        } catch (JSONException e) {
+            e.printStackTrace();
+            AlertBox b = new AlertBox(getContext());
+            b.getErrBox(e);
+        }
+    }
+
+    /** Removes every list row whose bin matches the shorted MSA bin, then refreshes the table + counter. */
+    private void removeScannedBinFromList(String bin){
+        if (bin == null || bin.trim().isEmpty() || picklistDataMap == null || picklistDataMap.isEmpty()) {
+            return;
+        }
+        String target = bin.trim();
+        Iterator<Map.Entry<String, ETPickData>> it = picklistDataMap.entrySet().iterator();
+        while (it.hasNext()) {
+            ETPickData data = it.next().getValue();
+            String rowBin = (data == null || data.getLgbin() == null) ? "" : data.getLgbin().trim();
+            if (rowBin.equalsIgnoreCase(target)) {
+                it.remove();
+            }
+        }
+        totalBin = picklistDataMap.size();
+        if (totalScanned > totalBin) {
+            totalScanned = totalBin;
+        }
+        populateBinCrateTable();
+        txt_scanned_bin.setText(totalScanned + " / " + totalBin);
     }
 
     private void clear(){
@@ -456,10 +594,12 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         ll_screen_3.setVisibility(View.GONE);
         btn_next.setVisibility(View.VISIBLE);
         btn_save.setVisibility(View.INVISIBLE);
+        btn_empty_bin.setVisibility(View.GONE);
         txt_scan_bin.setText("");
         txt_section.setText("");
         txt_floor.setText("");
         txt_picklist.setText("");
+        txt_hub.setText("");
         UIFuncs.enableInput(con, txt_scan_bin);
     }
 
@@ -469,7 +609,8 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         ll_screen_2.setVisibility(View.VISIBLE);
         ll_screen_3.setVisibility(View.GONE);
         btn_next.setVisibility(View.VISIBLE);
-        btn_save.setVisibility(View.INVISIBLE);
+        btn_save.setVisibility(View.GONE);
+        btn_empty_bin.setVisibility(View.VISIBLE);
         UIFuncs.enableInput(con, txt_scan_msa_crate);
         if(mode == 0){
             totalScanned = 0;
@@ -509,6 +650,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         currentStep = 3;
         btn_next.setVisibility(View.INVISIBLE);
         btn_save.setVisibility(View.VISIBLE);
+        btn_empty_bin.setVisibility(View.GONE);
         ll_screen_1.setVisibility(View.GONE);
         ll_screen_2.setVisibility(View.GONE);
         ll_screen_3.setVisibility(View.VISIBLE);
@@ -627,6 +769,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                         txt_floor.setText(binCrateData.getFloor() == null ? "" : binCrateData.getFloor());
                         txt_section.setText(binCrateData.getSection() == null ? "" : binCrateData.getSection());
                         txt_picklist.setText(binCrateData.getPicklist() == null ? "" : binCrateData.getPicklist());
+                        txt_hub.setText(binCrateData.getHub() == null ? "" : binCrateData.getHub());
                         firstRowSet = true;
                     }
                 }
@@ -1418,6 +1561,10 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                     return;
                 } else {
                     try {
+                        if (request == REQUEST_SHORT_CRATE) {
+                            handleShortCrateResponse(responsebody);
+                            return;
+                        }
                         if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
                             JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
                             if (returnobj != null) {

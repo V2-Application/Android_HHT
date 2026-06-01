@@ -256,25 +256,69 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         }
     }
 
+    /**
+     * Dev JSON RFC adapter returns 0-indexed data rows only; production SAP often
+     * prefixes the result tables with a column-name/description template row at index 0.
+     */
+    private static boolean isDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String ean11 = row.optString("EAN11", "").trim();
+        String matnr = row.optString("MATNR", "").trim();
+        if ("EAN11".equalsIgnoreCase(ean11) || "MATNR".equalsIgnoreCase(matnr)) {
+            return true;
+        }
+        if (ean11.contains("International Article Number")) {
+            return true;
+        }
+        return matnr.equalsIgnoreCase("Material Number");
+    }
+
+    private static int dataStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isDataHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     private void setData(JSONObject response){
         try{
-            JSONArray arrEanData = response.getJSONArray("ET_EAN_DATA");
-            JSONArray arrDiscData = response.getJSONArray("ET_DISCOUNT_DATA");
-            int eanLength = arrEanData.length();
-            int discLength = arrDiscData.length();
+            JSONArray arrEanData = response.optJSONArray("ET_EAN_DATA");
+            JSONArray arrDiscData = response.optJSONArray("ET_DISCOUNT_DATA");
 
             DiscountArticle discData = null;
-            for(int i=1; i < eanLength; i++){
-                ETEan eanData = new Gson().fromJson(arrEanData.get(i).toString(), ETEan.class);
-                eanDataMap.put(eanData.getLgean11(), eanData);
+
+            if (arrEanData != null) {
+                int eanStart = dataStartIndex(arrEanData);
+                for(int i=eanStart; i < arrEanData.length(); i++){
+                    JSONObject row = arrEanData.getJSONObject(i);
+                    if (isDataHeaderRow(row)) {
+                        continue;
+                    }
+                    ETEan eanData = new Gson().fromJson(row.toString(), ETEan.class);
+                    if (eanData != null && eanData.getLgean11() != null) {
+                        eanDataMap.put(eanData.getLgean11(), eanData);
+                    }
+                }
             }
 
-            for(int i=1; i < discLength; i++){
-                discData = new Gson().fromJson(arrDiscData.get(i).toString(), DiscountArticle.class);
-                discountDataMap.put(discData.getEan11(), discData);
+            if (arrDiscData != null) {
+                int discStart = dataStartIndex(arrDiscData);
+                for(int i=discStart; i < arrDiscData.length(); i++){
+                    JSONObject row = arrDiscData.getJSONObject(i);
+                    if (isDataHeaderRow(row)) {
+                        continue;
+                    }
+                    DiscountArticle parsed = new Gson().fromJson(row.toString(), DiscountArticle.class);
+                    if (parsed != null && parsed.getEan11() != null) {
+                        discountDataMap.put(parsed.getEan11(), parsed);
+                        discData = parsed;
+                    }
+                }
             }
 
-            if(eanLength > 1 && discLength > 1){
+            if(!eanDataMap.isEmpty() && discData != null){
                 String startdate = Util.DateTime("yyyyMMdd", new Date());
                 String starttime = Util.DateTime("HHmmss", new Date());
 
@@ -302,6 +346,8 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 articleScan.setDisper(discData.getDisper());
                 articleScan.setDisper1(discData.getDisper1());
                 discountArticleScanMap.put(discData.getEan11(), articleScan);
+            } else {
+                showError("No Data", "No discount data found for the scanned barcode");
             }
 
         }catch (Exception exce){

@@ -308,6 +308,10 @@ public class FragmentPTLFloorDcla extends Fragment implements View.OnClickListen
                 if (!TextUtils.isEmpty(hub)) {
                     txtHub.setText(hub);
                 }
+                String noOfHu = PtlHuTransferRfcResponse.extractNoOfHu(responsebody);
+                if (!TextUtils.isEmpty(noOfHu)) {
+                    txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
+                }
                 txtScanPallet.setText("");
                 txtScanPallet.requestFocus();
             } else if (request == REQUEST_SAVE) {
@@ -326,7 +330,7 @@ public class FragmentPTLFloorDcla extends Fragment implements View.OnClickListen
         if (!TextUtils.isEmpty(hub)) {
             txtHub.setText(hub);
         }
-        String cnt = PtlHuTransferRfcResponse.extractPaletteCount(responsebody);
+        String cnt = PtlHuTransferRfcResponse.extractNoOfHu(responsebody);
         if (!TextUtils.isEmpty(cnt)) {
             txtNoOfHu.setText(UIFuncs.removeLeadingZeros(cnt));
         }

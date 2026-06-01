@@ -51,6 +51,7 @@ import org.json.JSONObject;
 public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnClickListener {
 
     private static final int REQUEST_VALIDATE_EXT_HU = 1501;
+    private static final int REQUEST_PRINT_HU = 1502;
 
     private static final String TAG = FragmentPTLNewHUCloseAndPrint.class.getName();
 
@@ -160,62 +161,57 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
             }
         });
 
-        if(this.process.equalsIgnoreCase("HU Close")){
-            UIFuncs.enableInput(con, txt_scan_ext_hu);
-            ll_printer.setVisibility(View.GONE);
+        txt_printer = rootView.findViewById(R.id.txt_ptl_new_hu_close_printer);
+
+        ll_printer.setVisibility(View.VISIBLE);
+
+        String defaultPrinter = data.read(Vars.TVS_PRINTER);
+        if(defaultPrinter != null && !defaultPrinter.isEmpty()){
+            txt_printer.setText(defaultPrinter);
+            validatePrinter(defaultPrinter, true);
         }else{
-            txt_printer = rootView.findViewById(R.id.txt_ptl_new_hu_close_printer);
+            txt_printer.requestFocus();
+        }
 
-            ll_printer.setVisibility(View.VISIBLE);
+        txt_printer.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    String value = UIFuncs.toUpperTrim(txt_printer);
+                    if (value.length() > 0) {
+                        validatePrinter(value, false);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+        txt_printer.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
 
-            String defaultPrinter = data.read(Vars.TVS_PRINTER);
-            if(defaultPrinter != null && !defaultPrinter.isEmpty()){
-                txt_printer.setText(defaultPrinter);
-                validatePrinter(defaultPrinter, true);
-            }else{
-                txt_printer.requestFocus();
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
             }
 
-            txt_printer.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                    if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        UIFuncs.hideKeyboard(getActivity());
-                        String value = UIFuncs.toUpperTrim(txt_printer);
-                        if (value.length() > 0) {
-                            validatePrinter(value, false);
-                            return true;
-                        }
-                    }
-                    return false;
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if ((before == 0 && start == 0) && count > 3) {
+                    scannerReading = true;
+                } else {
+                    scannerReading = false;
                 }
-            });
-            txt_printer.addTextChangedListener(new TextWatcher() {
-                boolean scannerReading = false;
+            }
 
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+            @Override
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().toUpperCase().trim();
+                if (value.length() > 0 && scannerReading) {
+                    validatePrinter(value, false);
                 }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if ((before == 0 && start == 0) && count > 3) {
-                        scannerReading = true;
-                    } else {
-                        scannerReading = false;
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                    String value = s.toString().toUpperCase().trim();
-                    if (value.length() > 0 && scannerReading) {
-                        validatePrinter(value, false);
-                    }
-                }
-            });
-        }
+            }
+        });
         return rootView;
     }
 
@@ -280,6 +276,31 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     private void printHU(JSONObject huObj){
         TSPLPrinter printer = new TSPLPrinter(getContext(), Vars.PTL_NEW_MODULE_HU_CLOSE);
         printer.sendPrintCommandToBluetoothPrinter(this.tvsprinter, huObj, "1");
+    }
+
+    /**
+     * The HU Close RFC only validates/closes the HU and does not return EX_HUDATA,
+     * so fetch the printable payload via the print RFC and print it silently.
+     */
+    private void fetchPrintDataAndPrint(String hu){
+        huRequestInFlight = true;
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_PTL_TVS_HU_PRINT);
+            args.put("IM_USER", USER);
+            args.put("IM_EXIDV", hu);
+            showProcessingAndSubmit(Vars.ZWM_PTL_TVS_HU_PRINT, REQUEST_PRINT_HU, args);
+        } catch (JSONException e) {
+            huRequestInFlight = false;
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
     }
 
     private void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -356,13 +377,18 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
                                         }
                                     } else {
                                         if (request == REQUEST_VALIDATE_EXT_HU) {
-                                            txt_ext_hu.setText(UIFuncs.toUpperTrim(txt_scan_ext_hu));
+                                            String scannedHu = UIFuncs.toUpperTrim(txt_scan_ext_hu);
+                                            txt_ext_hu.setText(scannedHu);
                                             txt_scan_ext_hu.setText("");
                                             txt_scan_ext_hu.requestFocus();
-                                            if(!process.equalsIgnoreCase("HU Close")){
+                                            if(process.equalsIgnoreCase("HU Close")){
+                                                fetchPrintDataAndPrint(scannedHu);
+                                            }else{
                                                 Toast.makeText(con, "Details sent to printer " + tvsprinter, Toast.LENGTH_SHORT).show();
                                                 printHU(responsebody.getJSONObject("EX_HUDATA"));
                                             }
+                                        } else if (request == REQUEST_PRINT_HU) {
+                                            printHU(responsebody.getJSONObject("EX_HUDATA"));
                                         }
                                     }
                                 }

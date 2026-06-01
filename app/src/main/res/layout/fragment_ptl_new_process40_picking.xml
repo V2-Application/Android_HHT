@@ -155,6 +155,41 @@
                         android:textSize="16sp" />
                 </RelativeLayout>
             </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="2dp"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:padding="7dp"
+                    android:text="HUB"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7">
+
+                    <EditText
+                        android:id="@+id/txt_ptl_new_picking_process_40_hub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/border_disabled_input"
+                        android:enabled="false"
+                        android:padding="7dp"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </RelativeLayout>
+            </LinearLayout>
         </LinearLayout>
         <LinearLayout
             android:id="@+id/ll_ptl_new_picking_process_40_screen_2"
@@ -672,6 +707,21 @@
             android:text="Back"
             android:textColor="@color/white"
             android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btn_ptl_new_picking_process_40_empty_bin"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:layout_weight="2"
+            android:background="#FFF9C4"
+            android:text="Empty Bin"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btn_ptl_new_picking_process_40_save"

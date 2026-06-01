@@ -6,8 +6,8 @@ android {
         applicationId "com.v2retail.dotvik"
         minSdkVersion 25
         targetSdkVersion 31
-        versionCode 1220
-        versionName "12.120"
+        versionCode 1221
+        versionName "12.121"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
         aaptOptions {

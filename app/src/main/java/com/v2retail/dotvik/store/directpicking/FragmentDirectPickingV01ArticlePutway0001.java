@@ -497,7 +497,10 @@ public class FragmentDirectPickingV01ArticlePutway0001 extends Fragment implemen
         if (articleSize == null) return "";
         String s = articleSize.trim();
         if (s.equalsIgnoreCase("NORMAL")) {
-            return "A";
+            return "NS";
+        }
+        if (s.equalsIgnoreCase("S")) {
+            return "NS";
         }
         return s;
     }

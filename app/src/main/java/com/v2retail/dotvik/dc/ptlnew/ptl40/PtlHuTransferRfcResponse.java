@@ -22,18 +22,53 @@ public final class PtlHuTransferRfcResponse {
     private PtlHuTransferRfcResponse() {
     }
 
-    /** {@code EX_HUB} is {@code ZCLA_HU}; adaptor may return a flat string or structure with {@code HUB}. */
+    /**
+     * HUB field. Prefers {@code ES_HUB-WERKS} (e.g. {@code ZWM_PTL_PALATE_V60_V61} validate),
+     * falling back to {@code EX_HUB} ({@code ZCLA_HU}) or a flat {@code HUB}.
+     */
     public static String extractHub(JSONObject responsebody) {
         return firstNonEmpty(
+                extractExportString(responsebody, "ES_HUB", "WERKS", "HUB"),
                 extractExportString(responsebody, "EX_HUB", "HUB"),
                 responsebody.optString("HUB", "").trim());
     }
 
-    /** {@code EX_STORE} is {@code ZGRT_ORDCONF}; adaptor may return a flat string or structure with {@code STORE}. */
+    /**
+     * STORE field. Prefers {@code ES_STORE-WERKS}, falling back to {@code EX_STORE}
+     * ({@code ZGRT_ORDCONF}) or a flat {@code STORE}.
+     */
     public static String extractStore(JSONObject responsebody) {
         return firstNonEmpty(
+                extractExportString(responsebody, "ES_STORE", "WERKS", "STORE"),
                 extractExportString(responsebody, "EX_STORE", "STORE"),
                 responsebody.optString("STORE", "").trim());
+    }
+
+    /**
+     * No Of HU field. Prefers {@code EX_RETURN-NUMBER} (validate RFC), falling back to
+     * {@code EX_PALETTE_CNT}.
+     */
+    public static String extractNoOfHu(JSONObject responsebody) {
+        return firstNonEmpty(
+                extractReturnNumber(responsebody),
+                extractPaletteCount(responsebody));
+    }
+
+    /** {@code EX_RETURN-NUMBER} from the {@code BAPIRET2} structure. */
+    public static String extractReturnNumber(JSONObject responsebody) {
+        if (!responsebody.has("EX_RETURN")) {
+            return "";
+        }
+        try {
+            Object raw = responsebody.get("EX_RETURN");
+            if (raw instanceof JSONObject) {
+                String number = ((JSONObject) raw).optString("NUMBER", "").trim();
+                return "null".equalsIgnoreCase(number) ? "" : number;
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "extractReturnNumber", e);
+        }
+        return "";
     }
 
     /** {@code EX_PALETTE_CNT} is type {@code I}. */

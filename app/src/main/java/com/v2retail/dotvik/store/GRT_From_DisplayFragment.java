@@ -144,6 +144,26 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
     }
 
     private void getSlocdata() {
+        // The legacy "getsloc#..." hash-delimited text protocol only exists on the old
+        // on-prem middleware (xmwgw). The new Azure middleware exposes JSON RFCs only and
+        // rejects the text payload with {"TYPE":"E","MESSAGE":"bapiname is required"}.
+        // Detect the middleware the same way LoginActivity does.
+        if (URL == null || !URL.contains("xmwgw")) {
+            // Azure: no getsloc RFC available. Valid sources are exactly the fixed spinner
+            // values; the destination is validated server-side on the next screen
+            // (ZWM_STORE_GRT_FROM_DISP_AREA), so we leave dest_bin_table empty.
+            source_bin_table.clear();
+            dest_bin_table.clear();
+            if (sourceLocAdapter != null) {
+                for (int i = 0; i < sourceLocAdapter.getCount(); i++) {
+                    String v = sourceLocAdapter.getItem(i);
+                    if (v != null && !v.trim().isEmpty()) source_bin_table.add(v.trim());
+                }
+            }
+            Log.d(TAG, "Azure middleware: skipping legacy getsloc, source table -> " + source_bin_table);
+            return;
+        }
+
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
@@ -177,7 +197,11 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
             @Override
             public void onResponse(String response) {
 
-                response = response.substring(9, response.length());
+                // Old ValueXMW middleware prefixes the body with "Response:"; strip it only
+                // if present instead of blindly chopping 9 chars (which corrupted error text).
+                if (response != null && response.startsWith("Response:")) {
+                    response = response.substring("Response:".length());
+                }
 
                 Log.d(TAG, "response ->" + response);
 
@@ -466,12 +490,15 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
                 ? dest_sloc_et.getText().toString().trim()
                 : "";
 
-        if (!containsTrimmed(source_bin_table, source)) {
+        // Only enforce client-side list validation when a sloc list was actually fetched.
+        // On the Azure middleware the lists may be empty (no getsloc RFC); in that case the
+        // destination is validated server-side on the next screen.
+        if (!source_bin_table.isEmpty() && !containsTrimmed(source_bin_table, source)) {
             box.getBox("Alert", "Invalid Source!");
             return;
         }
 
-        if (!containsTrimmed(dest_bin_table, dest)) {
+        if (!dest_bin_table.isEmpty() && !containsTrimmed(dest_bin_table, dest)) {
             box.getBox("Alert", "Invalid Destination!");
             return;
         }
@@ -561,7 +588,9 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
                     case "dest":
                         Log.v(TAG, "scanContent dest = " + scanContent);
                         dest_sloc_et.setText(scanContent);
-                        if (dest_bin_table.contains(scanContent))
+                        // Skip client-side validation when no dest list was fetched (Azure);
+                        // the next screen validates the destination server-side.
+                        if (dest_bin_table.isEmpty() || dest_bin_table.contains(scanContent))
                             dest_sloc_et.setText(scanContent);
                         else {
                             box.getBox("Alert", "Invalid Destination!");

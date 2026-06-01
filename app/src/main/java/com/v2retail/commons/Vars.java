@@ -266,6 +266,8 @@ public class Vars {
     public static String ZGRT_PICK_GET_PICK_DATA_V4 = "ZGRT_PICK_GET_PICK_DATA_V4";
     public static String ZWM_PTL_CRATE_VALIDATE_V4 = "ZWM_PTL_CRATE_VALIDATE_V4";
     public static String ZWM_PTL_MSA_CRATE_VALIDATE_V4 = "ZWM_PTL_MSA_CRATE_VALIDATE_V4";
+    /** PTL short crate / empty bin (IM_USER, IM_PLANT, IM_BIN, IM_PICKLIST); export ES_RETURN + table ZWM_PTL_NEW_SHORT_CRATE_RFC (TANUM, MESSAGE...). */
+    public static String ZWM_PTL_NEW_SHORT_CRATE_RFC = "ZWM_PTL_NEW_SHORT_CRATE_RFC";
     public static String ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4 = "ZWM_PTL_PLT_REC_AT_ZONE_SRT_V4";
     public static String ZWM_PTL_ZONE_CRATE_VALIDATE_V3 = "ZWM_PTL_ZONE_CRATE_VALIDATE_V3";
     public static String ZWM_PTL_ZONE_HU_VALIDATE_V3 = "ZWM_PTL_ZONE_HU_VALIDATE_V3";

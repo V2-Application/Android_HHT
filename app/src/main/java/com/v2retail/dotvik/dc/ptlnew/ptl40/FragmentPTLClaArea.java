@@ -288,9 +288,13 @@ public class FragmentPTLClaArea extends Fragment implements View.OnClickListener
             if (request == REQUEST_VALIDATE_PALLET) {
                 validatedPallet = UIFuncs.toUpperTrim(txtScanPallet);
                 txtPallet.setText(validatedPallet);
-                String hub = responsebody.optString("EX_HUB", "").trim();
+                String hub = PtlHuTransferRfcResponse.extractHub(responsebody);
                 if (!TextUtils.isEmpty(hub)) {
                     txtHub.setText(hub);
+                }
+                String noOfHu = PtlHuTransferRfcResponse.extractNoOfHu(responsebody);
+                if (!TextUtils.isEmpty(noOfHu)) {
+                    txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
                 }
                 txtScanPallet.setText("");
                 txtScanPallet.requestFocus();
