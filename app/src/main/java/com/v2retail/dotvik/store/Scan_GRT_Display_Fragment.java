@@ -3,6 +3,7 @@ package com.v2retail.dotvik.store;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -131,6 +132,7 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
     int OpenQty = 0;
     int sum = 0;
     String requester = "";
+    private boolean requestInProgress = false;
 
     ArrayList<ArrayList<String>> dtEAN;
     ArrayList<ETPACKMAT> packMaterialRecords;
@@ -288,6 +290,14 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         barcode_art_et.requestFocus();
     }
 
+    // Clears the Article/Barcode field and returns focus to it so the user can rescan.
+    private void resetBarcodeInput() {
+        if (barcode_art_et != null) {
+            barcode_art_et.setText("");
+            barcode_art_et.requestFocus();
+        }
+    }
+
     @Override
     public void onClick(View view) {
         switch (view.getId())
@@ -358,6 +368,12 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         if(etEanRecords.containsKey(ean)){
             eanModel = etEanRecords.get(ean);
         }else{
+            // Avoid firing a duplicate stock lookup while one is already running
+            // (the barcode field has both an editor-action and a text-watcher listener
+            // that can each trigger validateEan for the same scan).
+            if(requestInProgress){
+                return;
+            }
             getStoreStockdata(ean);
             return;
         }
@@ -501,6 +517,16 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
 
+        // Dismiss any previously shown dialog so we never leave an orphaned
+        // "Please wait..." dialog on screen when a request is triggered twice.
+        if (dialog != null) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+            dialog = null;
+        }
+
+        requestInProgress = true;
         dialog = new ProgressDialog(getContext());
 
         dialog.setMessage("Please wait...");
@@ -514,7 +540,11 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                 try {
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
-                    dialog.dismiss();
+                    requestInProgress = false;
+                    if (dialog != null) {
+                        dialog.dismiss();
+                        dialog = null;
+                    }
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
                 }
@@ -537,6 +567,7 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
 
             @Override
             public void onResponse(JSONObject responsebody) {
+                requestInProgress = false;
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
@@ -546,11 +577,23 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                 if (responsebody == null) {
                     UIFuncs.errorSound(con);
                     AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "No response from Server");
+                    box.getBox("Err", "No response from Server", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface d, int which) {
+                            d.dismiss();
+                            resetBarcodeInput();
+                        }
+                    });
                 } else if (responsebody.equals("") || responsebody.equals("null") || responsebody.equals("{}")) {
                     UIFuncs.errorSound(con);
                     AlertBox box = new AlertBox(getContext());
-                    box.getBox("Err", "Unable to Connect Server/ Empty Response");
+                    box.getBox("Err", "Unable to Connect Server/ Empty Response", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface d, int which) {
+                            d.dismiss();
+                            resetBarcodeInput();
+                        }
+                    });
                     return;
                 } else {
                     try {
@@ -561,8 +604,18 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                                 if (type != null) {
                                     if (type.equals("E")) {
                                         UIFuncs.errorSound(getContext());
+                                        if (dialog != null) {
+                                            dialog.dismiss();
+                                            dialog = null;
+                                        }
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"));
+                                        box.getBox("Err", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface d, int which) {
+                                                d.dismiss();
+                                                resetBarcodeInput();
+                                            }
+                                        });
                                     } else {
                                         if(request == REQUEST_PACK_DATA){
                                             populatePackMaterial(responsebody);
@@ -634,6 +687,7 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
         } catch (AuthFailureError authFailureError) {
             authFailureError.printStackTrace();
+            requestInProgress = false;
             if (dialog != null) {
                 dialog.dismiss();
                 dialog = null;
@@ -664,12 +718,19 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                     err = "Parse Error!";
                 } else err = error.toString();
 
+                requestInProgress = false;
                 if (dialog != null) {
                     dialog.dismiss();
                     dialog = null;
                 }
                 AlertBox box = new AlertBox(getContext());
-                box.getBox("Err", err);
+                box.getBox("Err", err, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        d.dismiss();
+                        resetBarcodeInput();
+                    }
+                });
             }
         };
     }

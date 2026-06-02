@@ -42,6 +42,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
     Button baseStock;
     Button picking_with_consolidation;
     Button carticle_process, direct_picking_v01_0001;
+    Button store_grt_process;
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
@@ -103,6 +104,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
         picking_with_consolidation = (Button) view.findViewById(R.id.button_picking_with_consolidation);
         carticle_process = view.findViewById(R.id.carticle_process);
         direct_picking_v01_0001 = view.findViewById(R.id.direct_picking_v01_0001);
+        store_grt_process = view.findViewById(R.id.store_grt_process);
 
         direct_picking.setOnClickListener(this);
         picking_against_picking.setOnClickListener(this);
@@ -115,6 +117,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
         picking_with_consolidation.setOnClickListener(this);
         carticle_process.setOnClickListener(this);
         direct_picking_v01_0001.setOnClickListener(this);
+        store_grt_process.setOnClickListener(this);
 
         return view;
     }
@@ -190,6 +193,9 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
                 break;
             case R.id.direct_picking_v01_0001:
                 fragment = new MenuDirectPickingV01To0001();
+                break;
+            case R.id.store_grt_process:
+                fragment = new FragmentStoreGrtProcess();
                 break;
         }
         if (fragment != null) {

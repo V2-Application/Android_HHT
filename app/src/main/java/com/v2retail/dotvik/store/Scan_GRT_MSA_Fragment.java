@@ -8,7 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -107,6 +109,9 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
     private String scanner;
     private String TAG = Scan_GRT_MSA_Fragment.class.getName();
     private OnFragmentInteractionListener mListener;
+    private final Handler scanDebounceHandler = new Handler();
+    private Runnable scanRunnable;
+    private boolean articleScanInProgress = false;
 
     public Scan_GRT_MSA_Fragment() {
         // Required empty public constructor
@@ -228,31 +233,68 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
         //barcode_scan.setOnClickListener(this);
         //bin_scan.setOnClickListener(this);
         save.setOnClickListener(this);
+        // The article field is scanner-only; never pop the soft keyboard for it.
+        disableSoftKeyboard(barcode_art_et);
         barcode_art_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH
-                    /*|| (keyEvent.getAction() == KeyEvent.KEYCODE_ENTER)*/) {
-
-                    if (!(barcode_art_et.getText().toString().equals("") && TextUtils.isEmpty(barcode_art_et.getText().toString()))) {
-
-
-                        try {
-                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.hideSoftInputFromWindow(barcode_art_et.getWindowToken(), 0);
-                            setFormData();
-                        } catch (Exception e) {
-
-                            box.getBox("Exception", e.getMessage() + "");
-                        }
-
-
-                    } else {
-
-                        box.getBox("Alert!!", "First Scan Bar Number");
-                    }
+                        || actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_NEXT
+                        || actionId == EditorInfo.IME_ACTION_GO
+                        || actionId == EditorInfo.IME_ACTION_UNSPECIFIED
+                        || (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    handleArticleScan();
+                    return true;
                 }
                 return false;
+            }
+        });
+        // HHT scanners that emit a trailing ENTER key after the barcode.
+        barcode_art_et.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN
+                        && (keyCode == KeyEvent.KEYCODE_ENTER
+                        || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
+                    handleArticleScan();
+                    return true;
+                }
+                return false;
+            }
+        });
+        // Primary path: auto-fire once the scanned characters stop arriving,
+        // so no ENTER key or Search button press is needed.
+        barcode_art_et.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (articleScanInProgress) {
+                    return;
+                }
+                if (scanRunnable != null) {
+                    scanDebounceHandler.removeCallbacks(scanRunnable);
+                }
+                final String value = s.toString().replaceAll("[\\r\\n]", "").trim();
+                if (value.isEmpty()) {
+                    return;
+                }
+                scanRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        handleArticleScan();
+                    }
+                };
+                scanDebounceHandler.postDelayed(scanRunnable, 300);
             }
         });
         bin_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -699,6 +741,56 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
 
 
     }
+    private void disableSoftKeyboard(EditText editText) {
+        editText.setShowSoftInputOnFocus(false);
+        editText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    }
+                }
+            }
+        });
+    }
+
+    private void handleArticleScan() {
+        if (scanRunnable != null) {
+            scanDebounceHandler.removeCallbacks(scanRunnable);
+        }
+        if (articleScanInProgress) {
+            return;
+        }
+        String barcode = barcode_art_et.getText().toString().replaceAll("[\\r\\n]", "").trim();
+        if (barcode.isEmpty()) {
+            box.getBox("Alert!!", "First Scan Bar Number");
+            return;
+        }
+        String bin = bin_et.getText().toString().trim();
+        if (bin.isEmpty()) {
+            box.getBox("Alert!!", "First Scan Bin Number");
+            bin_et.requestFocus();
+            return;
+        }
+        articleScanInProgress = true;
+        try {
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(barcode_art_et.getWindowToken(), 0);
+            }
+            if (!barcode.equals(barcode_art_et.getText().toString())) {
+                barcode_art_et.setText(barcode);
+            }
+            setFormData();
+        } catch (Exception e) {
+            box.getErrBox(e);
+        } finally {
+            articleScanInProgress = false;
+        }
+    }
+
     private void setFormData() {
 
         String barcode = barcode_art_et.getText().toString();
