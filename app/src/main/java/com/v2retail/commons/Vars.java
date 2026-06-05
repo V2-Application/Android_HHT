@@ -152,10 +152,16 @@ public class Vars {
     public static String ZWM_HUSWAP = "ZWM_HUSWAP";
     /** Process key for TSPLPrinter HU-swap label layout. */
     public static String HU_SWAP_PROCESS = "HU_SWAP";
+    /** Process key for TSPLPrinter Store GRT Process HU label layout. */
+    public static String STORE_GRT_PROCESS = "STORE_GRT_PROCESS";
 
     public static String ZWM_STK_IROD_GANDOLA_0001 = "ZWM_STK_IROD_GANDOLA_0001";
     public static String ZWM_STORE_GRT_FROM_DISP_AREA = "ZWM_STORE_GRT_FROM_DISP_AREA";
     public static String ZWM_GET_PACKING_MATERIAL = "ZWM_GET_PACKING_MATERIAL";
+    /** Store GRT Process — fetch picklist numbers for a source site. Returns table ET_PICKLIST_NO. */
+    public static String ZWM_ST_GRT_PICKLIST_RFC = "ZWM_ST_GRT_PICKLIST_RFC";
+    /** Store GRT Process — validate scanned article against picklist; returns category in ER_RETURN. */
+    public static String ZWM_ST_GRT_MAJ_CAT_VAL_RFC = "ZWM_ST_GRT_MAJ_CAT_VAL_RFC";
     public static String ZWM_STORE_GET_STOCK = "ZWM_STORE_GET_STOCK";
     /**
      * Store Stock Track — FM in SE37: ZWM_STORE_PUSHDATATOSAP_1STOCK.

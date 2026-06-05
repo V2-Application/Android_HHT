@@ -48,6 +48,15 @@
             android:id="@+id/ptl_new_picking_4_0"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PTL-GRT Process"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/ptl_new_grt_process"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>

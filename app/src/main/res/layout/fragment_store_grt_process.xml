@@ -57,7 +57,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Main warehouse source"
+                        android:text="Main warehouse"
                         android:textColor="@color/textSecondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -84,201 +84,207 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Secondary warehouse source"
+                        android:text="Secondary warehouse"
                         android:textColor="@color/textSecondary"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <!-- Picklist No. -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="Picklist No."
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp" />
-
-            <EditText
-                android:id="@+id/store_grt_picklist_no"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/border_disabled_input"
-                android:hint="dropdown / scan..."
-                android:imeOptions="actionDone"
-                android:maxLines="1"
-                android:padding="10dp"
-                android:singleLine="true"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textHint"
-                android:textSize="15sp" />
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:text="Picklist No."
+                    android:textColor="@color/textPrimary"
+                    android:textSize="14sp" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/bg_dropdown_box">
+
+                    <Spinner
+                        android:id="@+id/store_grt_picklist_no"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp" />
+                </RelativeLayout>
+            </LinearLayout>
 
             <!-- Scan External HU -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="Scan External HU"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp" />
-
-            <EditText
-                android:id="@+id/store_grt_external_hu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/border"
-                android:hint="scan by HHT..."
-                android:imeOptions="actionDone"
-                android:maxLines="1"
-                android:padding="10dp"
-                android:singleLine="true"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textHint"
-                android:textSize="15sp" />
-
-            <!-- F.Des Plant -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="F.Des Plant (Final Destination Plant)"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp" />
-
-            <EditText
-                android:id="@+id/store_grt_fdes_plant"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/border_disabled_input"
-                android:enabled="false"
-                android:hint="auto-filled..."
-                android:maxLines="1"
-                android:padding="10dp"
-                android:singleLine="true"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textHint"
-                android:textSize="15sp" />
-
-            <!-- ART + Scan QTY -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:weightSum="2">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
-                        android:text="ART"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="14sp" />
-
-                    <EditText
-                        android:id="@+id/store_grt_article"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border"
-                        android:hint="scan article..."
-                        android:imeOptions="actionDone"
-                        android:maxLines="1"
-                        android:padding="10dp"
-                        android:singleLine="true"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textHint"
-                        android:textSize="15sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
-                        android:text="Scan QTY"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="14sp" />
-
-                    <EditText
-                        android:id="@+id/store_grt_scan_qty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/border_disabled_input"
-                        android:enabled="false"
-                        android:inputType="numberDecimal"
-                        android:maxLines="1"
-                        android:padding="10dp"
-                        android:singleLine="true"
-                        android:text="0"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="15sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Article / Qty header -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="2">
+                android:weightSum="12">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="5"
+                    android:text="Scan External HU"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_external_hu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border"
+                    android:hint="scan by HHT..."
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"
+                    android:padding="10dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <!-- Plant -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:text="Plant"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_fdes_plant"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border_disabled_input"
+                    android:enabled="false"
+                    android:hint="auto-filled..."
+                    android:maxLines="1"
+                    android:padding="10dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <!-- Article -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
                     android:text="Article"
                     android:textColor="@color/textPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_article"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border"
+                    android:hint="scan article..."
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"
+                    android:padding="10dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <!-- Scan QTY -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:text="Qty"
+                    android:layout_weight="5"
+                    android:text="Scan QTY"
                     android:textColor="@color/textPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_scan_qty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border_disabled_input"
+                    android:enabled="false"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1"
+                    android:padding="10dp"
+                    android:singleLine="true"
+                    android:text="0"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="15sp" />
             </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="6dp"
-                android:background="@color/borderMedium" />
-
+            <!-- Packing Material -->
             <LinearLayout
-                android:id="@+id/store_grt_scanned_list"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
 
                 <TextView
-                    android:id="@+id/store_grt_empty_hint"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:gravity="center"
-                    android:text="Last 3 scanned articles will display here"
-                    android:textColor="@color/textHint"
-                    android:textSize="13sp" />
+                    android:layout_weight="5"
+                    android:text="Packing Material"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="14sp" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/bg_dropdown_box">
+
+                    <Spinner
+                        android:id="@+id/store_grt_packing_material"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp" />
+                </RelativeLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
@@ -298,33 +304,33 @@
             android:id="@+id/store_grt_btn_cancel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="3dp"
+            android:layout_margin="4dp"
             android:layout_weight="1"
-            android:background="@android:color/transparent"
-            android:text="CANCEL"
-            android:textColor="@color/textSecondary"
+            android:background="@drawable/shadow"
+            android:text="BACK"
+            android:textColor="@color/textPrimary"
             android:textSize="14sp" />
 
         <Button
             android:id="@+id/store_grt_btn_reset"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="3dp"
+            android:layout_margin="4dp"
             android:layout_weight="1"
-            android:background="@android:color/transparent"
+            android:background="@drawable/shadow"
             android:text="RESET"
-            android:textColor="#e71821"
+            android:textColor="@color/textPrimary"
             android:textSize="14sp" />
 
         <Button
             android:id="@+id/store_grt_btn_submit"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="3dp"
+            android:layout_margin="4dp"
             android:layout_weight="1"
-            android:background="#e71821"
-            android:text="SUBMIT"
-            android:textColor="@color/white"
+            android:background="@drawable/shadow"
+            android:text="SAVE"
+            android:textColor="@color/textPrimary"
             android:textSize="14sp" />
     </LinearLayout>
 </RelativeLayout>

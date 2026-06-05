@@ -156,7 +156,7 @@ public class TSPLPrinter {
                     }
                 }
                 tvstext = huObj.getString("TVS_TEXT");
-                huno = huObj.getString("SAP_HU");
+                huno = removeLeadingZeros(huObj.getString("SAP_HU"));
             }catch (Exception exce){
 
             }
@@ -430,12 +430,153 @@ public class TSPLPrinter {
                "PRINT 1, 1\n";
     }
 
-    /** Remove leading zeros: "000000H005678" → "H005678", "000012345" → "12345" */
+    /**
+     * Store GRT Process — print HU label after save.
+     * Layout: S. SITE, D. HUB, D. SITE, QTY, DATE (left), centered Code128 + HU.
+     */
+    public boolean sendStoreGrtPrintCommand(String printerName,
+                                            String huNo,
+                                            String sourceCode,
+                                            String sourceName,
+                                            String destPlant,
+                                            String destHub,
+                                            String destName,
+                                            String qty,
+                                            String dateTime) {
+        try {
+            if (!locateStoreGrtPrinter(printerName)) {
+                Log.e("TSPLPrinter", "Store GRT: printer not found: " + printerName);
+                return false;
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                Log.e("TSPLPrinter", "Store GRT: Bluetooth not connected");
+                return false;
+            }
+
+            String tspl = buildStoreGrtLabel(huNo, sourceCode, sourceName,
+                    destPlant, destHub, destName, qty, dateTime);
+            OutputStream out = bluetoothSocket.getOutputStream();
+            PrintWriter w = new PrintWriter(out, true);
+            w.write(tspl);
+            w.flush();
+            w.close();
+            out.close();
+            bluetoothSocket.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean locateStoreGrtPrinter(String printerName) {
+        if (printerName != null && !printerName.isEmpty() && findBluetoothPrinter(printerName, false)) {
+            return true;
+        }
+        return findBluetoothPrinter("4B-2033", true);
+    }
+
+    private String buildStoreGrtLabel(String huNo,
+                                      String sourceCode, String sourceName,
+                                      String destPlant, String destHub, String destName,
+                                      String qty, String dateTime) {
+        String rawHu = huNo != null ? huNo.trim() : "";
+        String printHu = removeLeadingZeros(rawHu);
+        if (printHu.isEmpty() && !rawHu.isEmpty()) {
+            printHu = rawHu;
+        }
+
+        String srcCode = sourceCode != null ? sourceCode.trim() : "";
+        String srcName = sourceName != null ? sourceName.trim() : "";
+        String plant = destPlant != null ? destPlant.trim() : "";
+        String hub = destHub != null ? destHub.trim() : "";
+        String name = destName != null ? destName.trim() : "";
+
+        // Mockup: S. SITE: HD22 (ES_S_NAME), D. HUB: xx, D. SITE: DH27 (D_NAME), QTY : n, DATE:dd.mm...
+        String lineSrcSite = formatCodeWithName("S. SITE: ", srcCode, srcName);
+        String lineDHub = "D. HUB: " + (hub.isEmpty() ? "-" : hub);
+        String lineDSite = formatCodeWithName("D. SITE: ", plant, name);
+        String lineQty = "QTY : " + (qty != null && !qty.isEmpty() ? qty : "0");
+        String lineDate = "DATE:" + (dateTime != null ? dateTime.trim() : "");
+
+        final int maxLen = 32;
+        lineSrcSite = truncate(lineSrcSite, maxLen);
+        lineDHub = truncate(lineDHub, maxLen);
+        lineDSite = truncate(lineDSite, maxLen);
+        lineQty = truncate(lineQty, maxLen);
+        lineDate = truncate(lineDate, maxLen);
+
+        int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
+        int textX = 20;
+        int ySrcSite = 25;
+        int yDHub = 55;
+        int yDSite = 85;
+        int yQty = 115;
+        int yDate = 145;
+        int barcodeY = 175;
+        int barcodeHeight = 90;
+        int narrow = 4;
+        int wide = 8;
+        int barcodeCenterX = labelWidthInDots / 2;
+        final int humanReadableCenter = 2;
+        final int barcodeAlignCenter = 2;
+
+        return "SIZE 70 mm, 40 mm\n" +
+                "GAP 3 mm, 0 mm\n" +
+                "DIRECTION 0\n" +
+                "CLS\n" +
+                "TEXT " + textX + ", " + ySrcSite + ", \"3\", 0, 1, 1, \"" + lineSrcSite + "\"\n" +
+                "TEXT " + textX + ", " + yDHub + ", \"3\", 0, 1, 1, \"" + lineDHub + "\"\n" +
+                "TEXT " + textX + ", " + yDSite + ", \"3\", 0, 1, 1, \"" + lineDSite + "\"\n" +
+                "TEXT " + textX + ", " + yQty + ", \"3\", 0, 1, 1, \"" + lineQty + "\"\n" +
+                "TEXT " + textX + ", " + yDate + ", \"3\", 0, 1, 1, \"" + lineDate + "\"\n" +
+                "BARCODE " + barcodeCenterX + ", " + barcodeY + ", \"128\", " + barcodeHeight + ", " +
+                humanReadableCenter + ", 0, " + narrow + ", " + wide + ", " + barcodeAlignCenter +
+                ", \"" + printHu + "\"\n" +
+                "PRINT 1, 1\n";
+    }
+
+    /** e.g. "D. SITE: DH27 (Kolkata)" when code and name are present. */
+    private static String formatCodeWithName(String prefix, String code, String name) {
+        String c = code != null ? code.trim() : "";
+        String n = name != null ? name.trim() : "";
+        if (!c.isEmpty() && !n.isEmpty()) {
+            return prefix + c + " (" + n + ")";
+        }
+        if (!c.isEmpty()) {
+            return prefix + c;
+        }
+        if (!n.isEmpty()) {
+            return prefix + n;
+        }
+        return prefix + "-";
+    }
+
+    private static String truncate(String text, int maxLen) {
+        if (text == null || text.length() <= maxLen) {
+            return text != null ? text : "";
+        }
+        return text.substring(0, maxLen);
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String v : values) {
+            if (v != null && !v.trim().isEmpty()) {
+                return v.trim();
+            }
+        }
+        return "";
+    }
+
+    /** e.g. 00000000001006599160 → 1006599160 */
     private static String removeLeadingZeros(String hu) {
-        if (hu == null || hu.isEmpty()) return hu;
-        // Find first non-zero character
-        int i = 0;
-        while (i < hu.length() - 1 && hu.charAt(i) == '0') i++;
-        return hu.substring(i);
+        if (hu == null || hu.isEmpty()) {
+            return hu != null ? hu : "";
+        }
+        return UIFuncs.removeLeadingZeros(hu.trim());
     }
 }

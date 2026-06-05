@@ -373,7 +373,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 args.put("bapiname", Vars.ZSTORE_DISCOUNT_SAVE_EAN_DATA);
                 args.put("IM_PLANT", WERKS);
                 args.put("IM_USER", WERKS);
-                args.put("IM_0001", radio_0001.isChecked() ? "X":"");
+                args.put("IM_0017", radio_0001.isChecked() ? "X":"");
                 args.put("IM_0006", radio_0006.isChecked() ? "X":"");
                 args.put("IT_DATA", dataToSave);
                 showProcessingAndSubmit(Vars.ZSTORE_DISCOUNT_SAVE_EAN_DATA, REQUEST_SAVE, args);

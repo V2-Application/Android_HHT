@@ -25,6 +25,7 @@ import com.v2retail.dotvik.dc.binwisepicking.MenuMSABinwisePickingFragment;
 import com.v2retail.dotvik.dc.grt.GRTProcessFragment;
 import com.v2retail.dotvik.dc.ptl.PTLProcessFragment;
 import com.v2retail.dotvik.dc.ptlnew.MenuPTLNewFragment;
+import com.v2retail.dotvik.dc.ptlnew.grt.MenuPTLNewGrtProcess;
 import com.v2retail.dotvik.dc.ptlnew.fullcrate30.MenuPTLNewPickingFullCrate30;
 import com.v2retail.dotvik.dc.ptlnew.ptl40.MenuPTLNewPickingProcess40;
 import com.v2retail.dotvik.dc.ptlnew.withoutpallate.MenuPTLNewPickingWithoutPallateFragment;
@@ -60,6 +61,7 @@ public class Process_Selection_Activity extends AppCompatActivity
         MenuPTLNewPickingWithoutPallateFragment.OnFragmentInteractionListener,
         MenuPTLNewPickingFullCrate30.OnFragmentInteractionListener,
         MenuPTLNewPickingProcess40.OnFragmentInteractionListener,
+        MenuPTLNewGrtProcess.OnFragmentInteractionListener,
         MenuMSABinwisePickingFragment.OnFragmentInteractionListener,
         MenuBinCrateIdentifier.OnFragmentInteractionListener
 

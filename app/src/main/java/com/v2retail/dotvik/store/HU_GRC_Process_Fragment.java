@@ -36,6 +36,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.UIFuncs;
 import com.v2retail.ApplicationController;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
@@ -387,7 +388,8 @@ public class HU_GRC_Process_Fragment extends Fragment {
                                             if(arrHu.length() > 1){
                                                 List<String> hus = new ArrayList<>();
                                                 for(int i=1; i < arrHu.length(); i++){
-                                                    hus.add(arrHu.getJSONObject(i).getString("HU_NO"));
+                                                    hus.add(UIFuncs.removeLeadingZeros(
+                                                            arrHu.getJSONObject(i).getString("HU_NO")));
                                                 }
                                                 Bundle args=new Bundle();
                                                 args.putString("TTL_HU", (arrHu.length() - 1)+"");

@@ -294,7 +294,7 @@
                     android:textColor="@color/black"
                     android:background="@color/bgCard"
                     android:textSize="16sp"
-                    android:text="0001 To 0006" />
+                    android:text="0017 To 0006" />
 
                 <RadioButton
                     android:id="@+id/radio_002msa_carticle_process_0006"
@@ -304,7 +304,7 @@
                     android:textColor="@color/black"
                     android:background="@color/bgCard"
                     android:textSize="16sp"
-                    android:text="0006 To 0001" />
+                    android:text="0006 To 0017" />
             </RadioGroup>
 
         </LinearLayout>
