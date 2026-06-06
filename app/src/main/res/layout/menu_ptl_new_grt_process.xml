@@ -11,6 +11,42 @@
         android:background="#000"
         android:padding="5dp">
 
+        <Button
+            android:id="@+id/ptl_grt_crate_picking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="CRATE PICKING"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_palette_putaway"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="PALETTE PUTAWAY"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_palette_receive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="PALETTE RECEIVE"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_floor_hub_wise_crate_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="FLOOR - HUB Wise Crate Tag"
+            android:textColor="#fff" />
+
     </LinearLayout>
 
 </FrameLayout>

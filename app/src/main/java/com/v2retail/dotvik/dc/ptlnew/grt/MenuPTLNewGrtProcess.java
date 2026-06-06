@@ -6,18 +6,26 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
+import com.v2retail.dotvik.dc.grt.GRTCratePickingProcess;
+import com.v2retail.dotvik.dc.grt.GRTComboPalettePutway;
+import com.v2retail.dotvik.dc.grt.GRTComboPaletteReceive;
 
-public class MenuPTLNewGrtProcess extends Fragment {
+public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListener {
 
     FragmentManager fm;
+    Context con;
     private OnFragmentInteractionListener mListener;
+
+    Button btnCratePicking, btnPalettePutaway, btnPaletteReceive, btnFloorHubWiseCrateTag;
 
     public MenuPTLNewGrtProcess() {
     }
@@ -35,7 +43,20 @@ public class MenuPTLNewGrtProcess extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.menu_ptl_new_grt_process, container, false);
+        View view = inflater.inflate(R.layout.menu_ptl_new_grt_process, container, false);
+        con = getContext();
+
+        btnCratePicking = view.findViewById(R.id.ptl_grt_crate_picking);
+        btnPalettePutaway = view.findViewById(R.id.ptl_grt_palette_putaway);
+        btnPaletteReceive = view.findViewById(R.id.ptl_grt_palette_receive);
+        btnFloorHubWiseCrateTag = view.findViewById(R.id.ptl_grt_floor_hub_wise_crate_tag);
+
+        btnCratePicking.setOnClickListener(this);
+        btnPalettePutaway.setOnClickListener(this);
+        btnPaletteReceive.setOnClickListener(this);
+        btnFloorHubWiseCrateTag.setOnClickListener(this);
+
+        return view;
     }
 
     @Override
@@ -43,6 +64,32 @@ public class MenuPTLNewGrtProcess extends Fragment {
         super.onResume();
         ((Process_Selection_Activity) getActivity())
                 .setActionBarTitle("PTL-GRT Process");
+    }
+
+    @Override
+    public void onClick(View view) {
+        Fragment fragment = null;
+        switch (view.getId()) {
+            case R.id.ptl_grt_crate_picking:
+                fragment = new GRTCratePickingProcess();
+                break;
+            case R.id.ptl_grt_palette_putaway:
+                fragment = new GRTComboPalettePutway();
+                break;
+            case R.id.ptl_grt_palette_receive:
+                fragment = new GRTComboPaletteReceive();
+                break;
+            case R.id.ptl_grt_floor_hub_wise_crate_tag:
+                fragment = FragmentPTLGrtFloorHubWiseCrateTag.newInstance();
+                break;
+        }
+
+        if (fragment != null) {
+            FragmentTransaction ft = fm.beginTransaction();
+            ft.replace(R.id.home, fragment, "ptlnew_grt_process");
+            ft.addToBackStack("ptlnew_grt_process");
+            ft.commit();
+        }
     }
 
     @Override

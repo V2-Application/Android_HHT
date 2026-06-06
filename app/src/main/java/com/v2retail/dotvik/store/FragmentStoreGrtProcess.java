@@ -79,9 +79,8 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     private static final String LGNUM = "V2R";
 
     private static final int REQUEST_GET_PICKLIST = 2001;
-    private static final int REQUEST_VALIDATE_ARTICLE = 2002;
+    private static final int REQUEST_GET_PICKLIST_DATA = 2002;
     private static final int REQUEST_GET_PACKING = 2003;
-    private static final int REQUEST_GET_STOCK = 2004;
     private static final int REQUEST_SAVE = 2005;
 
     View rootView;
@@ -117,15 +116,40 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     Map<String, Double> scannedQtyByCategory = new HashMap<>();
     // packing material records (index aligns with spinner items, minus the hint at position 0)
     List<ETPACKMAT> packMaterialRecords = new ArrayList<>();
-    String lastScannedMatnr = "";
-    String lastScannedEan11 = "";
     String lastScannedCategory = "";
     Map<String, ScannedGrtLine> scannedLines = new HashMap<>();
-    boolean isArticleValidating = false;
+    /** MATNR → picklist article row from ET_DATA. */
+    Map<String, PicklistArticleLine> picklistArticlesByMatnr = new HashMap<>();
+    /** EAN11 or MATNR scan key → EAN row from ET_EAN_DATA. */
+    Map<String, EanRecord> eanByScanCode = new HashMap<>();
+    /** Destination plant from EX_RDC after picklist data load. */
+    String picklistRdcPlant = "";
+
+    private static class PicklistArticleLine {
+        String picklistNo;
+        String source;
+        String majCat;
+        String size1;
+        String floor;
+        String bgt;
+        String matnr;
+        String matkl;
+    }
+
+    private static class EanRecord {
+        String matnr;
+        String ean11;
+        double umrez;
+    }
 
     private static class ScannedGrtLine {
         String category;
         String matnr;
+        String ean11;
+        String matkl;
+        String size1;
+        String floor;
+        String bgt;
         double scanQty;
     }
 
@@ -253,8 +277,11 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         spinnerPicklistNo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                resetPicklistScanState();
                 applyPlantForSelectedPicklist();
-                if (!getSelectedPicklist().isEmpty()) {
+                String picklist = getSelectedPicklist();
+                if (!picklist.isEmpty()) {
+                    loadPicklistData(picklist);
                     txtExternalHu.requestFocus();
                     UIFuncs.enableInput(con, txtExternalHu);
                 }
@@ -273,33 +300,23 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             txtFdesPlant.setText("");
             return;
         }
-        txtFdesPlant.setText(formatDestinationPlantDisplay(picklist));
+        if (picklistRdcPlant != null && !picklistRdcPlant.isEmpty()) {
+            txtFdesPlant.setText(picklistRdcPlant);
+            return;
+        }
+        String fDesSite = picklistDesSite.get(picklist);
+        txtFdesPlant.setText(fDesSite != null ? fDesSite : "");
     }
 
-    /** Plant field: F_DES_SITE with optional D_HUB / D_NAME from picklist RFC. */
-    private String formatDestinationPlantDisplay(String picklistNo) {
-        String plant = picklistDesSite.get(picklistNo);
-        if (plant == null) {
-            plant = "";
-        }
-        String hub = picklistDesHub.get(picklistNo);
-        String name = picklistDesName.get(picklistNo);
-        if (name != null && !name.isEmpty()) {
-            if (!plant.isEmpty()) {
-                return plant + " - " + name;
-            }
-            if (hub != null && !hub.isEmpty()) {
-                return hub + " - " + name;
-            }
-            return name;
-        }
-        if (hub != null && !hub.isEmpty()) {
-            if (!plant.isEmpty() && !plant.equalsIgnoreCase(hub)) {
-                return plant + " / " + hub;
-            }
-            return hub;
-        }
-        return plant;
+    private void resetPicklistScanState() {
+        picklistArticlesByMatnr = new HashMap<>();
+        eanByScanCode = new HashMap<>();
+        picklistRdcPlant = "";
+        scannedQtyByCategory = new HashMap<>();
+        scannedLines = new HashMap<>();
+        lastScannedCategory = "";
+        txtScanQty.setText("0");
+        txtArticle.setText("");
     }
 
     /** Reads ES_S_NAME / NAME1 export (flat string or structure). */
@@ -328,12 +345,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (spinnerPackingMaterial.getAdapter() != null && spinnerPackingMaterial.getAdapter().getCount() > 0) {
             spinnerPackingMaterial.setSelection(0);
         }
-        scannedQtyByCategory = new HashMap<>();
-        scannedLines = new HashMap<>();
-        isArticleValidating = false;
-        lastScannedMatnr = "";
-        lastScannedEan11 = "";
-        lastScannedCategory = "";
+        resetPicklistScanState();
         txtExternalHu.setText("");
         txtFdesPlant.setText("");
         txtArticle.setText("");
@@ -421,141 +433,173 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private void validateArticle(String article) {
-        if (isArticleValidating) {
-            return;
-        }
         String picklist = getSelectedPicklist();
         if (picklist.isEmpty()) {
             UIFuncs.errorSound(con);
             box.getBox("Select Picklist", "Please select a Picklist No. before scanning an article.");
-            txtArticle.setText("");
-            txtArticle.requestFocus();
+            resetArticleInput();
             return;
         }
-
-        isArticleValidating = true;
-        UIFuncs.disableInput(con, txtArticle);
-        getStockData(article);
-    }
-
-    private void finishArticleValidation() {
-        isArticleValidating = false;
-        finishRequest();
-    }
-
-    private void getStockData(String ean11) {
-        JSONObject args = new JSONObject();
-        try {
-            args.put("bapiname", Vars.ZWM_STORE_GET_STOCK);
-            args.put("IM_WERKS", WERKS);
-            args.put("IM_LGORT", selectedSource);
-            args.put("IM_EAN11", ean11);
-            args.put("IM_STOCK_TAKE", "X");
-            showProcessingAndSubmit(Vars.ZWM_STORE_GET_STOCK, REQUEST_GET_STOCK, args);
-        } catch (JSONException e) {
-            e.printStackTrace();
+        if (UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
             UIFuncs.errorSound(con);
-            dismissDialog();
-            box.getErrBox(e);
-        }
-    }
-
-    private void handleStockData(JSONObject response) {
-        try {
-            JSONArray arrEanData = response.optJSONArray("ET_EAN_DATA");
-            if (arrEanData == null || arrEanData.length() == 0) {
-                UIFuncs.errorSound(con);
-                box.getBox("Err", "No article data found for this scan.");
-                finishArticleValidation();
-                resetArticleInput();
-                return;
-            }
-
-            String ean11 = "";
-            String matnr = "";
-            for (int i = 0; i < arrEanData.length(); i++) {
-                JSONObject row = arrEanData.optJSONObject(i);
-                if (row == null || isEanHeaderRow(row)) {
-                    continue;
-                }
-                ean11 = row.optString("EAN11", "").trim();
-                matnr = row.optString("MATNR", "").trim();
-                if (!ean11.isEmpty() || !matnr.isEmpty()) {
-                    break;
-                }
-            }
-
-            if (ean11.isEmpty() && matnr.isEmpty()) {
-                UIFuncs.errorSound(con);
-                box.getBox("Err", "Invalid article scan.");
-                finishArticleValidation();
-                resetArticleInput();
-                return;
-            }
-
-            lastScannedEan11 = ean11;
-            lastScannedMatnr = matnr;
-
-            if (!lastScannedMatnr.isEmpty()) {
-                txtArticle.setText(UIFuncs.removeLeadingZeros(lastScannedMatnr));
-            } else if (!lastScannedEan11.isEmpty()) {
-                txtArticle.setText(lastScannedEan11);
-            }
-
-            requestMajCatValidation();
-        } catch (Exception exce) {
-            box.getErrBox(exce);
-            finishArticleValidation();
+            box.getBox("Validation", "Please scan External HU before article.");
+            txtExternalHu.requestFocus();
             resetArticleInput();
+            return;
         }
-    }
-
-    private String getArticleIdentifierForValidation() {
-        if (!lastScannedEan11.isEmpty()) {
-            return lastScannedEan11;
-        }
-        if (!lastScannedMatnr.isEmpty()) {
-            return UIFuncs.removeLeadingZeros(lastScannedMatnr);
-        }
-        return "";
-    }
-
-    private void requestMajCatValidation() {
-        String picklist = getSelectedPicklist();
-        String articleId = getArticleIdentifierForValidation();
-        if (picklist.isEmpty() || articleId.isEmpty()) {
+        if (picklistArticlesByMatnr.isEmpty()) {
             UIFuncs.errorSound(con);
-            box.getBox("Err", "Unable to validate article.");
-            finishArticleValidation();
+            box.getBox("Err", "Picklist data not loaded. Reselect picklist and try again.");
             resetArticleInput();
             return;
         }
 
-        JSONObject args = new JSONObject();
-        try {
-            args.put("bapiname", Vars.ZWM_ST_GRT_MAJ_CAT_VAL_RFC);
-            args.put("IM_EANNR", articleId);
-            args.put("IM_PICKLIST", picklist);
-            chainSubmitRequest(Vars.ZWM_ST_GRT_MAJ_CAT_VAL_RFC, REQUEST_VALIDATE_ARTICLE, args);
-        } catch (JSONException e) {
-            e.printStackTrace();
+        EanRecord eanRec = resolveEanRecord(article);
+        if (eanRec == null || eanRec.matnr == null || eanRec.matnr.isEmpty()) {
             UIFuncs.errorSound(con);
-            finishArticleValidation();
-            box.getErrBox(e);
+            box.getBox("Err", "Article not allowed for this picklist.");
+            resetArticleInput();
+            return;
         }
+
+        PicklistArticleLine articleLine = findArticleLine(eanRec.matnr);
+        if (articleLine == null) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Article not found in picklist data.");
+            resetArticleInput();
+            return;
+        }
+
+        String category = articleLine.majCat != null ? articleLine.majCat.trim() : "";
+        if (category.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Could not determine the article category.");
+            resetArticleInput();
+            return;
+        }
+
+        Map<String, Double> catMap = picklistCategoryPend.get(picklist);
+        Double pend = (catMap != null) ? catMap.get(category.toUpperCase()) : null;
+        if (pend == null) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "No pending quantity found for category " + category
+                    + " in picklist " + picklist + ".");
+            resetArticleInput();
+            return;
+        }
+
+        double umrez = eanRec.umrez > 0 ? eanRec.umrez : 1;
+        double categoryScanned = getCategoryScannedQty(category);
+        double proposedCategoryQty = categoryScanned + umrez;
+        if (proposedCategoryQty > pend) {
+            UIFuncs.errorSound(con);
+            box.getBox("Limit Reached", "Scanned quantity cannot exceed pending quantity ("
+                    + Util.formatDouble(pend) + ") for category " + category + ".");
+            resetArticleInput();
+            return;
+        }
+
+        String matnrKey = articleLine.matnr.toUpperCase();
+        ScannedGrtLine line = scannedLines.get(matnrKey);
+        if (line == null) {
+            line = new ScannedGrtLine();
+            line.matnr = articleLine.matnr;
+            line.category = category;
+            line.ean11 = eanRec.ean11;
+            line.matkl = articleLine.matkl;
+            line.size1 = articleLine.size1;
+            line.floor = articleLine.floor;
+            line.bgt = articleLine.bgt;
+            line.scanQty = 0;
+        }
+        line.scanQty += umrez;
+        scannedLines.put(matnrKey, line);
+
+        scannedQtyByCategory.put(category.toUpperCase(), proposedCategoryQty);
+        lastScannedCategory = category;
+
+        if (!articleLine.matnr.isEmpty()) {
+            txtArticle.setText(UIFuncs.removeLeadingZeros(articleLine.matnr));
+        } else if (eanRec.ean11 != null && !eanRec.ean11.isEmpty()) {
+            txtArticle.setText(eanRec.ean11);
+        }
+        txtScanQty.setText(Util.formatDouble(proposedCategoryQty));
+        resetArticleInput();
     }
 
-    /** Chains after stock RFC — reuses active loading state, no extra delay. */
-    private void chainSubmitRequest(String rfc, int request, JSONObject args) {
-        try {
-            submitRequest(rfc, request, args);
-        } catch (Exception e) {
-            finishArticleValidation();
-            box.getErrBox(e);
+    private double getCategoryScannedQty(String category) {
+        if (category == null || category.isEmpty()) {
+            return 0;
         }
+        double total = 0;
+        for (ScannedGrtLine line : scannedLines.values()) {
+            if (line.category != null && line.category.equalsIgnoreCase(category)) {
+                total += line.scanQty;
+            }
+        }
+        return total;
     }
 
-    private static boolean isEanHeaderRow(JSONObject row) {
+    private EanRecord resolveEanRecord(String scan) {
+        if (scan == null) {
+            return null;
+        }
+        String upper = scan.trim().toUpperCase();
+        if (upper.isEmpty()) {
+            return null;
+        }
+        EanRecord hit = eanByScanCode.get(upper);
+        if (hit != null) {
+            return hit;
+        }
+        String noZeros = UIFuncs.removeLeadingZeros(upper);
+        if (!noZeros.isEmpty()) {
+            hit = eanByScanCode.get(noZeros);
+            if (hit != null) {
+                return hit;
+            }
+        }
+        PicklistArticleLine line = findArticleLine(upper);
+        if (line == null) {
+            return null;
+        }
+        EanRecord fallback = new EanRecord();
+        fallback.matnr = line.matnr;
+        fallback.ean11 = "";
+        fallback.umrez = 1;
+        return fallback;
+    }
+
+    private PicklistArticleLine findArticleLine(String matnrOrScan) {
+        if (matnrOrScan == null || matnrOrScan.isEmpty()) {
+            return null;
+        }
+        String upper = matnrOrScan.trim().toUpperCase();
+        PicklistArticleLine direct = picklistArticlesByMatnr.get(upper);
+        if (direct != null) {
+            return direct;
+        }
+        String noZeros = UIFuncs.removeLeadingZeros(upper);
+        for (Map.Entry<String, PicklistArticleLine> entry : picklistArticlesByMatnr.entrySet()) {
+            String key = entry.getKey();
+            if (key.equalsIgnoreCase(upper)
+                    || UIFuncs.removeLeadingZeros(key).equalsIgnoreCase(noZeros)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isPicklistDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String matnr = row.optString("MATNR", "").trim();
+        String picklist = row.optString("PICKLIST_NO", "").trim();
+        return "MATNR".equalsIgnoreCase(matnr) || "PICKLIST_NO".equalsIgnoreCase(picklist);
+    }
+
+    private static boolean isEanDataHeaderRow(JSONObject row) {
         if (row == null) {
             return true;
         }
@@ -564,76 +608,18 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return "MATNR".equalsIgnoreCase(matnr) || "EAN11".equalsIgnoreCase(ean11);
     }
 
-    private static String categoryFromReturn(JSONObject returnobj) {
-        if (returnobj == null) {
-            return "";
-        }
-        String category = returnobj.optString("MESSAGE_V1", "").trim();
-        if (!category.isEmpty()) {
-            return category;
-        }
-        String message = returnobj.optString("MESSAGE", "").trim();
-        int idx = message.lastIndexOf(':');
-        if (idx >= 0 && idx < message.length() - 1) {
-            return message.substring(idx + 1).trim();
-        }
-        return message;
-    }
-
-    private void handleArticleCategory(String category) {
-        category = category != null ? category.trim() : "";
-        if (category.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "Could not determine the article category.");
-            finishArticleValidation();
-            resetArticleInput();
+    private void indexEanRecord(EanRecord record) {
+        if (record == null || record.matnr == null || record.matnr.isEmpty()) {
             return;
         }
-
-        String picklist = getSelectedPicklist();
-        Map<String, Double> catMap = picklistCategoryPend.get(picklist);
-        Double pend = (catMap != null) ? catMap.get(category.toUpperCase()) : null;
-        if (pend == null) {
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "No pending quantity found for category " + category
-                    + " in picklist " + picklist + ".");
-            finishArticleValidation();
-            resetArticleInput();
-            return;
+        eanByScanCode.put(record.matnr.toUpperCase(), record);
+        String nz = UIFuncs.removeLeadingZeros(record.matnr);
+        if (!nz.isEmpty()) {
+            eanByScanCode.put(nz.toUpperCase(), record);
         }
-
-        double current = scannedQtyByCategory.containsKey(category.toUpperCase())
-                ? scannedQtyByCategory.get(category.toUpperCase()) : 0;
-        double proposed = current + 1;
-
-        if (proposed > pend) {
-            UIFuncs.errorSound(con);
-            box.getBox("Limit Reached", "Scanned quantity cannot exceed pending quantity ("
-                    + Util.formatDouble(pend) + ") for category " + category + ".");
-            scannedQtyByCategory.put(category.toUpperCase(), pend);
-            txtScanQty.setText(Util.formatDouble(pend));
-            finishArticleValidation();
-            resetArticleInput();
-            return;
+        if (record.ean11 != null && !record.ean11.isEmpty()) {
+            eanByScanCode.put(record.ean11.toUpperCase(), record);
         }
-
-        scannedQtyByCategory.put(category.toUpperCase(), proposed);
-        lastScannedCategory = category;
-
-        ScannedGrtLine line = scannedLines.get(category.toUpperCase());
-        if (line == null) {
-            line = new ScannedGrtLine();
-            line.category = category;
-        }
-        if (!lastScannedMatnr.isEmpty()) {
-            line.matnr = lastScannedMatnr;
-        }
-        line.scanQty = proposed;
-        scannedLines.put(category.toUpperCase(), line);
-
-        txtScanQty.setText(Util.formatDouble(proposed));
-        finishArticleValidation();
-        resetArticleInput();
     }
 
     private String getSelectedPackMatNr() {
@@ -660,7 +646,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
 
-        String werksDes = picklistDesSite.get(picklist);
+        String werksDes = picklistRdcPlant;
+        if (werksDes == null || werksDes.isEmpty()) {
+            werksDes = picklistDesSite.get(picklist);
+        }
         if (werksDes == null || werksDes.isEmpty()) {
             werksDes = UIFuncs.toUpperTrim(txtFdesPlant);
         }
@@ -722,6 +711,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         try {
             JSONArray arrItData = new JSONArray();
             String huNo = UIFuncs.toUpperTrim(txtExternalHu);
+            String picklist = getSelectedPicklist();
             for (ScannedGrtLine line : scannedLines.values()) {
                 if (line.scanQty <= 0 || line.matnr == null || line.matnr.isEmpty()) {
                     continue;
@@ -730,25 +720,25 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 itDataJson.put("MATERIAL", line.matnr);
                 itDataJson.put("SCAN_QTY", line.scanQty);
                 itDataJson.put("WM_NO", "");
-                itDataJson.put("PLANT", "");
-                itDataJson.put("STOR_LOC", "");
+                itDataJson.put("PLANT", WERKS);
+                itDataJson.put("STOR_LOC", selectedSource);
                 itDataJson.put("BATCH", "");
                 itDataJson.put("CRATE", "");
                 itDataJson.put("BIN", "");
                 itDataJson.put("STORAGE_TYPE", "");
-                itDataJson.put("MEINS", "");
+                itDataJson.put("MEINS", "EA");
                 itDataJson.put("AVL_STOCK", "");
                 itDataJson.put("OPEN_STOCK", "");
-                itDataJson.put("PICNR", "");
+                itDataJson.put("PICNR", picklist);
                 itDataJson.put("PICK_QTY", "");
                 itDataJson.put("HU_NO", huNo);
-                itDataJson.put("BARCODE", "");
-                itDataJson.put("MATKL", "");
-                itDataJson.put("WGBEZ", "");
+                itDataJson.put("BARCODE", line.ean11 != null ? line.ean11 : "");
+                itDataJson.put("MATKL", line.matkl != null ? line.matkl : "");
+                itDataJson.put("WGBEZ", line.size1 != null ? line.size1 : "");
                 itDataJson.put("SONUM", "");
                 itDataJson.put("DELNUM", "");
                 itDataJson.put("POSNR", "");
-                itDataJson.put("GNATURE", "");
+                itDataJson.put("GNATURE", line.category != null ? line.category : "");
                 arrItData.put(itDataJson);
             }
             return arrItData;
@@ -904,7 +894,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
         String picklist = getSelectedPicklist();
-        String destPlant = picklistDesSite.get(picklist);
+        String destPlant = picklistRdcPlant;
+        if (destPlant == null || destPlant.isEmpty()) {
+            destPlant = picklistDesSite.get(picklist);
+        }
         if (destPlant == null) {
             destPlant = UIFuncs.toUpperTrim(txtFdesPlant);
         }
@@ -951,6 +944,88 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             UIFuncs.errorSound(con);
             dismissDialog();
             box.getErrBox(e);
+        }
+    }
+
+    private void loadPicklistData(String picklistNo) {
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_ST_GRT_GET_PICKLIST_DATA);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_USER", USER);
+            args.put("IM_PICKLIST", picklistNo);
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, REQUEST_GET_PICKLIST_DATA, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            dismissDialog();
+            box.getErrBox(e);
+        }
+    }
+
+    private void bindPicklistData(JSONObject response) {
+        try {
+            picklistArticlesByMatnr = new HashMap<>();
+            eanByScanCode = new HashMap<>();
+
+            String exRdc = response.optString("EX_RDC", "").trim();
+            if (!exRdc.isEmpty() && !"null".equalsIgnoreCase(exRdc)) {
+                picklistRdcPlant = exRdc;
+                applyPlantForSelectedPicklist();
+            }
+
+            JSONArray etData = response.optJSONArray("ET_DATA");
+            if (etData != null) {
+                for (int i = 0; i < etData.length(); i++) {
+                    JSONObject row = etData.optJSONObject(i);
+                    if (row == null || isPicklistDataHeaderRow(row)) {
+                        continue;
+                    }
+                    String matnr = row.optString("MATNR", "").trim();
+                    if (matnr.isEmpty()) {
+                        continue;
+                    }
+                    PicklistArticleLine line = new PicklistArticleLine();
+                    line.picklistNo = row.optString("PICKLIST_NO", "").trim();
+                    line.source = row.optString("SOUR", row.optString("SOURCE", WERKS)).trim();
+                    line.majCat = row.optString("MAJ_CAT", "").trim();
+                    line.size1 = row.optString("SIZE1", "").trim();
+                    line.floor = row.optString("FLOOR", "").trim();
+                    line.bgt = row.optString("BGT", "").trim();
+                    line.matnr = matnr;
+                    line.matkl = row.optString("MATKL", "").trim();
+                    picklistArticlesByMatnr.put(matnr.toUpperCase(), line);
+                }
+            }
+
+            JSONArray etEanData = response.optJSONArray("ET_EAN_DATA");
+            if (etEanData != null) {
+                for (int i = 0; i < etEanData.length(); i++) {
+                    JSONObject row = etEanData.optJSONObject(i);
+                    if (row == null || isEanDataHeaderRow(row)) {
+                        continue;
+                    }
+                    String matnr = row.optString("MATNR", "").trim();
+                    if (matnr.isEmpty()) {
+                        continue;
+                    }
+                    EanRecord record = new EanRecord();
+                    record.matnr = matnr;
+                    record.ean11 = row.optString("EAN11", "").trim();
+                    record.umrez = Util.convertStringToDouble(row.optString("UMREZ", "1"));
+                    if (record.umrez <= 0) {
+                        record.umrez = 1;
+                    }
+                    indexEanRecord(record);
+                }
+            }
+
+            if (picklistArticlesByMatnr.isEmpty()) {
+                UIFuncs.errorSound(con);
+                box.getBox("No Data", "No picklist article data returned.");
+            }
+        } catch (Exception exce) {
+            box.getErrBox(exce);
         }
     }
 
@@ -1082,14 +1157,8 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return "PICKLIST_NO".equalsIgnoreCase(row.optString("PICKLIST_NO", "").trim());
     }
 
-    /** Article validation uses ER_RETURN; picklist/packing/save use EX_RETURN (object or table). */
+    /** Picklist/packing/save use EX_RETURN (object or table). */
     private static JSONObject getReturnObject(JSONObject response, int request) throws JSONException {
-        if (request == REQUEST_VALIDATE_ARTICLE) {
-            JSONObject er = parseReturnNode(response, "ER_RETURN");
-            if (er != null) {
-                return er;
-            }
-        }
         JSONObject ex = parseReturnNode(response, "EX_RETURN");
         if (ex != null) {
             return ex;
@@ -1178,15 +1247,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 if (responsebody == null) {
                     UIFuncs.errorSound(con);
                     box.getBox("Err", "No response from Server");
-                    if (request == REQUEST_VALIDATE_ARTICLE || request == REQUEST_GET_STOCK) {
-                        resetArticleInput();
-                    }
                 } else if (responsebody.equals("") || responsebody.equals("null") || responsebody.equals("{}")) {
                     UIFuncs.errorSound(con);
                     box.getBox("Err", "Unable to Connect Server/ Empty Response");
-                    if (request == REQUEST_VALIDATE_ARTICLE || request == REQUEST_GET_STOCK) {
-                        resetArticleInput();
-                    }
                 } else {
                     try {
                         JSONObject returnobj = getReturnObject(responsebody, request);
@@ -1194,20 +1257,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                         if (returnobj != null && "E".equals(returnobj.optString("TYPE"))) {
                             UIFuncs.errorSound(con);
                             box.getBox("Err", returnobj.optString("MESSAGE"));
-                            if (request == REQUEST_VALIDATE_ARTICLE || request == REQUEST_GET_STOCK) {
-                                finishArticleValidation();
-                                resetArticleInput();
-                            }
                         } else if (request == REQUEST_GET_PICKLIST) {
                             bindPicklistNumbers(responsebody);
+                        } else if (request == REQUEST_GET_PICKLIST_DATA) {
+                            bindPicklistData(responsebody);
                         } else if (request == REQUEST_GET_PACKING) {
                             bindPackingMaterials(responsebody);
-                        } else if (request == REQUEST_GET_STOCK) {
-                            dismissLoading = false;
-                            handleStockData(responsebody);
-                        } else if (request == REQUEST_VALIDATE_ARTICLE) {
-                            dismissLoading = false;
-                            handleArticleCategory(categoryFromReturn(returnobj));
                         } else if (request == REQUEST_SAVE) {
                             String successMsg = returnobj != null
                                     ? returnobj.optString("MESSAGE", "Saved successfully.")
@@ -1221,23 +1276,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        if (request == REQUEST_VALIDATE_ARTICLE || request == REQUEST_GET_STOCK) {
-                            finishArticleValidation();
-                            resetArticleInput();
-                        }
                         box.getErrBox(e);
                     }
                 }
 
                 if (dismissLoading) {
-                    if (request == REQUEST_VALIDATE_ARTICLE || request == REQUEST_GET_STOCK) {
-                        finishArticleValidation();
-                        if (request == REQUEST_GET_STOCK) {
-                            resetArticleInput();
-                        }
-                    } else {
-                        finishRequest();
-                    }
+                    finishRequest();
                 }
             }
         }, volleyErrorListener()) {
@@ -1293,12 +1337,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 } else {
                     err = error.toString();
                 }
-                if (isArticleValidating) {
-                    finishArticleValidation();
-                    resetArticleInput();
-                } else {
-                    finishRequest();
-                }
+                finishRequest();
                 box.getBox("Err", err);
             }
         };

@@ -160,8 +160,8 @@ public class Vars {
     public static String ZWM_GET_PACKING_MATERIAL = "ZWM_GET_PACKING_MATERIAL";
     /** Store GRT Process — fetch picklist numbers for a source site. Returns table ET_PICKLIST_NO. */
     public static String ZWM_ST_GRT_PICKLIST_RFC = "ZWM_ST_GRT_PICKLIST_RFC";
-    /** Store GRT Process — validate scanned article against picklist; returns category in ER_RETURN. */
-    public static String ZWM_ST_GRT_MAJ_CAT_VAL_RFC = "ZWM_ST_GRT_MAJ_CAT_VAL_RFC";
+    /** Store GRT Process — load picklist article/EAN data (ET_DATA, ET_EAN_DATA). */
+    public static String ZWM_ST_GRT_GET_PICKLIST_DATA = "ZWM_ST_GRT_GET_PICKLIST_DATA";
     public static String ZWM_STORE_GET_STOCK = "ZWM_STORE_GET_STOCK";
     /**
      * Store Stock Track — FM in SE37: ZWM_STORE_PUSHDATATOSAP_1STOCK.
@@ -298,6 +298,10 @@ public class Vars {
     public static String ZWM_PTL_HU_V63_V64 = "ZWM_PTL_HU_V63_V64";
     /** PTL V64/V65 — Lorry Loading Processing (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V64_V65 = "ZWM_PTL_HU_V64_V65";
+    /** PTL-GRT Floor HUB Wise Crate Tag — scan HUB validate (IM_USER, IM_PLANT, IM_HUB) → EX_RETURN. */
+    public static String ZWM_PTL_GRT_HUB_VALIDATE = "ZWM_PTL_GRT_HUB_VALIDATE";
+    /** PTL-GRT Floor HUB Wise Crate Tag — scan crate validate (IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE) → EX_RETURN. */
+    public static String ZWM_PTL_GRT_HUB_CRATE_VALIDATE = "ZWM_PTL_GRT_HUB_CRATE_VALIDATE";
     public static String ZSTORE_DISCOUNT_GET_EAN_DATA = "ZSTORE_DISCOUNT_GET_EAN_DATA";
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
