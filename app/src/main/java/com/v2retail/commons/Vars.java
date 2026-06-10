@@ -162,6 +162,10 @@ public class Vars {
     public static String ZWM_ST_GRT_PICKLIST_RFC = "ZWM_ST_GRT_PICKLIST_RFC";
     /** Store GRT Process — load picklist article/EAN data (ET_DATA, ET_EAN_DATA). */
     public static String ZWM_ST_GRT_GET_PICKLIST_DATA = "ZWM_ST_GRT_GET_PICKLIST_DATA";
+    /** Store GRT Process — validate scanned external HU (IM_PLANT, IM_USER, IM_HU → EX_RETURN). */
+    public static String ZWM_ST_GRT_EXHU_VALIDATION = "ZWM_ST_GRT_EXHU_VALIDATION";
+    /** Store GRT Process — save HU creation (IM_WERKS, IM_LGORT_SRC, IM_WERKS_DES, IM_USER, IM_PACK_MAT, IM_CATEGORY, IT_DATA). */
+    public static String ZWM_ST_GRT_HU_CREATION_SAVE = "ZWM_ST_GRT_HU_CREATION_SAVE";
     public static String ZWM_STORE_GET_STOCK = "ZWM_STORE_GET_STOCK";
     /**
      * Store Stock Track — FM in SE37: ZWM_STORE_PUSHDATATOSAP_1STOCK.
@@ -302,6 +306,16 @@ public class Vars {
     public static String ZWM_PTL_GRT_HUB_VALIDATE = "ZWM_PTL_GRT_HUB_VALIDATE";
     /** PTL-GRT Floor HUB Wise Crate Tag — scan crate validate (IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE) → EX_RETURN. */
     public static String ZWM_PTL_GRT_HUB_CRATE_VALIDATE = "ZWM_PTL_GRT_HUB_CRATE_VALIDATE";
+    /** PTL-GRT Hub Sorting — MSA crate validate (IM_USER, IM_WERKS, IM_CRATE) → EX_RETURN, ET_DATA, ET_EAN_DATA. */
+    public static String ZWM_PTL_GRT_MSA_CRATE_VALIDATE = "ZWM_PTL_GRT_MSA_CRATE_VALIDATE";
+    /** PTL-GRT Hub Sorting — tag crate at HUB (IM_USER, IM_WERKS, IM_SOURCE_CRATE, IT_DATA) → EX_RETURN. */
+    public static String ZWM_PTL_HUB_ARTICLE_TAG_CRATE = "ZWM_PTL_HUB_ARTICLE_TAG_CRATE";
+    /** PTL-GRT HUB HU/Crate Closed — close crate (IM_USER, IM_PLANT, IM_FLOOR, IM_CRATE) → EX_RETURN. */
+    public static String ZWM_PTL_GRT_CRATE_CLOSE = "ZWM_PTL_GRT_CRATE_CLOSE";
+    /** PTL-GRT Palette Tag With Crate — validate palette (IM_USER, IM_PALETTE, IM_PLANT, IM_FLOOR) → EX_RETURN. */
+    public static String ZWM_PTL_GRT_HUB_PALLATE_VALIDA = "ZWM_PTL_GRT_HUB_PALLATE_VALIDA";
+    /** PTL-GRT Palette Tag With Crate — tag crate to palette (IM_USER, IM_WERKS, IM_FLOOR, IM_CRATE, IM_PALETTE) → EX_RETURN. */
+    public static String ZWM_PTL_GRT_HUB_CRATE_PAL_TAG = "ZWM_PTL_GRT_HUB_CRATE_PAL_TAG";
     public static String ZSTORE_DISCOUNT_GET_EAN_DATA = "ZSTORE_DISCOUNT_GET_EAN_DATA";
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
@@ -327,4 +341,12 @@ public class Vars {
     public static String ZWM_STK_ADJ_MSA_BIN_EMP = "ZWM_STK_ADJ_MSA_BIN_EMP";
 
     public static String ZWM_LIVE_STOCK_SCANNING = "ZWM_LIVE_STOCK_SCANNING";
+    /** CLA Vehicle Loading — transporter dropdown (export ET_TRANSPORT_DET: VENDOR, NAME1). */
+    public static String ZWM_TRANSPORTER_DETAILS_RFC = "ZWM_TRANSPORTER_DETAILS_RFC";
+    /** CLA Vehicle Loading — hub-wise store list (IM_USER, IM_PLANT, IM_HUB → ET_STORES: PLAN, HUB). */
+    public static String ZWM_HUBWISE_STORE_LIST_RFC = "ZWM_HUBWISE_STORE_LIST_RFC";
+    /** CLA Vehicle Loading — HU selection on NEXT (→ ET_HULIST: ZHU_UNSCANNED). */
+    public static String ZWM_HU_SELECTION_RFC = "ZWM_HU_SELECTION_RFC";
+    /** CLA Vehicle Loading — save scanned / removed HU (→ HU_LIST). */
+    public static String ZWM_SAVE_SCANNEDHULIST_RFC = "ZWM_SAVE_SCANNEDHULIST_RFC";
 }

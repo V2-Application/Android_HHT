@@ -47,7 +47,8 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         MenuPTLNewPickingFullCrate30.OnFragmentInteractionListener,
         MenuPTLNewPickingProcess40.OnFragmentInteractionListener,
         MenuMSABinwisePickingFragment.OnFragmentInteractionListener,
-        MenuBinCrateIdentifier.OnFragmentInteractionListener
+        MenuBinCrateIdentifier.OnFragmentInteractionListener,
+        MenuInventoryFragment.OnFragmentInteractionListener
 {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -63,15 +64,12 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
 
     Button inbound;
     Button outbound;
-    Button stock_take;
+    Button inventory;
     Button grt_process;
     Button ptl_process;
     Button cla_process;
-    Button v11_to_msa;
     Button ptl_new;
     Button msa_binwise_picking;
-    Button bin_crate_identifier;
-    Button msa_live_stock_take;
     Button rdc_to_rdc_hu_putway;
     Button inbound_process_new;
     Button inbound_putway_to_bin;
@@ -119,30 +117,24 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         box=new AlertBox(con);
         inbound = view.findViewById(R.id.inward);
         outbound = view.findViewById(R.id.outward);
-        stock_take = view.findViewById(R.id.stock_take);
+        inventory = view.findViewById(R.id.inventory);
         grt_process = view.findViewById(R.id.grt_process);
         ptl_process = view.findViewById(R.id.ptl_process);
         cla_process = view.findViewById(R.id.cla_process);
-        v11_to_msa = view.findViewById(R.id.v11_to_msa);
         ptl_new = view.findViewById(R.id.ptl_new);
         msa_binwise_picking = view.findViewById(R.id.msa_binwise_picking);
-        bin_crate_identifier = view.findViewById(R.id.bin_crate_identifier);
-        msa_live_stock_take = view.findViewById(R.id.msa_live_stock_take);
         rdc_to_rdc_hu_putway = view.findViewById(R.id.rdc_to_rdc_hu_putway);
         inbound_process_new = view.findViewById(R.id.inbound_process_new);
         inbound_putway_to_bin = view.findViewById(R.id.inbound_putway_to_bin);
 
         inbound.setOnClickListener(this);
         outbound.setOnClickListener(this);
-        stock_take.setOnClickListener(this);
+        inventory.setOnClickListener(this);
         grt_process.setOnClickListener(this);
         ptl_process.setOnClickListener(this);
         cla_process.setOnClickListener(this);
-        v11_to_msa.setOnClickListener(this);
         ptl_new.setOnClickListener(this);
         msa_binwise_picking.setOnClickListener(this);
-        bin_crate_identifier.setOnClickListener(this);
-        msa_live_stock_take.setOnClickListener(this);
         rdc_to_rdc_hu_putway.setOnClickListener(this);
         inbound_process_new.setOnClickListener(this);
         inbound_putway_to_bin.setOnClickListener(this);
@@ -229,8 +221,8 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
             case R.id.outward:
                 fragment = new OutWardFragment();
                 break;
-            case R.id.stock_take:
-                 fragment=new Stock_Take_Process_Fragment();
+            case R.id.inventory:
+                fragment = new MenuInventoryFragment();
                 break;
             case R.id.grt_process:
                 fragment=new GRTProcessMenu();
@@ -241,20 +233,11 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
             case R.id.cla_process:
                 fragment = new CLAProcessFragment();
                 break;
-            case R.id.v11_to_msa:
-                fragment = new V11ToMsaFragment();
-                break;
             case R.id.ptl_new:
                 fragment = new MenuPTLNewFragment();
                 break;
             case R.id.msa_binwise_picking:
                 fragment = new MenuMSABinwisePickingFragment();
-                break;
-            case R.id.bin_crate_identifier:
-                fragment = new MenuBinCrateIdentifier();
-                break;
-            case R.id.msa_live_stock_take:
-                fragment = new FragmentMSALiveStockTake();
                 break;
             case R.id.rdc_to_rdc_hu_putway:
                 fragment = new FragmentRdcToRdcHuPutway();

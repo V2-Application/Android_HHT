@@ -353,7 +353,7 @@ public class FragmentHuPickingFromMSA extends  Fragment implements View.OnClickL
             args.put("IM_WERKS", WERKS);
             args.put("IM_USER", USER);
             args.put("IM_PICKLIST", picklistno);
-            showProcessingAndSubmit(Vars.ZWM_HU_VALIDATION_PUT, REQUEST_VALIDATE_PICKLIST, args);
+            showProcessingAndSubmit(Vars.ZWM_PICKLIST_PPPN, REQUEST_VALIDATE_PICKLIST, args);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);
@@ -370,7 +370,7 @@ public class FragmentHuPickingFromMSA extends  Fragment implements View.OnClickL
         try {
             JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
             int length = ET_DATA_ARRAY.length();
-            for(int i = 1; i < length; i++){
+            for(int i = 0; i < length; i++){
                 PicklistData data = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(i).toString(), PicklistData.class);
                 data.setHuno(UIFuncs.removeLeadingZeros(data.getHuno()));
                 picklistData.add(data);

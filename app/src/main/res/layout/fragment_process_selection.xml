@@ -46,20 +46,11 @@
             </LinearLayout>
 
             <Button
-                android:id="@+id/v11_to_msa"
+                android:id="@+id/inventory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="V11 To Msa"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:id="@+id/stock_take"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="Stock Take"
+                android:text="Inventory"
                 android:textColor="#fff"
                 android:background="#e71821" />
 
@@ -115,24 +106,6 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="MSA Binwise Picking Process"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:id="@+id/bin_crate_identifier"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="Bin / Crate Identifier"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:id="@+id/msa_live_stock_take"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="MSA Live Stock Take"
                 android:textColor="#fff"
                 android:background="#e71821" />
 

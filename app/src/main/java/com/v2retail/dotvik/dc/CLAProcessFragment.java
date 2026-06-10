@@ -20,7 +20,7 @@ import com.v2retail.dotvik.R;
  */
 public class CLAProcessFragment extends Fragment implements View.OnClickListener {
 
-    Button hu_scan_in_pallete,pallete_putway,pallete_picking,hu_putway_in_msa,hu_picking_from_msa;
+    Button hu_scan_in_pallete,pallete_putway,pallete_picking,hu_putway_in_msa,hu_picking_from_msa,vehicle_loading;
     FragmentManager fm;
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -73,6 +73,7 @@ public class CLAProcessFragment extends Fragment implements View.OnClickListener
         pallete_putway = view.findViewById(R.id.pallete_putway);
         hu_putway_in_msa = view.findViewById(R.id.hu_putway_in_msa);
         hu_picking_from_msa = view.findViewById(R.id.hu_picking_from_msa);
+        vehicle_loading = view.findViewById(R.id.vehicle_loading);
 
         fm=getFragmentManager();
         hu_scan_in_pallete.setOnClickListener(this);
@@ -80,6 +81,7 @@ public class CLAProcessFragment extends Fragment implements View.OnClickListener
         pallete_putway.setOnClickListener(this);
         hu_putway_in_msa.setOnClickListener(this);
         hu_picking_from_msa.setOnClickListener(this);
+        vehicle_loading.setOnClickListener(this);
         return view;
     }
 
@@ -114,6 +116,9 @@ public class CLAProcessFragment extends Fragment implements View.OnClickListener
                 break;
             case R.id.hu_picking_from_msa:
                 fragment = new FragmentHuPickingFromMSA();
+                break;
+            case R.id.vehicle_loading:
+                fragment = FragmentVehicleLoading.newInstance();
                 break;
         }
 

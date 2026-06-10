@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="2dp"
+        android:background="#000"
+        android:padding="5dp">
+
+        <Button
+            android:id="@+id/inventory_menu_v11_to_msa"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="V11 To Msa"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:id="@+id/inventory_menu_stock_take"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Stock Take"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:id="@+id/inventory_menu_bin_crate_identifier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Bin / Crate Identifier"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:id="@+id/inventory_menu_msa_live_stock_take"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="MSA Live Stock Take"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:id="@+id/inventory_menu_scan_hu_article"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Scan Hu (Article)"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+    </LinearLayout>
+
+</FrameLayout>

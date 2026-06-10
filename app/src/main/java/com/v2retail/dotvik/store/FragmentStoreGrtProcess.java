@@ -81,6 +81,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     private static final int REQUEST_GET_PICKLIST = 2001;
     private static final int REQUEST_GET_PICKLIST_DATA = 2002;
     private static final int REQUEST_GET_PACKING = 2003;
+    private static final int REQUEST_VALIDATE_EXHU = 2004;
     private static final int REQUEST_SAVE = 2005;
 
     View rootView;
@@ -124,6 +125,8 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     Map<String, EanRecord> eanByScanCode = new HashMap<>();
     /** Destination plant from EX_RDC after picklist data load. */
     String picklistRdcPlant = "";
+    /** True after ZWM_ST_GRT_EXHU_VALIDATION succeeds for the current External HU scan. */
+    boolean externalHuValidated = false;
 
     private static class PicklistArticleLine {
         String picklistNo;
@@ -315,6 +318,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         scannedQtyByCategory = new HashMap<>();
         scannedLines = new HashMap<>();
         lastScannedCategory = "";
+        externalHuValidated = false;
         txtScanQty.setText("0");
         txtArticle.setText("");
     }
@@ -346,6 +350,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             spinnerPackingMaterial.setSelection(0);
         }
         resetPicklistScanState();
+        externalHuValidated = false;
         txtExternalHu.setText("");
         txtFdesPlant.setText("");
         txtArticle.setText("");
@@ -358,8 +363,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     UIFuncs.hideKeyboard(getActivity());
-                    if (!UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
-                        focusArticleField();
+                    String value = UIFuncs.toUpperTrim(txtExternalHu);
+                    if (!value.isEmpty()) {
+                        validateExternalHu(value);
                         return true;
                     }
                 }
@@ -371,6 +377,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                externalHuValidated = false;
             }
 
             @Override
@@ -382,7 +389,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
-                    focusArticleField();
+                    validateExternalHu(value);
                 }
             }
         });
@@ -440,10 +447,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             resetArticleInput();
             return;
         }
-        if (UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
+        if (!externalHuValidated || UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
             UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please scan External HU before article.");
-            txtExternalHu.requestFocus();
+            box.getBox("Validation", "Please scan and validate External HU before article.");
+            resetExternalHuInput();
             resetArticleInput();
             return;
         }
@@ -659,6 +666,13 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
 
+        if (!externalHuValidated || UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Validation", "Please scan and validate External HU before save.");
+            resetExternalHuInput();
+            return;
+        }
+
         if (scannedLines.isEmpty()) {
             UIFuncs.errorSound(con);
             box.getBox("Validation", "Please scan at least one article before save.");
@@ -690,7 +704,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_GRT_FROM_DISP_AREA);
+            args.put("bapiname", Vars.ZWM_ST_GRT_HU_CREATION_SAVE);
             args.put("IM_WERKS", WERKS);
             args.put("IM_LGORT_SRC", selectedSource);
             args.put("IM_WERKS_DES", werksDes);
@@ -698,7 +712,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             args.put("IM_PACK_MAT", packMat);
             args.put("IM_CATEGORY", category);
             args.put("IT_DATA", arrItData);
-            showProcessingAndSubmit(Vars.ZWM_STORE_GRT_FROM_DISP_AREA, REQUEST_SAVE, args);
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_HU_CREATION_SAVE, REQUEST_SAVE, args);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);
@@ -746,6 +760,39 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             box.getErrBox(e);
             return null;
         }
+    }
+
+    private void validateExternalHu(String hu) {
+        String picklist = getSelectedPicklist();
+        if (picklist.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Select Picklist", "Please select a Picklist No. before scanning External HU.");
+            resetExternalHuInput();
+            return;
+        }
+        if (hu == null || hu.isEmpty()) {
+            return;
+        }
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_ST_GRT_EXHU_VALIDATION);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_USER", USER);
+            args.put("IM_HU", hu);
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_EXHU_VALIDATION, REQUEST_VALIDATE_EXHU, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            dismissDialog();
+            box.getErrBox(e);
+        }
+    }
+
+    private void resetExternalHuInput() {
+        externalHuValidated = false;
+        txtExternalHu.setText("");
+        txtExternalHu.requestFocus();
+        UIFuncs.enableInput(con, txtExternalHu);
     }
 
     private void focusArticleField() {
@@ -1257,6 +1304,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                         if (returnobj != null && "E".equals(returnobj.optString("TYPE"))) {
                             UIFuncs.errorSound(con);
                             box.getBox("Err", returnobj.optString("MESSAGE"));
+                            if (request == REQUEST_VALIDATE_EXHU) {
+                                resetExternalHuInput();
+                            }
+                        } else if (request == REQUEST_VALIDATE_EXHU) {
+                            externalHuValidated = true;
+                            focusArticleField();
                         } else if (request == REQUEST_GET_PICKLIST) {
                             bindPicklistNumbers(responsebody);
                         } else if (request == REQUEST_GET_PICKLIST_DATA) {

@@ -25,7 +25,9 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
     Context con;
     private OnFragmentInteractionListener mListener;
 
-    Button btnCratePicking, btnPalettePutaway, btnPaletteReceive, btnFloorHubWiseCrateTag;
+    Button btnCratePicking, btnPalettePutaway, btnPaletteReceive, btnFloorHubWiseCrateTag,
+            btnReceivePalletAtHubSorting, btnHubSortingScanCrate, btnHubHuCrateClosed,
+            btnPaletteTagWithCrate;
 
     public MenuPTLNewGrtProcess() {
     }
@@ -50,11 +52,19 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
         btnPalettePutaway = view.findViewById(R.id.ptl_grt_palette_putaway);
         btnPaletteReceive = view.findViewById(R.id.ptl_grt_palette_receive);
         btnFloorHubWiseCrateTag = view.findViewById(R.id.ptl_grt_floor_hub_wise_crate_tag);
+        btnReceivePalletAtHubSorting = view.findViewById(R.id.ptl_grt_receive_pallet_at_hub_sorting);
+        btnHubSortingScanCrate = view.findViewById(R.id.ptl_grt_hub_sorting_scan_crate);
+        btnHubHuCrateClosed = view.findViewById(R.id.ptl_grt_hub_hu_crate_closed);
+        btnPaletteTagWithCrate = view.findViewById(R.id.ptl_grt_palette_tag_with_crate);
 
         btnCratePicking.setOnClickListener(this);
         btnPalettePutaway.setOnClickListener(this);
         btnPaletteReceive.setOnClickListener(this);
         btnFloorHubWiseCrateTag.setOnClickListener(this);
+        btnReceivePalletAtHubSorting.setOnClickListener(this);
+        btnHubSortingScanCrate.setOnClickListener(this);
+        btnHubHuCrateClosed.setOnClickListener(this);
+        btnPaletteTagWithCrate.setOnClickListener(this);
 
         return view;
     }
@@ -81,6 +91,18 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
                 break;
             case R.id.ptl_grt_floor_hub_wise_crate_tag:
                 fragment = FragmentPTLGrtFloorHubWiseCrateTag.newInstance();
+                break;
+            case R.id.ptl_grt_receive_pallet_at_hub_sorting:
+                fragment = FragmentPTLGrtReceivePalletAtHubSorting.newInstance();
+                break;
+            case R.id.ptl_grt_hub_sorting_scan_crate:
+                fragment = FragmentPTLGrtHubSortingScanCrate.newInstance();
+                break;
+            case R.id.ptl_grt_hub_hu_crate_closed:
+                fragment = FragmentPTLGrtHubHuCrateClosed.newInstance();
+                break;
+            case R.id.ptl_grt_palette_tag_with_crate:
+                fragment = FragmentPTLGrtPaletteTagWithCrate.newInstance();
                 break;
         }
 

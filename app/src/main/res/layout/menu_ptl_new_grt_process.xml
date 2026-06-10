@@ -47,6 +47,42 @@
             android:text="FLOOR - HUB Wise Crate Tag"
             android:textColor="#fff" />
 
+        <Button
+            android:id="@+id/ptl_grt_receive_pallet_at_hub_sorting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="Receive Pallet at Hub Sorting"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_hub_sorting_scan_crate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="Hub Sorting-Scan Crate"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_hub_hu_crate_closed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="HUB HU/Crate Closed"
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/ptl_grt_palette_tag_with_crate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="PALLATE Tag With Crate"
+            android:textColor="#fff" />
+
     </LinearLayout>
 
 </FrameLayout>

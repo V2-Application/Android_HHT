@@ -339,13 +339,73 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
             box.getErrBox(e);
         }
     }
+    /** Dev JSON RFC adapter returns data rows only; production SAP often prefixes tables with a header row at index 0. */
+    private static boolean isPackMatHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String maktx = row.optString("MAKTX", "").trim();
+        String matnr = row.optString("MATNR", "").trim();
+        return "MAKTX".equalsIgnoreCase(maktx) || "MATNR".equalsIgnoreCase(matnr);
+    }
+
+    private static boolean isEanDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String matnr = row.optString("MATNR", "").trim();
+        String ean11 = row.optString("EAN11", "").trim();
+        return "MATNR".equalsIgnoreCase(matnr) || "EAN11".equalsIgnoreCase(ean11);
+    }
+
+    private static JSONObject parseReturnObject(JSONObject responsebody) throws JSONException {
+        if (!responsebody.has("EX_RETURN")) {
+            return null;
+        }
+        Object raw = responsebody.get("EX_RETURN");
+        if (raw instanceof JSONObject) {
+            return (JSONObject) raw;
+        }
+        if (raw instanceof JSONArray) {
+            JSONArray arr = (JSONArray) raw;
+            JSONObject firstSuccess = null;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject row = arr.optJSONObject(i);
+                if (row == null) {
+                    continue;
+                }
+                String type = row.optString("TYPE", "").trim();
+                if ("E".equals(type) || "A".equals(type)) {
+                    return row;
+                }
+                if (firstSuccess == null) {
+                    firstSuccess = row;
+                }
+            }
+            return firstSuccess;
+        }
+        return null;
+    }
+
+    private static boolean isSapErrorReturn(JSONObject returnobj) {
+        if (returnobj == null) {
+            return false;
+        }
+        String type = returnobj.optString("TYPE", "").trim();
+        return "E".equals(type) || "A".equals(type);
+    }
+
     private void populatePackMaterial(JSONObject responsebody){
         try{
             packMaterialRecords = new ArrayList<>();
             JSONArray arrPackMaterial = responsebody.getJSONArray("ET_PACK_MAT");
             int len = arrPackMaterial.length();
-            for(int recordIndex=1; recordIndex < len; recordIndex++){
-                packMaterialRecords.add(new Gson().fromJson(arrPackMaterial.getJSONObject(recordIndex).toString(), ETPACKMAT.class));
+            for (int recordIndex = 0; recordIndex < len; recordIndex++) {
+                JSONObject row = arrPackMaterial.getJSONObject(recordIndex);
+                if (isPackMatHeaderRow(row)) {
+                    continue;
+                }
+                packMaterialRecords.add(new Gson().fromJson(row.toString(), ETPACKMAT.class));
             }
             if(!packMaterialRecords.isEmpty()){
                 ArrayList<String> materials = new ArrayList<>();
@@ -364,6 +424,10 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
 
     @SuppressLint("SetTextI18n")
     private void validateEan(String ean){
+        ean = ean != null ? ean.trim().toUpperCase() : "";
+        if (ean.isEmpty()) {
+            return;
+        }
         EtEanDataModel eanModel = null;
         if(etEanRecords.containsKey(ean)){
             eanModel = etEanRecords.get(ean);
@@ -443,18 +507,36 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
             JSONArray arrEanData = responsebody.getJSONArray("ET_EAN_DATA");
             JSONObject mardData = responsebody.getJSONObject("EX_MARD");
             int len = arrEanData.length();
-            for(int recordIndex=1; recordIndex < len; recordIndex++){
-                EtEanDataModel eanModel = new Gson().fromJson(arrEanData.getJSONObject(recordIndex).toString(), EtEanDataModel.class);
-                if(eanModel.getEAN11().trim().isEmpty()){
+            for (int recordIndex = 0; recordIndex < len; recordIndex++) {
+                JSONObject row = arrEanData.getJSONObject(recordIndex);
+                if (isEanDataHeaderRow(row)) {
                     continue;
                 }
-                etEanRecords.put(eanModel.getEAN11(), eanModel);
+                EtEanDataModel eanModel = new Gson().fromJson(row.toString(), EtEanDataModel.class);
+                if (eanModel.getEAN11() == null || eanModel.getEAN11().trim().isEmpty()) {
+                    continue;
+                }
+                etEanRecords.put(eanModel.getEAN11().trim().toUpperCase(), eanModel);
             }
             MardModal mardModal = MardModal.newInstance(mardData.getString("MATNR"), mardData.getString("LABST"));
             etMardRecords.put(mardModal.getMatnr(), mardModal);
-            validateEan(UIFuncs.toUpperTrim(barcode_art_et));
+
+            String scannedEan = UIFuncs.toUpperTrim(barcode_art_et);
+            if (!scannedEan.isEmpty() && etEanRecords.containsKey(scannedEan)) {
+                validateEan(scannedEan);
+            } else {
+                UIFuncs.errorSound(con);
+                box.getBox("No Data", "No EAN data returned for scanned barcode.", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface d, int which) {
+                        d.dismiss();
+                        resetBarcodeInput();
+                    }
+                });
+            }
         }catch (Exception exce){
             box.getErrBox(exce);
+            resetBarcodeInput();
         }
     }
 
@@ -597,48 +679,37 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                     return;
                 } else {
                     try {
-                        if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
-                            JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
-                            if (returnobj != null) {
-                                String type = returnobj.getString("TYPE");
-                                if (type != null) {
-                                    if (type.equals("E")) {
-                                        UIFuncs.errorSound(getContext());
-                                        if (dialog != null) {
-                                            dialog.dismiss();
-                                            dialog = null;
-                                        }
-                                        AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface d, int which) {
-                                                d.dismiss();
-                                                resetBarcodeInput();
-                                            }
-                                        });
-                                    } else {
-                                        if(request == REQUEST_PACK_DATA){
-                                            populatePackMaterial(responsebody);
-                                        }
-                                        else if(request == REQUEST_STOCK_DATA){
-                                            setStockData(responsebody);
-                                        }
-                                        else if (request == REQUEST_SAVE) {
-                                            if(dialog != null){
-                                                dialog.dismiss();
-                                            }
-                                            box.getBox("Success", returnobj.getString("MESSAGE"));
-                                            clearData();
-                                        }
-                                    }
+                        JSONObject returnobj = parseReturnObject(responsebody);
+                        if (isSapErrorReturn(returnobj)) {
+                            UIFuncs.errorSound(getContext());
+                            AlertBox box = new AlertBox(getContext());
+                            String message = returnobj.optString("MESSAGE", "").trim();
+                            box.getBox("Err", message.isEmpty() ? "SAP error" : message, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface d, int which) {
+                                    d.dismiss();
+                                    resetBarcodeInput();
                                 }
-                                return;
+                            });
+                        } else if (request == REQUEST_PACK_DATA) {
+                            populatePackMaterial(responsebody);
+                        } else if (request == REQUEST_STOCK_DATA) {
+                            setStockData(responsebody);
+                        } else if (request == REQUEST_SAVE) {
+                            String message = returnobj != null
+                                    ? returnobj.optString("MESSAGE", "Saved successfully.").trim()
+                                    : "Saved successfully.";
+                            if (message.isEmpty()) {
+                                message = "Saved successfully.";
                             }
+                            box.getBox("Success", message);
+                            clearData();
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         AlertBox box = new AlertBox(getContext());
                         box.getErrBox(e);
+                        resetBarcodeInput();
                     }
                 }
             }
