@@ -16,47 +16,29 @@
             android:padding="5dp">
 
             <Button
-                android:id="@+id/btn_hu_scan_putway"
+                android:id="@+id/btn_gate_entry_lot_putaway"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="HU Scanning &amp; Putaway to Pallet"
+                android:text="Gate Entry Lot Putaway"
                 android:textColor="#fff"
                 android:background="#e71821" />
 
             <Button
-                android:id="@+id/btn_hu_putaway_to_bin"
+                android:id="@+id/btn_inbound_process_new"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="HU Putaway to Bin"
+                android:text="Inbound Process New"
                 android:textColor="#fff"
                 android:background="#e71821" />
 
             <Button
-                android:id="@+id/btn_hu_picking_bin"
+                android:id="@+id/btn_return_gate_entry_process"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="HU Picking from Bin"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:id="@+id/btn_put01_hu_scan"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="PUT01 — HU Wise Scanning"
-                android:textColor="#fff"
-                android:background="#e71821" />
-
-            <Button
-                android:id="@+id/btn_vnd_box_put_bin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="Putaway — VND Box Put Bin"
+                android:text="Return Gate Entry Process"
                 android:textColor="#fff"
                 android:background="#e71821" />
 

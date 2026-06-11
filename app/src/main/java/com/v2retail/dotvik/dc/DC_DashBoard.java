@@ -66,6 +66,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
     Button outbound;
     Button inventory;
     Button grt_process;
+    Button gate_entry_process;
     Button ptl_process;
     Button cla_process;
     Button ptl_new;
@@ -119,6 +120,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         outbound = view.findViewById(R.id.outward);
         inventory = view.findViewById(R.id.inventory);
         grt_process = view.findViewById(R.id.grt_process);
+        gate_entry_process = view.findViewById(R.id.gate_entry_process);
         ptl_process = view.findViewById(R.id.ptl_process);
         cla_process = view.findViewById(R.id.cla_process);
         ptl_new = view.findViewById(R.id.ptl_new);
@@ -131,6 +133,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         outbound.setOnClickListener(this);
         inventory.setOnClickListener(this);
         grt_process.setOnClickListener(this);
+        gate_entry_process.setOnClickListener(this);
         ptl_process.setOnClickListener(this);
         cla_process.setOnClickListener(this);
         ptl_new.setOnClickListener(this);
@@ -226,6 +229,9 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
                 break;
             case R.id.grt_process:
                 fragment=new GRTProcessMenu();
+                break;
+            case R.id.gate_entry_process:
+                fragment = new MenuGateEntryFragment();
                 break;
             case R.id.ptl_process:
                 fragment = new PTLProcessFragment();

@@ -42,7 +42,7 @@ import org.json.JSONObject;
  * Flow:
  *   1. Scan Destination BIN  -> ZWM_HU_MVT_BIN_VAL_RFC  (validate bin)
  *   2. Scan HU               -> ZWM_HU_MVT_HU_VAL_RFC   (validate HU against bin)
- *   3. Save                  -> ZWM_HU_MVT_SAVE_RFC      (commit movement)
+ *   3. Auto Save             -> ZWM_HU_MVT_SAVE_RFC      (commit movement)
  *
  * BIN logic:
  *   - If BIN starts with "001", do NOT clear fields after save (consolidation mode).
@@ -63,20 +63,22 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
     private ProgressDialog dialog;
     private AlertBox box;
 
-    private EditText etBin;
-    private EditText etHu;
+    private EditText etDcSite;
+    private EditText etScanBin;
+    private EditText etBinDisplay;
+    private EditText etScanHu;
+    private EditText etHuDisplay;
+    private EditText etTotalScanned;
     private TextView tvStatus;
-    private Button   btnSave;
-    private Button   btnReset;
-    private Button   btnBack;
+    private Button btnBack;
 
     private String URL    = "";
     private String USER   = "";
     private String WERKS  = "";
 
-    // State flags
     private boolean binValidated = false;
     private String  validatedBin = "";
+    private int     totalScanned = 0;
 
     public FragmentRdcToRdcHuPutway() {}
 
@@ -89,36 +91,34 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_rdc_to_rdc_hu_putway, container, false);
 
-        etBin    = view.findViewById(R.id.rdc_et_bin);
-        etHu     = view.findViewById(R.id.rdc_et_hu);
-        tvStatus = view.findViewById(R.id.rdc_tv_status);
-        btnSave  = view.findViewById(R.id.rdc_btn_save);
-        btnReset = view.findViewById(R.id.rdc_btn_reset);
-        btnBack  = view.findViewById(R.id.rdc_btn_back);
+        etDcSite       = view.findViewById(R.id.rdc_et_dc_site);
+        etScanBin      = view.findViewById(R.id.rdc_et_bin);
+        etBinDisplay   = view.findViewById(R.id.rdc_et_bin_display);
+        etScanHu       = view.findViewById(R.id.rdc_et_hu);
+        etHuDisplay    = view.findViewById(R.id.rdc_et_hu_display);
+        etTotalScanned = view.findViewById(R.id.rdc_et_total_scanned);
+        tvStatus       = view.findViewById(R.id.rdc_tv_status);
+        btnBack        = view.findViewById(R.id.rdc_btn_back);
 
-        btnSave.setOnClickListener(this);
-        btnReset.setOnClickListener(this);
         btnBack.setOnClickListener(this);
 
-        // BIN scan triggers validation on IME action (scan gun sends Enter)
-        etBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        etScanBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                String bin = etBin.getText().toString().trim();
+                String bin = etScanBin.getText().toString().trim();
                 if (!bin.isEmpty()) validateBin(bin);
                 return true;
             }
         });
 
-        // HU scan triggers HU validation
-        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        etScanHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (!binValidated) {
-                    showStatus("Please scan and validate BIN first.", false);
+                    showError("Please scan and validate BIN first.");
                     return true;
                 }
-                String hu = etHu.getText().toString().trim();
+                String hu = etScanHu.getText().toString().trim();
                 if (!hu.isEmpty()) validateHu(hu);
                 return true;
             }
@@ -126,6 +126,15 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
 
         init();
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (getActivity() instanceof Process_Selection_Activity) {
+            ((Process_Selection_Activity) getActivity())
+                    .setActionBarTitle("RDC TO RDC HU PUTWAY");
+        }
     }
 
     private void init() {
@@ -136,12 +145,11 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         USER  = prefs.read("USER");
         WERKS = prefs.read("WERKS");
 
-        etHu.setEnabled(false);
-        btnSave.setEnabled(false);
-        showStatus("Scan Destination BIN to begin.", true);
+        etDcSite.setText(WERKS);
+        etScanHu.setEnabled(false);
+        etTotalScanned.setText("0");
+        etScanBin.requestFocus();
     }
-
-    // ── BIN Validation ────────────────────────────────────────────────────────
 
     private void validateBin(final String bin) {
         showProgress("Validating BIN...");
@@ -173,12 +181,12 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 public void onResponse(JSONObject response) {
                     dismissProgress();
                     if (response == null || response.length() == 0) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     JSONObject ret = response.optJSONObject("EX_RETURN");
                     if (ret == null) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     String type = ret.optString("TYPE", "");
@@ -186,14 +194,16 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
                         binValidated = true;
                         validatedBin = bin;
-                        etBin.setEnabled(false);
-                        etHu.setEnabled(true);
-                        etHu.requestFocus();
+                        etBinDisplay.setText(bin);
+                        etScanBin.setText("");
+                        etScanBin.setEnabled(false);
+                        etScanHu.setEnabled(true);
+                        etScanHu.requestFocus();
                         showStatus("BIN OK: " + bin + " - Now scan HU.", true);
                     } else {
-                        showStatus("BIN Error: " + msg, false);
-                        etBin.setText("");
-                        etBin.requestFocus();
+                        showError("BIN Error: " + msg);
+                        etScanBin.setText("");
+                        etScanBin.requestFocus();
                     }
                 }
             },
@@ -201,7 +211,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     dismissProgress();
-                    showStatus("Network error: " + parseVolleyError(error), false);
+                    showError("Network error: " + parseVolleyError(error));
                 }
             });
 
@@ -209,8 +219,6 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         RequestQueue q = ApplicationController.getInstance().getRequestQueue();
         q.add(req);
     }
-
-    // ── HU Validation ─────────────────────────────────────────────────────────
 
     private void validateHu(final String hu) {
         showProgress("Validating HU...");
@@ -243,23 +251,25 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 public void onResponse(JSONObject response) {
                     dismissProgress();
                     if (response == null || response.length() == 0) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     JSONObject ret = response.optJSONObject("EX_RETURN");
                     if (ret == null) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     String type = ret.optString("TYPE", "");
                     String msg  = ret.optString("MESSAGE", "");
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                        btnSave.setEnabled(true);
-                        showStatus("HU OK: " + hu + " - Ready to Save.", true);
+                        etHuDisplay.setText(hu);
+                        etScanHu.setText("");
+                        showStatus("HU OK: " + hu + " - Saving...", true);
+                        saveMovement(hu);
                     } else {
-                        showStatus("HU Error: " + msg, false);
-                        etHu.setText("");
-                        etHu.requestFocus();
+                        showError("HU Error: " + msg);
+                        etScanHu.setText("");
+                        etScanHu.requestFocus();
                     }
                 }
             },
@@ -267,7 +277,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     dismissProgress();
-                    showStatus("Network error: " + parseVolleyError(error), false);
+                    showError("Network error: " + parseVolleyError(error));
                 }
             });
 
@@ -275,14 +285,11 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
-    // ── Save ──────────────────────────────────────────────────────────────────
-
-    private void saveMovement() {
-        final String hu  = etHu.getText().toString().trim();
+    private void saveMovement(final String hu) {
         final String bin = validatedBin;
 
         if (TextUtils.isEmpty(bin) || TextUtils.isEmpty(hu)) {
-            showStatus("BIN and HU are required.", false);
+            showError("BIN and HU are required.");
             return;
         }
 
@@ -316,12 +323,12 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 public void onResponse(JSONObject response) {
                     dismissProgress();
                     if (response == null || response.length() == 0) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     JSONObject ret = response.optJSONObject("EX_RETURN");
                     if (ret == null) {
-                        showStatus("RFC not available on server. Contact SAP team.", false);
+                        showError("RFC not available on server. Contact SAP team.");
                         return;
                     }
                     String type  = ret.optString("TYPE", "");
@@ -329,23 +336,22 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                     String tanum = response.optString("EX_TANUM", "");
 
                     if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
+                        totalScanned++;
+                        etTotalScanned.setText(String.valueOf(totalScanned));
+
                         String successMsg = "Saved! HU " + hu + " -> BIN " + bin;
                         if (!tanum.isEmpty()) successMsg += " | TO: " + tanum;
                         showStatus(successMsg, true);
 
-                        // Clear logic: keep BIN if it starts with "001", else clear all
                         if (bin.startsWith("001")) {
-                            // Consolidation bin - stay on same bin, clear only HU
-                            etHu.setText("");
-                            etHu.setEnabled(true);
-                            etHu.requestFocus();
-                            btnSave.setEnabled(false);
+                            etHuDisplay.setText("");
+                            etScanHu.setEnabled(true);
+                            etScanHu.requestFocus();
                         } else {
-                            // Normal bin - clear everything for next scan
                             resetFields();
                         }
                     } else {
-                        showStatus("Save Error: " + msg, false);
+                        showError("Save Error: " + msg);
                     }
                 }
             },
@@ -353,15 +359,13 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     dismissProgress();
-                    showStatus("Network error: " + parseVolleyError(error), false);
+                    showError("Network error: " + parseVolleyError(error));
                 }
             });
 
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String buildRfcUrl(String rfcName) {
         String base = URL;
@@ -375,21 +379,25 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
         if (tvStatus == null) return;
         tvStatus.setVisibility(View.VISIBLE);
         tvStatus.setText(msg);
-        tvStatus.setBackgroundColor(ok
-            ? 0xFFE8F5E9   // green tint
-            : 0xFFFFEBEE); // red tint
+        tvStatus.setBackgroundColor(ok ? 0xFFE8F5E9 : 0xFFFFEBEE);
         tvStatus.setTextColor(ok ? 0xFF065F46 : 0xFFB71C1C);
+    }
+
+    private void showError(String msg) {
+        showStatus(msg, false);
+        if (box != null) box.getBox("Error", msg);
     }
 
     private void resetFields() {
         binValidated = false;
         validatedBin = "";
-        etBin.setText("");
-        etHu.setText("");
-        etBin.setEnabled(true);
-        etHu.setEnabled(false);
-        btnSave.setEnabled(false);
-        etBin.requestFocus();
+        etScanBin.setText("");
+        etBinDisplay.setText("");
+        etScanHu.setText("");
+        etHuDisplay.setText("");
+        etScanBin.setEnabled(true);
+        etScanHu.setEnabled(false);
+        etScanBin.requestFocus();
         showStatus("Scan Destination BIN to begin.", true);
     }
 
@@ -423,12 +431,7 @@ public class FragmentRdcToRdcHuPutway extends Fragment implements View.OnClickLi
 
     @Override
     public void onClick(View v) {
-        int id = v.getId();
-        if (id == R.id.rdc_btn_save) {
-            saveMovement();
-        } else if (id == R.id.rdc_btn_reset) {
-            resetFields();
-        } else if (id == R.id.rdc_btn_back) {
+        if (v.getId() == R.id.rdc_btn_back) {
             if (getFragmentManager() != null) getFragmentManager().popBackStack();
         }
     }

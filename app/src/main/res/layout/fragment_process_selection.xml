@@ -54,14 +54,33 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
-            <Button
-                android:id="@+id/grt_process"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="GRT"
-                android:textColor="#fff"
-                android:background="#e71821" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/grt_process"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="GRT"
+                    android:textColor="#fff"
+                    android:background="#e71821" />
+
+                <Button
+                    android:id="@+id/gate_entry_process"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Gate Entry"
+                    android:textColor="#fff"
+                    android:background="#e71821" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"

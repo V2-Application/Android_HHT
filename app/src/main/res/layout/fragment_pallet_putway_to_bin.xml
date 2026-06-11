@@ -7,26 +7,14 @@
     android:paddingEnd="5dp">
 
     <LinearLayout
-        android:id="@+id/rdc_putway_body"
+        android:id="@+id/pallet_putway_body"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/rdc_putway_footer"
+        android:layout_above="@+id/pallet_putway_footer"
         android:layout_margin="5dp"
         android:orientation="vertical">
 
-        <!-- <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#e71821"
-            android:gravity="center"
-            android:padding="12dp"
-            android:text="RDC TO RDC HU PUTWAY"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold" /> -->
-
-        <!-- DC Site -->
+        <!-- Scan Pallet -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,21 +29,59 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="DC Site:"
+                android:text="Scan Pallet"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/rdc_et_dc_site"
+                android:id="@+id/pallet_et_scan_pallet"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7"
+                android:background="@drawable/border"
+                android:hint="Scan"
+                android:imeOptions="actionDone"
+                android:inputType="textCapCharacters"
+                android:padding="7dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textColorHint="#e71821"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Pallet -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:padding="7dp"
+                android:text="Pallet"
+                android:textColor="@color/black"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/pallet_et_pallet"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="7"
                 android:background="@drawable/border_disabled_input"
                 android:enabled="false"
+                android:hint="Pallet"
                 android:padding="7dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
+                android:textColorHint="#80000000"
                 android:textSize="14sp" />
         </LinearLayout>
 
@@ -74,18 +100,19 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="Scan BIN:"
+                android:text="Scan BIN"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/rdc_et_bin"
+                android:id="@+id/pallet_et_scan_bin"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="7"
-                android:background="@drawable/border"
-                android:hint="SCAN BIN"
+                android:background="@drawable/border_disabled_input"
+                android:enabled="false"
+                android:hint="Scan"
                 android:imeOptions="actionDone"
                 android:inputType="textCapCharacters"
                 android:padding="7dp"
@@ -110,13 +137,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="BIN:"
+                android:text="BIN"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/rdc_et_bin_display"
+                android:id="@+id/pallet_et_bin"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="7"
@@ -130,7 +157,7 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Scan HU -->
+        <!-- NO. OF BOXES -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -145,91 +172,19 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="Scan HU:"
+                android:text="NO. OF BOXES"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/rdc_et_hu"
+                android:id="@+id/pallet_et_box_count"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="7"
                 android:background="@drawable/border"
-                android:enabled="false"
-                android:hint="SCAN HU"
-                android:imeOptions="actionDone"
-                android:inputType="textCapCharacters"
-                android:padding="7dp"
-                android:singleLine="true"
-                android:textColor="@color/black"
-                android:textColorHint="#80000000"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- HU Number -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="HU Number:"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/rdc_et_hu_display"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7"
-                android:background="@drawable/border_disabled_input"
-                android:enabled="false"
-                android:hint="HU NUMBER"
-                android:padding="7dp"
-                android:singleLine="true"
-                android:textColor="@color/black"
-                android:textColorHint="#80000000"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Total Scanned -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Total Scanned:"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/rdc_et_total_scanned"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7"
-                android:background="@drawable/border_disabled_input"
-                android:enabled="false"
-                android:hint="COUNT"
+                android:hint="0"
+                android:inputType="number"
                 android:padding="7dp"
                 android:singleLine="true"
                 android:text="0"
@@ -239,7 +194,7 @@
         </LinearLayout>
 
         <TextView
-            android:id="@+id/rdc_tv_status"
+            android:id="@+id/pallet_tv_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -250,7 +205,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/rdc_putway_footer"
+        android:id="@+id/pallet_putway_footer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -258,7 +213,7 @@
         android:padding="5dp">
 
         <Button
-            android:id="@+id/rdc_btn_back"
+            android:id="@+id/pallet_btn_back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"

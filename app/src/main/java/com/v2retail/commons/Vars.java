@@ -320,6 +320,10 @@ public class Vars {
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
     public static String ZSDC_DIRECT_ART_VAL_BARCOD_RFC = "ZSDC_DIRECT_ART_VAL_BARCOD_RFC";
+    /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE → EX_BARCODE). */
+    public static String ZSDC_DIRECT_ARTICLE_VAL_RFC = "ZSDC_DIRECT_ARTICLE_VAL_RFC";
+    /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, ET_DATA). */
+    public static String ZSDC_DIRECT_ART_V01_0001_RFC = "ZSDC_DIRECT_ART_V01_0001_RFC";
     public static String ZSDC_DIRECT_ART_VAL1_SAVE1_RFC = "ZSDC_DIRECT_ART_VAL1_SAVE1_RFC";
     public static String ARTICLE_LOOKUP_URL = "https://sap-api.v2retail.net/api/article-lookup";
     public static String ZBIN_GRT_HU_VALIDATION = "ZBIN_GRT_HU_VALIDATION";
@@ -349,4 +353,30 @@ public class Vars {
     public static String ZWM_HU_SELECTION_RFC = "ZWM_HU_SELECTION_RFC";
     /** CLA Vehicle Loading — save scanned / removed HU (→ HU_LIST). */
     public static String ZWM_SAVE_SCANNEDHULIST_RFC = "ZWM_SAVE_SCANNEDHULIST_RFC";
+
+    // ── Gate Entry Lot Putaway — Box Putaway to Pallet ─────────────────────────────
+    /** Gate Entry Lot Putaway — load open gate entries (IM_USER, IM_WERKS, IM_DOCNO → ET_Data.DOCNO). */
+    public static String ZWM_GET_GATE_ENTRY_LIST_RFC = "ZWM_GET_GATE_ENTRY_LIST_RFC";
+    /** Gate Entry Lot Putaway — PO + vendor invoice for selected gate entry (IM_USER, IM_GATE, IM_WERKS → ET_Data.VPONO, INVNO). */
+    public static String ZWM_GET_GATE_ENTRY_DATA_RFC = "ZWM_GET_GATE_ENTRY_DATA_RFC";
+    /** Gate Entry Lot Putaway — validate pallet (IM_USER, IM_GATE, IM_WERKS, IM_PALL). */
+    public static String ZWM_GET_GATE_ENTRY_PALLATE_RFC = "ZWM_GET_GATE_ENTRY_PALLATE_RFC";
+    /** Gate Entry Lot Putaway — submit box with weight (IM_USER, IM_GATE, IM_WERKS, IM_PALL, IM_BOX, IM_WEIGHT). */
+    public static String ZWM_GATE_BOX3N = "ZWM_GATE_BOX3N";
+    /** Gate Entry Lot Putaway — complete / save gate entry (IM_USER, IM_GATE, IM_WERKS). */
+    public static String ZWM_GATE_SAVE3_N = "ZWM_GATE_SAVE3_N";
+    /** Pallet Putaway to BIN — validate pallet (IM_USER, IM_WERKS, IM_PALL). */
+    public static String ZWM_GATE_PALLATE_VALIDATE3_N = "ZWM_GATE_PALLATE_VALIDATE3_N";
+    /** Pallet Putaway to BIN — validate BIN / putway (IM_USER, IM_WERKS, IM_PALL, IM_BIN). */
+    public static String ZWM_GATE_BIN_VALIDATION3_N = "ZWM_GATE_BIN_VALIDATION3_N";
+
+    // ── LOT Picking (Pallet Picking from BIN) ────────────────────────────────────
+    /** LOT Picking — load open gate entries (IM_USER, IM_PLANT → ET_Data.EDOCNO). */
+    public static String ZWM_GET_GATE_ENTRY_LIST4_RFC = "ZWM_GET_GATE_ENTRY_LIST4_RFC";
+    /** LOT Picking — PO + table for selected gate entry (IM_USER, IM_PLANT, IM_GET → EX_PO, ET_Data). */
+    public static String ZWM_GET_GATE_ENTRY_DATA4_RFC = "ZWM_GET_GATE_ENTRY_DATA4_RFC";
+    /** LOT Picking — validate BIN before pick (IM_USER, IM_PLANT, IM_GET, IM_BIN). */
+    public static String ZWM_GATE_BIN_VALIDATION4_N = "ZWM_GATE_BIN_VALIDATION4_N";
+    /** LOT Picking — validate pallet / pick transaction (IM_USER, IM_PLANT, IM_GET, IM_PALETTE, IM_BIN). */
+    public static String ZWM_GATE_PALLATE_VALIDATE4_N = "ZWM_GATE_PALLATE_VALIDATE4_N";
 }
