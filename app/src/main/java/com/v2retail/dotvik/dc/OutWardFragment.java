@@ -40,7 +40,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
     Button hu_cla;
     Context con;
     AlertBox box;
-    Button sample_stock_movement,shade_stock_movement,empty_bin,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu,hu_swap_print;
+    Button sample_stock_movement,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu,hu_swap_print;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -101,9 +101,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
 
         dc_grt = (Button) view.findViewById(R.id.dc_grt);
         hu_cla = (Button) view.findViewById(R.id.hu_move_cla);
-        shade_stock_movement = (Button) view.findViewById(R.id.shade_stock_movement);
         sample_stock_movement = (Button) view.findViewById(R.id.stock_movement);
-        empty_bin = (Button) view.findViewById(R.id.empty_bin);
         grt_hu_move = (Button) view.findViewById(R.id.grt_hu_move);
         hu_weight = view.findViewById(R.id.outward_hu_weight);
         tvs_paperless_picking= view.findViewById(R.id.tvs_paperless_picking);
@@ -114,8 +112,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         picking.setOnClickListener(this);
         hu_scan.setOnClickListener(this);
         paperless_picking.setOnClickListener(this);
-        shade_stock_movement.setOnClickListener(this);
-        empty_bin.setOnClickListener(this);
         grt_hu_move.setOnClickListener(this);
         hu_weight.setOnClickListener(this);
         tvs_paperless_picking.setOnClickListener(this);
@@ -171,9 +167,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
                 fragment = new GrtHuMoveFragment();
                 break;
 
-            case R.id.empty_bin:
-                fragment = new EmptyBinFragment();
-                break;
             case R.id.dc_grt:
 
                 box.getBox("Alert", "Implementation In Process");
@@ -188,10 +181,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
 
                 box.getBox("Alert", "Implementation In Process");
                 //  fragment=new Sloc_To_Sloc_without_WM_Fragment();
-                break;
-
-            case R.id.shade_stock_movement:
-                fragment = new ShadeStockMovementFragment();
                 break;
 
             case R.id.outward_hu_weight:

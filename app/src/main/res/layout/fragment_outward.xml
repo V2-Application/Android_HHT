@@ -78,37 +78,11 @@
 
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="Empty Bin "
-                    android:id="@+id/empty_bin"
-                    android:layout_margin="5dp"
-                    android:layout_weight="1"
-                    android:textColor="#fff"
-                    android:background="#e71821" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="GRT Hu Move "
-                    android:layout_weight="1"
-                    android:id="@+id/grt_hu_move"
-                    android:layout_margin="5dp"
-                    android:textColor="#fff"
-                    android:background="#e71821" />
-
-            </LinearLayout>
-
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Shade Stock Movement"
-                android:id="@+id/shade_stock_movement"
+                android:text="GRT Hu Move "
+                android:id="@+id/grt_hu_move"
                 android:layout_margin="5dp"
                 android:textColor="#fff"
                 android:background="#e71821" />

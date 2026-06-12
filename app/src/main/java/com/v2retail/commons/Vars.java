@@ -379,4 +379,30 @@ public class Vars {
     public static String ZWM_GATE_BIN_VALIDATION4_N = "ZWM_GATE_BIN_VALIDATION4_N";
     /** LOT Picking — validate pallet / pick transaction (IM_USER, IM_PLANT, IM_GET, IM_PALETTE, IM_BIN). */
     public static String ZWM_GATE_PALLATE_VALIDATE4_N = "ZWM_GATE_PALLATE_VALIDATE4_N";
+
+    // ── DC Unloading: HU Scanning & Putway to Pallet ─────────────────────────────
+    /** DC Unloading — validate scanned HU (IM_USER, IM_PLANT, IM_HU → ET_DATA, EX_RETURN). */
+    public static String ZVND_UNLOAD_HU_VALIDATE_RFC = "ZVND_UNLOAD_HU_VALIDATE_RFC";
+    /** DC Unloading — validate pallet against HU (IM_USER, IM_PLANT, IM_HU, IM_PALL → EX_RETURN). */
+    public static String ZVND_UNLOAD_PALLATE_VALIDATION = "ZVND_UNLOAD_PALLATE_VALIDATION";
+    /** DC Unloading — save HU to pallet (IM_USER, IM_PARMS → EX_RETURN). */
+    public static String ZVND_UNLOAD_SAVE_RFC = "ZVND_UNLOAD_SAVE_RFC";
+
+    // ── DC Inbound: HU Putway to BIN ─────────────────────────────────────────────
+    /** Inbound Putway to BIN — validate destination BIN (IM_USER, IM_PLANT, IM_BIN → EX_RETURN). */
+    public static String ZVND_PUTWAY_BIN_VAL_RFC = "ZVND_PUTWAY_BIN_VAL_RFC";
+    /** Inbound Putway to BIN — validate palette (IM_USER, IM_PLANT, IM_BIN, IM_PALL → ET_DATA, EX_RETURN). */
+    public static String ZVND_PUTWAY_PALETTE_VAL_RFC = "ZVND_PUTWAY_PALETTE_VAL_RFC";
+    /** Inbound Putway to BIN — save palette to BIN (IM_USER, IT_DATA → EX_RETURN). */
+    public static String ZVND_PUTWAY_SAVE_DATA_RFC = "ZVND_PUTWAY_SAVE_DATA_RFC";
+
+    // ── DC Inbound: HU Picking from BIN (GateLot2) ────────────────────────────────
+    /** HU Picking from BIN — validate picklist (IM_USER, IM_PLANT, IM_PICKLIST → ET_DATA, EX_RETURN). */
+    public static String ZVND_GATELOT2_PICKLIST_VAL_RFC = "ZVND_GATELOT2_PICKLIST_VAL_RFC";
+    /** HU Picking from BIN — validate BIN (IM_USER, IM_PLANT, IM_PICKLIST, IM_BIN → EX_RETURN). */
+    public static String ZVND_GATELOT2_BIN_VAL_RFC = "ZVND_GATELOT2_BIN_VAL_RFC";
+    /** HU Picking from BIN — validate palette (IM_USER, IM_PLANT, IM_PICKLIST, IM_BIN, IM_PALL → EX_RETURN). */
+    public static String ZVND_GATELOT2_PALETTE_VAL_RFC = "ZVND_GATELOT2_PALETTE_VAL_RFC";
+    /** HU Picking from BIN — save pick transaction (IM_USER, IT_DATA → EX_RETURN). */
+    public static String ZVND_GATELOT2_SAVE_DATA_RFC = "ZVND_GATELOT2_SAVE_DATA_RFC";
 }

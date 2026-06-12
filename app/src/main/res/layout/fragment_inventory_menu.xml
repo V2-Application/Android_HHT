@@ -56,6 +56,24 @@
             android:textColor="#fff"
             android:background="#e71821" />
 
+        <Button
+            android:id="@+id/inventory_menu_empty_bin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Empty Bin"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:id="@+id/inventory_menu_shade_stock_movement"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Shade Stock Movement"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>

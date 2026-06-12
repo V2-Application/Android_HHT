@@ -25,6 +25,8 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
     Button btn_bin_crate_identifier;
     Button btn_msa_live_stock_take;
     Button btn_scan_hu_article;
+    Button btn_empty_bin;
+    Button btn_shade_stock_movement;
     FragmentManager fm;
 
     public MenuInventoryFragment() {
@@ -81,12 +83,16 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
         btn_bin_crate_identifier = rootView.findViewById(R.id.inventory_menu_bin_crate_identifier);
         btn_msa_live_stock_take = rootView.findViewById(R.id.inventory_menu_msa_live_stock_take);
         btn_scan_hu_article = rootView.findViewById(R.id.inventory_menu_scan_hu_article);
+        btn_empty_bin = rootView.findViewById(R.id.inventory_menu_empty_bin);
+        btn_shade_stock_movement = rootView.findViewById(R.id.inventory_menu_shade_stock_movement);
 
         btn_v11_to_msa.setOnClickListener(this);
         btn_stock_take.setOnClickListener(this);
         btn_bin_crate_identifier.setOnClickListener(this);
         btn_msa_live_stock_take.setOnClickListener(this);
         btn_scan_hu_article.setOnClickListener(this);
+        btn_empty_bin.setOnClickListener(this);
+        btn_shade_stock_movement.setOnClickListener(this);
 
         return rootView;
     }
@@ -109,6 +115,12 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
                 break;
             case R.id.inventory_menu_scan_hu_article:
                 fragment = FragmentScanHuArticle.newInstance();
+                break;
+            case R.id.inventory_menu_empty_bin:
+                fragment = new EmptyBinFragment();
+                break;
+            case R.id.inventory_menu_shade_stock_movement:
+                fragment = new ShadeStockMovementFragment();
                 break;
         }
 

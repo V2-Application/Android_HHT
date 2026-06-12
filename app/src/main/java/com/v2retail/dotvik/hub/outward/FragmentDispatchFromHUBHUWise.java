@@ -299,11 +299,11 @@ public class FragmentDispatchFromHUBHUWise extends Fragment implements View.OnCl
             scannedHus = new HashMap<>();
             JSONArray arrEtHU = responsebody.getJSONArray("IT_EXIDV");
             int length = arrEtHU.length();
-            for(int i=1; i < length; i++){
+            for(int i=0; i < length; i++){
                 GRCHU etData = new Gson().fromJson(arrEtHU.get(i).toString(), GRCHU.class);
                 hus.put(UIFuncs.removeLeadingZeros(etData.getHuno()), etData);
             }
-            if(length > 1){
+            if(length > 0){
                 step2();
             }
         }catch (Exception exce){
