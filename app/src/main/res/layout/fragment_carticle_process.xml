@@ -279,15 +279,16 @@
             android:id="@+id/control_row_qc_status">
 
             <RadioGroup
-                android:id="@+id/radio_group_001_006"
+                android:id="@+id/radio_group_0017_0006"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_horizontal"
                 android:background="@color/bgCard"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:checkedButton="@+id/radio_002msa_carticle_process_0017">
 
                 <RadioButton
-                    android:id="@+id/radio_002msa_carticle_process_0001"
+                    android:id="@+id/radio_002msa_carticle_process_0017"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="3dp"

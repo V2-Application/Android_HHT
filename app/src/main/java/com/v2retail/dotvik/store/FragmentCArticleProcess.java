@@ -18,7 +18,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import com.android.volley.AuthFailureError;
@@ -73,7 +73,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
 
     Button btn_back, btn_reset, btn_save;
     EditText txt_store_code, txt_scan_barcode, txt_article, txt_sqty, txt_tqty, txt_cur_discount, txt_prev_discount;
-    RadioButton radio_0001,radio_0006;
+    RadioGroup radioGroupTransfer;
     double totalQty = 0;
     Map<String, ETEan> eanDataMap = new HashMap<>();
     Map<String, DiscountArticle> discountDataMap = new HashMap<>();
@@ -124,8 +124,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         btn_reset = rootView.findViewById(R.id.btn_002msa_carticle_process_reset);
         btn_save = rootView.findViewById(R.id.btn_002msa_carticle_process_save);
 
-        radio_0001 = rootView.findViewById(R.id.radio_002msa_carticle_process_0001);
-        radio_0006 = rootView.findViewById(R.id.radio_002msa_carticle_process_0006);
+        radioGroupTransfer = rootView.findViewById(R.id.radio_group_0017_0006);
 
         btn_back.setOnClickListener(this);
         btn_reset.setOnClickListener(this);
@@ -133,7 +132,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
 
         clear();
         addInputEvents();
-        radio_0001.setChecked(true);
+        radioGroupTransfer.check(R.id.radio_002msa_carticle_process_0017);
 
         return rootView;
     }
@@ -219,6 +218,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         txt_prev_discount.setText("");
         txt_sqty.setText("0");
         txt_tqty.setText(Util.formatDouble(totalQty));
+        radioGroupTransfer.check(R.id.radio_002msa_carticle_process_0017);
         UIFuncs.enableInput(con, txt_scan_barcode);
     }
 
@@ -357,6 +357,16 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
         UIFuncs.enableInput(con, txt_scan_barcode);
     }
 
+    private void putTransferDirectionParams(JSONObject args) throws JSONException {
+        int checkedId = radioGroupTransfer.getCheckedRadioButtonId();
+        boolean is0017To0006 = checkedId == R.id.radio_002msa_carticle_process_0017
+                || checkedId == View.NO_ID;
+        args.put("IM_0017", is0017To0006 ? "X" : "");
+        args.put("IM_0006", is0017To0006 ? "" : "X");
+        Log.d(TAG, "transfer direction -> IM_0017=" + (is0017To0006 ? "X" : "")
+                + ", IM_0006=" + (is0017To0006 ? "" : "X"));
+    }
+
     private void saveData(){
         if(discountArticleScanMap.isEmpty()){
             box.getBox("No Data Scanned", "No data scanned. Please scan some HU");
@@ -373,8 +383,7 @@ public class FragmentCArticleProcess extends Fragment implements View.OnClickLis
                 args.put("bapiname", Vars.ZSTORE_DISCOUNT_SAVE_EAN_DATA);
                 args.put("IM_PLANT", WERKS);
                 args.put("IM_USER", WERKS);
-                args.put("IM_0017", radio_0001.isChecked() ? "X":"");
-                args.put("IM_0006", radio_0006.isChecked() ? "X":"");
+                putTransferDirectionParams(args);
                 args.put("IT_DATA", dataToSave);
                 showProcessingAndSubmit(Vars.ZSTORE_DISCOUNT_SAVE_EAN_DATA, REQUEST_SAVE, args);
             } catch (JSONException e) {

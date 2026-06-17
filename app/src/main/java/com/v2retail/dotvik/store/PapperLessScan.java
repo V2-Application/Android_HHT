@@ -123,23 +123,6 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
     V2RDB db;
     private String startdate;
     private String starttime;
-    private String lastProcessedArticle = "";
-    private long lastProcessedArticleAtMs = 0L;
-
-    private boolean shouldProcessArticleNow(String article) {
-        if (article == null) return false;
-        String a = article.trim();
-        if (a.isEmpty()) return false;
-        long now = android.os.SystemClock.elapsedRealtime();
-        // Many scanners send an Enter key after the barcode, which can trigger BOTH
-        // TextWatcher and EditorAction. Guard to avoid double-processing the same scan.
-        if (a.equals(lastProcessedArticle) && (now - lastProcessedArticleAtMs) < 800) {
-            return false;
-        }
-        lastProcessedArticle = a;
-        lastProcessedArticleAtMs = now;
-        return true;
-    }
 
     private JSONArray normalizeEtBinMc(JSONArray raw) {
         if (raw == null) return null;
@@ -553,9 +536,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                 String article = s.toString();
                 if(scannerReading) {
                     Log.d(TAG, "Scanned article No: " +  article);
-                    if (shouldProcessArticleNow(article)) {
-                        handleArticleScanning(article);
-                    }
+                    handleArticleScanning(article);
                 }
 
             }
@@ -566,11 +547,7 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
                     Log.d(TAG, "Article Go");
-                    String article = artNoEditText.getText().toString();
-                    if (!shouldProcessArticleNow(article)) {
-                        return true;
-                    }
-                    if (handleArticleScanning(article)) {
+                    if (handleArticleScanning(artNoEditText.getText().toString())) {
                         return true;
                     } else {
                         return false;
@@ -843,13 +820,12 @@ public class PapperLessScan extends Fragment implements IBarcodeResult  {
                 try {
                     String matnr = eanObject.optString("MATNR", "").trim();
                     String toBeScan = secondItemRemainQty.getText().toString();
-                    int defaultQtyForScan = parseIntSafe(eanObject.optString("UMREZ", "1"));
-                    if (defaultQtyForScan <= 0) {
-                        defaultQtyForScan = 1;
-                    }
-                    int enteredQtyForScan = parseIntSafe(sqtyEditText != null ? sqtyEditText.getText().toString() : "");
-                    // If operator has entered SQty, use it; otherwise fall back to UMREZ from barcode master.
-                    int qtyForThisScan = enteredQtyForScan > 0 ? enteredQtyForScan : defaultQtyForScan;
+                    // One barcode scan = one increment of the barcode pack qty (UMREZ), exactly like v12.106.
+                    // Do NOT read SQty back here: SQty is a display field that the processing methods write
+                    // the running scanned TOTAL into. Reading it as an "entered quantity" made each scan add
+                    // the accumulated count, doubling the quantity (1, 2, 4, ...) and then tripping the
+                    // "greater than picklist" check so the count stopped updating.
+                    int qtyForThisScan = parseIntSafe(eanObject.optString("UMREZ", "1"));
                     if (qtyForThisScan <= 0) {
                         qtyForThisScan = 1;
                     }

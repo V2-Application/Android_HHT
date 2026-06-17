@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import android.text.Editable;
@@ -19,6 +20,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -39,7 +42,6 @@ import com.v2retail.ApplicationController;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
-import com.google.gson.Gson;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.modal.material.ETPACKMAT;
 import com.v2retail.util.AlertBox;
@@ -62,6 +64,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Store GRT Process screen.
@@ -73,6 +77,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     private static final String SOURCE_0001 = "0001";
     private static final String SOURCE_0006 = "0006";
 
+    private static final String SCAN_MODE_ALL = "ALL";
+    private static final String SCAN_MODE_SIZE = "SIZE";
+
     private static final String PICKLIST_HINT = "Select Picklist No.";
     private static final String PACKING_HINT = "Select Packing Material";
 
@@ -83,6 +90,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     private static final int REQUEST_GET_PACKING = 2003;
     private static final int REQUEST_VALIDATE_EXHU = 2004;
     private static final int REQUEST_SAVE = 2005;
+    private static final String VOLLEY_TAG = "FragmentStoreGrtProcess";
 
     View rootView;
     Context con;
@@ -90,6 +98,13 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     ProgressDialog dialog;
     int activeRequests = 0;
     FragmentManager fm;
+    ExecutorService picklistParseExecutor;
+    volatile boolean viewDestroyed = false;
+    volatile boolean suppressPicklistSelection = false;
+    volatile int picklistDataLoadSeq = 0;
+    boolean packingMaterialsLoaded = false;
+    ArrayAdapter<String> picklistSpinnerAdapter;
+    ArrayAdapter<String> packingSpinnerAdapter;
 
     String URL = "";
     String WERKS = "";
@@ -98,13 +113,17 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
     LinearLayout source0001, source0006;
     Spinner spinnerPicklistNo, spinnerPackingMaterial;
+    RadioGroup radioScanModeGroup;
+    RadioButton radioScanModeAll, radioScanModeSize;
     EditText txtExternalHu, txtFdesPlant, txtArticle, txtScanQty;
     Button btnCancel, btnReset, btnSubmit;
 
     String selectedSource = SOURCE_0001;
+    String selectedScanMode = SCAN_MODE_ALL;
 
-    // picklistNo -> (MAJ_CAT -> pending qty)
+    // picklistNo -> (category key -> pending qty)
     Map<String, Map<String, Double>> picklistCategoryPend = new HashMap<>();
+    List<PicklistPendEntry> picklistPendEntries = new ArrayList<>();
     // picklistNo -> F_DES_SITE (destination plant, IM_WERKS_DES)
     Map<String, String> picklistDesSite = new HashMap<>();
     // picklistNo -> D_HUB (destination PTL hub)
@@ -113,7 +132,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     Map<String, String> picklistDesName = new HashMap<>();
     /** Source site name from RFC export ES_S_NAME (NAME1). */
     String sourceSiteName = "";
-    // MAJ_CAT (for the currently selected picklist) -> scanned qty so far
+    // category key (MAJ_CAT or SIZE1 per scan mode) -> scanned qty so far
     Map<String, Double> scannedQtyByCategory = new HashMap<>();
     // packing material records (index aligns with spinner items, minus the hint at position 0)
     List<ETPACKMAT> packMaterialRecords = new ArrayList<>();
@@ -125,8 +144,17 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     Map<String, EanRecord> eanByScanCode = new HashMap<>();
     /** Destination plant from EX_RDC after picklist data load. */
     String picklistRdcPlant = "";
+    /** Cached article/EAN data per picklist to avoid repeat SAP calls. */
+    final Map<String, PicklistDataParseResult> picklistDataCache = new HashMap<>();
     /** True after ZWM_ST_GRT_EXHU_VALIDATION succeeds for the current External HU scan. */
     boolean externalHuValidated = false;
+
+    private static class PicklistPendEntry {
+        String picklistNo;
+        String majCat;
+        String size1;
+        double pend;
+    }
 
     private static class PicklistArticleLine {
         String picklistNo;
@@ -154,6 +182,22 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         String floor;
         String bgt;
         double scanQty;
+    }
+
+    private static class PicklistDataParseResult {
+        Map<String, PicklistArticleLine> articlesByMatnr = new HashMap<>();
+        Map<String, EanRecord> eanByScanCode = new HashMap<>();
+        String rdcPlant = "";
+    }
+
+    private static class PicklistNumbersParseResult {
+        List<PicklistPendEntry> pendEntries = new ArrayList<>();
+        Map<String, Map<String, Double>> categoryPend = new HashMap<>();
+        Map<String, String> desSite = new HashMap<>();
+        Map<String, String> desHub = new HashMap<>();
+        Map<String, String> desName = new HashMap<>();
+        List<String> picklistNos = new ArrayList<>();
+        String sourceSiteName = "";
     }
 
     public FragmentStoreGrtProcess() {
@@ -189,13 +233,15 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         USER = data.read("USER");
         tvsPrinter = data.read(Vars.TVS_PRINTER);
         PlantNames.load(URL);
-        resolveTvsPrinter(data);
 
         source0001 = rootView.findViewById(R.id.store_grt_source_0001);
         source0006 = rootView.findViewById(R.id.store_grt_source_0006);
 
         spinnerPicklistNo = rootView.findViewById(R.id.store_grt_picklist_no);
         spinnerPackingMaterial = rootView.findViewById(R.id.store_grt_packing_material);
+        radioScanModeGroup = rootView.findViewById(R.id.store_grt_scan_mode_group);
+        radioScanModeAll = rootView.findViewById(R.id.store_grt_scan_mode_all);
+        radioScanModeSize = rootView.findViewById(R.id.store_grt_scan_mode_size);
         txtExternalHu = rootView.findViewById(R.id.store_grt_external_hu);
         txtFdesPlant = rootView.findViewById(R.id.store_grt_fdes_plant);
         txtArticle = rootView.findViewById(R.id.store_grt_article);
@@ -213,14 +259,37 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
         setupDropdowns();
         addPicklistSelectionListener();
+        addScanModeListener();
         addInputEvents();
         selectSource(SOURCE_0001);
         clear();
 
+        viewDestroyed = false;
+        packingMaterialsLoaded = false;
+        picklistParseExecutor = Executors.newSingleThreadExecutor();
+
         loadPicklistNumbers();
-        loadPackingMaterials();
 
         return rootView;
+    }
+
+    @Override
+    public void onDestroyView() {
+        viewDestroyed = true;
+        if (spinnerPicklistNo != null) {
+            spinnerPicklistNo.setOnItemSelectedListener(null);
+        }
+        ApplicationController.getInstance().cancelPendingRequests(VOLLEY_TAG);
+        dismissDialogSafely();
+        if (picklistParseExecutor != null) {
+            picklistParseExecutor.shutdownNow();
+            picklistParseExecutor = null;
+        }
+        picklistDataCache.clear();
+        picklistPendEntries.clear();
+        picklistArticlesByMatnr.clear();
+        eanByScanCode.clear();
+        super.onDestroyView();
     }
 
     @Override
@@ -262,11 +331,53 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     private void setupDropdowns() {
         List<String> picklistItems = new ArrayList<>();
         picklistItems.add(PICKLIST_HINT);
-        setSpinnerData(spinnerPicklistNo, picklistItems);
+        picklistSpinnerAdapter = new ArrayAdapter<>(con,
+                android.R.layout.simple_spinner_item, picklistItems);
+        picklistSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPicklistNo.setAdapter(picklistSpinnerAdapter);
 
         List<String> packingItems = new ArrayList<>();
         packingItems.add(PACKING_HINT);
-        setSpinnerData(spinnerPackingMaterial, packingItems);
+        packingSpinnerAdapter = new ArrayAdapter<>(con,
+                android.R.layout.simple_spinner_item, packingItems);
+        packingSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPackingMaterial.setAdapter(packingSpinnerAdapter);
+    }
+
+    private void updatePicklistSpinnerItems(List<String> items) {
+        if (picklistSpinnerAdapter == null) {
+            setSpinnerData(spinnerPicklistNo, items);
+            return;
+        }
+        suppressPicklistSelection = true;
+        try {
+            picklistSpinnerAdapter.clear();
+            picklistSpinnerAdapter.addAll(items);
+            picklistSpinnerAdapter.notifyDataSetChanged();
+            spinnerPicklistNo.setSelection(0);
+        } finally {
+            suppressPicklistSelection = false;
+        }
+    }
+
+    private void updatePackingSpinnerItems(List<String> items) {
+        if (packingSpinnerAdapter == null) {
+            setSpinnerData(spinnerPackingMaterial, items);
+            return;
+        }
+        packingSpinnerAdapter.clear();
+        packingSpinnerAdapter.addAll(items);
+        packingSpinnerAdapter.notifyDataSetChanged();
+        spinnerPackingMaterial.setSelection(0);
+    }
+
+    private void setPicklistSpinnerSelection(int index) {
+        suppressPicklistSelection = true;
+        try {
+            spinnerPicklistNo.setSelection(index);
+        } finally {
+            suppressPicklistSelection = false;
+        }
     }
 
     private void setSpinnerData(Spinner spinner, List<String> items) {
@@ -276,10 +387,85 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         spinner.setAdapter(adapter);
     }
 
+    private void addScanModeListener() {
+        radioScanModeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                String previousMode = selectedScanMode;
+                if (checkedId == R.id.store_grt_scan_mode_size) {
+                    selectedScanMode = SCAN_MODE_SIZE;
+                } else {
+                    selectedScanMode = SCAN_MODE_ALL;
+                }
+                if (!previousMode.equals(selectedScanMode)) {
+                    clearForScanModeChange();
+                }
+            }
+        });
+    }
+
+    /** Full screen reset when ALL/SIZE changes; keeps the newly selected scan mode. */
+    private void clearForScanModeChange() {
+        if (spinnerPicklistNo.getAdapter() != null && spinnerPicklistNo.getAdapter().getCount() > 0) {
+            setPicklistSpinnerSelection(0);
+        }
+        if (spinnerPackingMaterial.getAdapter() != null && spinnerPackingMaterial.getAdapter().getCount() > 0) {
+            spinnerPackingMaterial.setSelection(0);
+        }
+        resetPicklistScanState();
+        externalHuValidated = false;
+        txtExternalHu.setText("");
+        txtFdesPlant.setText("");
+        txtArticle.setText("");
+        txtScanQty.setText("0");
+        rebuildPicklistCategoryPend();
+        txtExternalHu.requestFocus();
+        UIFuncs.enableInput(con, txtExternalHu);
+    }
+
+    /** SIZE mode: SIZE1 when present, else MAJ_CAT. ALL mode: always MAJ_CAT. */
+    private String resolveCategoryKey(String majCat, String size1) {
+        if (SCAN_MODE_SIZE.equals(selectedScanMode)) {
+            if (size1 != null && !size1.trim().isEmpty()) {
+                return size1.trim();
+            }
+        }
+        return majCat != null ? majCat.trim() : "";
+    }
+
+    private void putPicklistCategoryPend(Map<String, Double> catMap, String catKey, double pend) {
+        String key = catKey.toUpperCase();
+        if (SCAN_MODE_SIZE.equals(selectedScanMode)) {
+            Double existing = catMap.get(key);
+            catMap.put(key, existing != null ? existing + pend : pend);
+        } else {
+            catMap.put(key, pend);
+        }
+    }
+
+    private void rebuildPicklistCategoryPend() {
+        picklistCategoryPend = new HashMap<>();
+        for (PicklistPendEntry entry : picklistPendEntries) {
+            String catKey = resolveCategoryKey(entry.majCat, entry.size1);
+            if (catKey.isEmpty()) {
+                continue;
+            }
+            Map<String, Double> catMap = picklistCategoryPend.get(entry.picklistNo);
+            if (catMap == null) {
+                catMap = new HashMap<>();
+                picklistCategoryPend.put(entry.picklistNo, catMap);
+            }
+            putPicklistCategoryPend(catMap, catKey, entry.pend);
+        }
+    }
+
     private void addPicklistSelectionListener() {
         spinnerPicklistNo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (suppressPicklistSelection) {
+                    return;
+                }
                 resetPicklistScanState();
                 applyPlantForSelectedPicklist();
                 String picklist = getSelectedPicklist();
@@ -344,7 +530,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
     private void clear() {
         if (spinnerPicklistNo.getAdapter() != null && spinnerPicklistNo.getAdapter().getCount() > 0) {
-            spinnerPicklistNo.setSelection(0);
+            setPicklistSpinnerSelection(0);
         }
         if (spinnerPackingMaterial.getAdapter() != null && spinnerPackingMaterial.getAdapter().getCount() > 0) {
             spinnerPackingMaterial.setSelection(0);
@@ -355,6 +541,11 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         txtFdesPlant.setText("");
         txtArticle.setText("");
         txtScanQty.setText("0");
+        selectedScanMode = SCAN_MODE_ALL;
+        if (radioScanModeAll != null) {
+            radioScanModeAll.setChecked(true);
+        }
+        rebuildPicklistCategoryPend();
     }
 
     private void addInputEvents() {
@@ -477,7 +668,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
 
-        String category = articleLine.majCat != null ? articleLine.majCat.trim() : "";
+        String category = resolveCategoryKey(articleLine.majCat, articleLine.size1);
         if (category.isEmpty()) {
             UIFuncs.errorSound(con);
             box.getBox("Err", "Could not determine the article category.");
@@ -587,11 +778,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return direct;
         }
         String noZeros = UIFuncs.removeLeadingZeros(upper);
-        for (Map.Entry<String, PicklistArticleLine> entry : picklistArticlesByMatnr.entrySet()) {
-            String key = entry.getKey();
-            if (key.equalsIgnoreCase(upper)
-                    || UIFuncs.removeLeadingZeros(key).equalsIgnoreCase(noZeros)) {
-                return entry.getValue();
+        if (!noZeros.isEmpty()) {
+            direct = picklistArticlesByMatnr.get(noZeros.toUpperCase());
+            if (direct != null) {
+                return direct;
             }
         }
         return null;
@@ -616,16 +806,20 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private void indexEanRecord(EanRecord record) {
-        if (record == null || record.matnr == null || record.matnr.isEmpty()) {
+        indexEanRecord(eanByScanCode, record);
+    }
+
+    private static void indexEanRecord(Map<String, EanRecord> target, EanRecord record) {
+        if (target == null || record == null || record.matnr == null || record.matnr.isEmpty()) {
             return;
         }
-        eanByScanCode.put(record.matnr.toUpperCase(), record);
+        target.put(record.matnr.toUpperCase(), record);
         String nz = UIFuncs.removeLeadingZeros(record.matnr);
         if (!nz.isEmpty()) {
-            eanByScanCode.put(nz.toUpperCase(), record);
+            target.put(nz.toUpperCase(), record);
         }
         if (record.ean11 != null && !record.ean11.isEmpty()) {
-            eanByScanCode.put(record.ean11.toUpperCase(), record);
+            target.put(record.ean11.toUpperCase(), record);
         }
     }
 
@@ -805,10 +999,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         focusArticleField();
     }
 
-    private void resolveTvsPrinter(SharedPreferencesData data) {
-        resolveTvsPrinterForPrint(data);
-    }
-
     /** Resolves paired TVS printer name (exact match, then 4B-2033* prefix). */
     private boolean resolveTvsPrinterForPrint(SharedPreferencesData data) {
         TSPLPrinter helper = new TSPLPrinter(con);
@@ -827,6 +1017,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return true;
         }
         return false;
+    }
+
+    private void ensurePackingMaterialsLoaded() {
+        if (!packingMaterialsLoaded && !viewDestroyed && isAdded()) {
+            loadPackingMaterials();
+        }
     }
 
     private String extractHuFromSaveResponse(JSONObject response, JSONObject returnobj) {
@@ -995,13 +1191,22 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private void loadPicklistData(String picklistNo) {
+        if (picklistNo == null || picklistNo.isEmpty()) {
+            return;
+        }
+        PicklistDataParseResult cached = picklistDataCache.get(picklistNo);
+        if (cached != null) {
+            applyPicklistDataResult(picklistNo, cached);
+            return;
+        }
+        final int loadSeq = ++picklistDataLoadSeq;
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_ST_GRT_GET_PICKLIST_DATA);
             args.put("IM_PLANT", WERKS);
             args.put("IM_USER", USER);
             args.put("IM_PICKLIST", picklistNo);
-            showProcessingAndSubmit(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, REQUEST_GET_PICKLIST_DATA, args);
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, REQUEST_GET_PICKLIST_DATA, args, loadSeq);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);
@@ -1010,131 +1215,255 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
     }
 
-    private void bindPicklistData(JSONObject response) {
+    private void bindPicklistData(JSONObject response, int loadSeq) {
+        if (viewDestroyed || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
+            finishRequest();
+            return;
+        }
+        if (loadSeq != picklistDataLoadSeq) {
+            finishRequest();
+            return;
+        }
         try {
-            picklistArticlesByMatnr = new HashMap<>();
-            eanByScanCode = new HashMap<>();
-
-            String exRdc = response.optString("EX_RDC", "").trim();
-            if (!exRdc.isEmpty() && !"null".equalsIgnoreCase(exRdc)) {
-                picklistRdcPlant = exRdc;
-                applyPlantForSelectedPicklist();
-            }
-
-            JSONArray etData = response.optJSONArray("ET_DATA");
-            if (etData != null) {
-                for (int i = 0; i < etData.length(); i++) {
-                    JSONObject row = etData.optJSONObject(i);
-                    if (row == null || isPicklistDataHeaderRow(row)) {
-                        continue;
-                    }
-                    String matnr = row.optString("MATNR", "").trim();
-                    if (matnr.isEmpty()) {
-                        continue;
-                    }
-                    PicklistArticleLine line = new PicklistArticleLine();
-                    line.picklistNo = row.optString("PICKLIST_NO", "").trim();
-                    line.source = row.optString("SOUR", row.optString("SOURCE", WERKS)).trim();
-                    line.majCat = row.optString("MAJ_CAT", "").trim();
-                    line.size1 = row.optString("SIZE1", "").trim();
-                    line.floor = row.optString("FLOOR", "").trim();
-                    line.bgt = row.optString("BGT", "").trim();
-                    line.matnr = matnr;
-                    line.matkl = row.optString("MATKL", "").trim();
-                    picklistArticlesByMatnr.put(matnr.toUpperCase(), line);
+            final String exRdc = response.optString("EX_RDC", "").trim();
+            final JSONArray etData = response.optJSONArray("ET_DATA");
+            final JSONArray etEanData = response.optJSONArray("ET_EAN_DATA");
+            final String werks = WERKS;
+            picklistParseExecutor.execute(() -> {
+                if (loadSeq != picklistDataLoadSeq) {
+                    return;
                 }
-            }
-
-            JSONArray etEanData = response.optJSONArray("ET_EAN_DATA");
-            if (etEanData != null) {
-                for (int i = 0; i < etEanData.length(); i++) {
-                    JSONObject row = etEanData.optJSONObject(i);
-                    if (row == null || isEanDataHeaderRow(row)) {
-                        continue;
-                    }
-                    String matnr = row.optString("MATNR", "").trim();
-                    if (matnr.isEmpty()) {
-                        continue;
-                    }
-                    EanRecord record = new EanRecord();
-                    record.matnr = matnr;
-                    record.ean11 = row.optString("EAN11", "").trim();
-                    record.umrez = Util.convertStringToDouble(row.optString("UMREZ", "1"));
-                    if (record.umrez <= 0) {
-                        record.umrez = 1;
-                    }
-                    indexEanRecord(record);
+                PicklistDataParseResult parsed = parsePicklistDataArrays(exRdc, etData, etEanData, werks);
+                FragmentActivity activity = getActivity();
+                if (activity == null || viewDestroyed || loadSeq != picklistDataLoadSeq) {
+                    return;
                 }
-            }
-
-            if (picklistArticlesByMatnr.isEmpty()) {
-                UIFuncs.errorSound(con);
-                box.getBox("No Data", "No picklist article data returned.");
-            }
+                activity.runOnUiThread(() -> {
+                    if (viewDestroyed || !isAdded() || loadSeq != picklistDataLoadSeq) {
+                        finishRequest();
+                        return;
+                    }
+                    String picklist = getSelectedPicklist();
+                    if (!picklist.isEmpty() && !parsed.articlesByMatnr.isEmpty()) {
+                        picklistDataCache.put(picklist, parsed);
+                    }
+                    applyPicklistDataResult(picklist, parsed);
+                    finishRequest();
+                });
+            });
         } catch (Exception exce) {
+            finishRequest();
             box.getErrBox(exce);
         }
     }
 
-    private void bindPicklistNumbers(JSONObject response) {
-        try {
-            JSONArray arr = response.optJSONArray("ET_PICKLIST_NO");
-            Set<String> picklistNos = new LinkedHashSet<>();
-            picklistCategoryPend = new HashMap<>();
-            picklistDesSite = new HashMap<>();
-            picklistDesHub = new HashMap<>();
-            picklistDesName = new HashMap<>();
-            sourceSiteName = readSapNameExport(response, "ES_S_NAME");
-            if (arr != null) {
-                for (int i = 0; i < arr.length(); i++) {
-                    JSONObject row = arr.optJSONObject(i);
-                    if (row == null || isHeaderRow(row)) {
-                        continue;
-                    }
-                    String picklistNo = row.optString("PICKLIST_NO", "").trim();
-                    if (picklistNo.isEmpty()) {
-                        continue;
-                    }
-                    picklistNos.add(picklistNo);
+    private static PicklistDataParseResult parsePicklistDataArrays(String exRdc,
+                                                                   JSONArray etData,
+                                                                   JSONArray etEanData,
+                                                                   String werks) {
+        PicklistDataParseResult result = new PicklistDataParseResult();
+        if (exRdc != null && !exRdc.isEmpty() && !"null".equalsIgnoreCase(exRdc)) {
+            result.rdcPlant = exRdc;
+        }
 
-                    String fDesSite = row.optString("F_DES_SITE", "").trim();
-                    if (!fDesSite.isEmpty()) {
-                        picklistDesSite.put(picklistNo, fDesSite);
-                    }
-                    String dHub = row.optString("D_HUB", "").trim();
-                    if (!dHub.isEmpty()) {
-                        picklistDesHub.put(picklistNo, dHub);
-                    }
-                    String dName = row.optString("D_NAME", "").trim();
-                    if (!dName.isEmpty()) {
-                        picklistDesName.put(picklistNo, dName);
-                    }
-
-                    String majCat = row.optString("MAJ_CAT", "").trim();
-                    String pendQty = row.optString("PEND_QTY", row.optString("PEND", "0"));
-                    double pend = Util.convertStringToDouble(pendQty);
-                    if (!majCat.isEmpty()) {
-                        Map<String, Double> catMap = picklistCategoryPend.get(picklistNo);
-                        if (catMap == null) {
-                            catMap = new HashMap<>();
-                            picklistCategoryPend.put(picklistNo, catMap);
-                        }
-                        catMap.put(majCat.toUpperCase(), pend);
-                    }
+        if (etData != null) {
+            for (int i = 0; i < etData.length(); i++) {
+                JSONObject row = etData.optJSONObject(i);
+                if (row == null || isPicklistDataHeaderRow(row)) {
+                    continue;
+                }
+                String matnr = row.optString("MATNR", "").trim();
+                if (matnr.isEmpty()) {
+                    continue;
+                }
+                PicklistArticleLine line = new PicklistArticleLine();
+                line.picklistNo = row.optString("PICKLIST_NO", "").trim();
+                line.source = row.optString("SOUR", row.optString("SOURCE", werks)).trim();
+                line.majCat = row.optString("MAJ_CAT", "").trim();
+                line.size1 = row.optString("SIZE1", "").trim();
+                line.floor = row.optString("FLOOR", "").trim();
+                line.bgt = row.optString("BGT", "").trim();
+                line.matnr = matnr;
+                line.matkl = row.optString("MATKL", "").trim();
+                String matnrKey = matnr.toUpperCase();
+                result.articlesByMatnr.put(matnrKey, line);
+                String noZeros = UIFuncs.removeLeadingZeros(matnr);
+                if (!noZeros.isEmpty()) {
+                    result.articlesByMatnr.putIfAbsent(noZeros.toUpperCase(), line);
                 }
             }
+        }
 
-            List<String> items = new ArrayList<>();
-            items.add(PICKLIST_HINT);
-            items.addAll(picklistNos);
-            setSpinnerData(spinnerPicklistNo, items);
-            applyPlantForSelectedPicklist();
-
-            if (picklistNos.isEmpty()) {
-                box.getBox("No Data", "No picklist found for this site.");
+        if (etEanData != null) {
+            for (int i = 0; i < etEanData.length(); i++) {
+                JSONObject row = etEanData.optJSONObject(i);
+                if (row == null || isEanDataHeaderRow(row)) {
+                    continue;
+                }
+                String matnr = row.optString("MATNR", "").trim();
+                if (matnr.isEmpty()) {
+                    continue;
+                }
+                EanRecord record = new EanRecord();
+                record.matnr = matnr;
+                record.ean11 = row.optString("EAN11", "").trim();
+                record.umrez = Util.convertStringToDouble(row.optString("UMREZ", "1"));
+                if (record.umrez <= 0) {
+                    record.umrez = 1;
+                }
+                indexEanRecord(result.eanByScanCode, record);
             }
+        }
+        return result;
+    }
+
+    private void applyPicklistDataResult(String picklistNo, PicklistDataParseResult parsed) {
+        if (parsed == null) {
+            return;
+        }
+        picklistArticlesByMatnr = parsed.articlesByMatnr;
+        eanByScanCode = parsed.eanByScanCode;
+        if (parsed.rdcPlant != null && !parsed.rdcPlant.isEmpty()) {
+            picklistRdcPlant = parsed.rdcPlant;
+            applyPlantForSelectedPicklist();
+        }
+        if (picklistArticlesByMatnr.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("No Data", "No picklist article data returned.");
+        }
+    }
+
+    private void bindPicklistNumbers(JSONObject response) {
+        if (viewDestroyed || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
+            finishRequest();
+            ensurePackingMaterialsLoaded();
+            return;
+        }
+        try {
+            final String sourceName = readSapNameExport(response, "ES_S_NAME");
+            final JSONArray arr = response.optJSONArray("ET_PICKLIST_NO");
+            final String scanMode = selectedScanMode;
+            picklistParseExecutor.execute(() -> {
+                PicklistNumbersParseResult parsed = parsePicklistNumbersArray(arr, sourceName, scanMode);
+                FragmentActivity activity = getActivity();
+                if (activity == null || viewDestroyed) {
+                    return;
+                }
+                activity.runOnUiThread(() -> {
+                    if (viewDestroyed || !isAdded()) {
+                        finishRequest();
+                        return;
+                    }
+                    applyPicklistNumbersResult(parsed);
+                    finishRequest();
+                    ensurePackingMaterialsLoaded();
+                });
+            });
         } catch (Exception exce) {
+            finishRequest();
             box.getErrBox(exce);
+            ensurePackingMaterialsLoaded();
+        }
+    }
+
+    private PicklistNumbersParseResult parsePicklistNumbersArray(JSONArray arr,
+                                                                 String sourceName,
+                                                                 String scanMode) {
+        PicklistNumbersParseResult result = new PicklistNumbersParseResult();
+        result.sourceSiteName = sourceName != null ? sourceName : "";
+        Set<String> picklistNoSet = new LinkedHashSet<>();
+        if (arr == null) {
+            return result;
+        }
+        for (int i = 1; i < arr.length(); i++) {
+            JSONObject row = arr.optJSONObject(i);
+            if (row == null || isHeaderRow(row)) {
+                continue;
+            }
+            String picklistNo = row.optString("PICKLIST_NO", "").trim();
+            if (picklistNo.isEmpty()) {
+                continue;
+            }
+            picklistNoSet.add(picklistNo);
+
+            String fDesSite = row.optString("F_DES_SITE", "").trim();
+            if (!fDesSite.isEmpty()) {
+                result.desSite.put(picklistNo, fDesSite);
+            }
+            String dHub = row.optString("D_HUB", "").trim();
+            if (!dHub.isEmpty()) {
+                result.desHub.put(picklistNo, dHub);
+            }
+            String dName = row.optString("D_NAME", "").trim();
+            if (!dName.isEmpty()) {
+                result.desName.put(picklistNo, dName);
+            }
+
+            String majCat = row.optString("MAJ_CAT", "").trim();
+            String size1 = row.optString("SIZE1", "").trim();
+            String pendQty = row.optString("PEND_QTY", row.optString("PEND", "0"));
+            double pend = Util.convertStringToDouble(pendQty);
+            PicklistPendEntry entry = new PicklistPendEntry();
+            entry.picklistNo = picklistNo;
+            entry.majCat = majCat;
+            entry.size1 = size1;
+            entry.pend = pend;
+            result.pendEntries.add(entry);
+            String catKey = resolveCategoryKeyForMode(scanMode, majCat, size1);
+            if (!catKey.isEmpty()) {
+                Map<String, Double> catMap = result.categoryPend.get(picklistNo);
+                if (catMap == null) {
+                    catMap = new HashMap<>();
+                    result.categoryPend.put(picklistNo, catMap);
+                }
+                putPicklistCategoryPendForMode(scanMode, catMap, catKey, pend);
+            }
+        }
+        result.picklistNos.addAll(picklistNoSet);
+        return result;
+    }
+
+    private static String resolveCategoryKeyForMode(String scanMode, String majCat, String size1) {
+        if (SCAN_MODE_SIZE.equals(scanMode)) {
+            if (size1 != null && !size1.trim().isEmpty()) {
+                return size1.trim();
+            }
+        }
+        return majCat != null ? majCat.trim() : "";
+    }
+
+    private static void putPicklistCategoryPendForMode(String scanMode,
+                                                       Map<String, Double> catMap,
+                                                       String catKey,
+                                                       double pend) {
+        String key = catKey.toUpperCase();
+        if (SCAN_MODE_SIZE.equals(scanMode)) {
+            Double existing = catMap.get(key);
+            catMap.put(key, existing != null ? existing + pend : pend);
+        } else {
+            catMap.put(key, pend);
+        }
+    }
+
+    private void applyPicklistNumbersResult(PicklistNumbersParseResult parsed) {
+        if (parsed == null) {
+            return;
+        }
+        picklistPendEntries = parsed.pendEntries;
+        picklistCategoryPend = parsed.categoryPend;
+        picklistDesSite = parsed.desSite;
+        picklistDesHub = parsed.desHub;
+        picklistDesName = parsed.desName;
+        sourceSiteName = parsed.sourceSiteName;
+
+        List<String> items = new ArrayList<>();
+        items.add(PICKLIST_HINT);
+        items.addAll(parsed.picklistNos);
+        updatePicklistSpinnerItems(items);
+        applyPlantForSelectedPicklist();
+
+        if (parsed.picklistNos.isEmpty()) {
+            box.getBox("No Data", "No picklist found for this site.");
         }
     }
 
@@ -1165,20 +1494,20 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                     if (row == null || isPackHeaderRow(row)) {
                         continue;
                     }
-                    ETPACKMAT pack = new Gson().fromJson(row.toString(), ETPACKMAT.class);
-                    if (pack == null) {
-                        continue;
-                    }
-                    String maktx = pack.getMAKTX() != null ? pack.getMAKTX().trim() : "";
+                    String maktx = row.optString("MAKTX", "").trim();
                     if (maktx.isEmpty()) {
                         continue;
                     }
+                    ETPACKMAT pack = new ETPACKMAT();
+                    pack.setMATNR(row.optString("MATNR", "").trim());
+                    pack.setMAKTX(maktx);
                     packMaterialRecords.add(pack);
                     items.add(maktx);
                 }
             }
 
-            setSpinnerData(spinnerPackingMaterial, items);
+            updatePackingSpinnerItems(items);
+            packingMaterialsLoaded = true;
         } catch (Exception exce) {
             box.getErrBox(exce);
         }
@@ -1242,23 +1571,40 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return null;
     }
 
-    private void dismissDialog() {
+    private void dismissDialogSafely() {
         activeRequests = 0;
-        if (dialog != null) {
-            dialog.dismiss();
-            dialog = null;
+        try {
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
+        } catch (Exception ignored) {
         }
+        dialog = null;
+    }
+
+    private void dismissDialog() {
+        dismissDialogSafely();
     }
 
     /** Decrement the in-flight request count and dismiss the dialog only when none remain. */
     private void finishRequest() {
+        if (viewDestroyed) {
+            return;
+        }
         activeRequests--;
         if (activeRequests <= 0) {
-            dismissDialog();
+            dismissDialogSafely();
         }
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
+        showProcessingAndSubmit(rfc, request, args, 0);
+    }
+
+    public void showProcessingAndSubmit(String rfc, int request, JSONObject args, int loadSeq) {
+        if (viewDestroyed || !isAdded()) {
+            return;
+        }
         activeRequests++;
         if (dialog == null || !dialog.isShowing()) {
             dialog = new ProgressDialog(getContext());
@@ -1268,7 +1614,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
 
         try {
-            submitRequest(rfc, request, args);
+            submitRequest(rfc, request, args, loadSeq);
         } catch (Exception e) {
             finishRequest();
             box.getErrBox(e);
@@ -1276,20 +1622,29 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private void submitRequest(String rfc, int request, JSONObject args) {
+        submitRequest(rfc, request, args, 0);
+    }
+
+    private void submitRequest(String rfc, int request, JSONObject args, final int loadSeq) {
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
         final JSONObject params = args;
-        Log.d(TAG, "payload ->" + params.toString());
+        Log.d(TAG, "RFC request -> " + rfc);
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
         mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject responsebody) {
                 boolean dismissLoading = true;
-                Log.d(TAG, "response ->" + responsebody);
+                Log.d(TAG, "RFC response -> " + rfc);
+
+                if (viewDestroyed || !isAdded()) {
+                    finishRequest();
+                    return;
+                }
 
                 if (responsebody == null) {
                     UIFuncs.errorSound(con);
@@ -1312,8 +1667,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                             focusArticleField();
                         } else if (request == REQUEST_GET_PICKLIST) {
                             bindPicklistNumbers(responsebody);
+                            dismissLoading = false;
                         } else if (request == REQUEST_GET_PICKLIST_DATA) {
-                            bindPicklistData(responsebody);
+                            bindPicklistData(responsebody, loadSeq);
+                            dismissLoading = false;
                         } else if (request == REQUEST_GET_PACKING) {
                             bindPackingMaterials(responsebody);
                         } else if (request == REQUEST_SAVE) {
@@ -1368,6 +1725,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             public void retry(VolleyError error) throws VolleyError {
             }
         });
+        mJsonRequest.setTag(VOLLEY_TAG);
         mRequestQueue.add(mJsonRequest);
     }
 
@@ -1375,6 +1733,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                if (viewDestroyed || !isAdded()) {
+                    finishRequest();
+                    return;
+                }
                 Log.i(TAG, "Error :" + error.toString());
                 String err;
                 if (error instanceof TimeoutError || error instanceof NoConnectionError) {

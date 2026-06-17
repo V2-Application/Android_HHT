@@ -36,15 +36,7 @@
             android:layout_margin="5dp"
             android:background="#e71821"
             android:text="PALETTE RECEIVE"
-            android:textColor="#fff" />
-
-        <Button
-            android:id="@+id/ptl_grt_floor_hub_wise_crate_tag"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:background="#e71821"
-            android:text="FLOOR - HUB Wise Crate Tag"
+            android:visibility="gone"
             android:textColor="#fff" />
 
         <Button
@@ -55,6 +47,16 @@
             android:background="#e71821"
             android:text="Receive Pallet at Hub Sorting"
             android:textColor="#fff" />
+        
+        <Button
+            android:id="@+id/ptl_grt_floor_hub_wise_crate_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="#e71821"
+            android:text="FLOOR - HUB Wise Crate Tag"
+            android:textColor="#fff" />
+
 
         <Button
             android:id="@+id/ptl_grt_hub_sorting_scan_crate"

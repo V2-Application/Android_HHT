@@ -8,6 +8,8 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +20,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -48,9 +52,11 @@ import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -75,9 +81,11 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
     private Spinner ddFloor;
     private EditText txtScanPallet;
     private TextView txtMessage;
+    private TableLayout scannedItems;
     private Button btnBack;
 
     private boolean floorSelected = false;
+    private final List<String[]> rowsData = new ArrayList<>();
 
     public FragmentPTLGrtReceivePalletAtHubSorting() {
     }
@@ -107,6 +115,7 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
         ddFloor = root.findViewById(R.id.dd_ptl_grt_receive_pallet_hub_sorting_floor);
         txtScanPallet = root.findViewById(R.id.txt_ptl_grt_receive_pallet_hub_sorting_pallet);
         txtMessage = root.findViewById(R.id.txt_ptl_grt_receive_pallet_hub_sorting_message);
+        scannedItems = root.findViewById(R.id.table_ptl_grt_receive_pallet_hub_sorting_scanned_items);
         btnBack = root.findViewById(R.id.btn_ptl_grt_receive_pallet_hub_sorting_back);
 
         setupFloorDropdown();
@@ -196,6 +205,8 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
             ddFloor.requestFocus();
             return;
         }
+        rowsData.clear();
+        generateHeader();
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZCOMBO_VALIDATE_PALLETE_REC);
@@ -306,9 +317,7 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
             }
 
             if (request == REQUEST_VALIDATE_PALLET) {
-                if (!TextUtils.isEmpty(message)) {
-                    box.getBox("Success", message);
-                }
+                addRow(responsebody);
                 clearPalletFieldAndRefocus();
             }
         } catch (JSONException e) {
@@ -332,11 +341,121 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
     private void resetScreen() {
         displayMessage("");
         txtScanPallet.setText("");
+        rowsData.clear();
+        if (scannedItems != null) {
+            scannedItems.removeAllViews();
+        }
         if (ddFloor.getAdapter() != null && ddFloor.getAdapter().getCount() > 0) {
             ddFloor.setSelection(0);
             floorSelected = true;
         }
         txtScanPallet.post(() -> txtScanPallet.requestFocus());
+    }
+
+    private void generateHeader() {
+        if (scannedItems == null) {
+            return;
+        }
+        int headerTextSize = 20;
+        scannedItems.removeAllViews();
+
+        TextView headerSno = new TextView(con);
+        TextView headerPalette = new TextView(con);
+        TextView headerCrate = new TextView(con);
+
+        headerSno.setLayoutParams(new TableRow.LayoutParams(
+                TableRow.LayoutParams.WRAP_CONTENT,
+                TableRow.LayoutParams.WRAP_CONTENT));
+        headerSno.setGravity(Gravity.CENTER);
+        headerSno.setPadding(5, 5, 0, 5);
+        headerSno.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerSno.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerSno.setText("S.No");
+
+        headerPalette.setGravity(Gravity.CENTER);
+        headerPalette.setPadding(0, 5, 0, 5);
+        headerPalette.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerPalette.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerPalette.setText("Palette");
+
+        headerCrate.setGravity(Gravity.CENTER);
+        headerCrate.setPadding(0, 5, 0, 5);
+        headerCrate.setTextSize(TypedValue.COMPLEX_UNIT_SP, headerTextSize);
+        headerCrate.setBackground(getResources().getDrawable(R.drawable.table_header_cell_border));
+        headerCrate.setText("Crate");
+
+        TableRow tr = new TableRow(con);
+        TableLayout.LayoutParams trParams = new TableLayout.LayoutParams(
+                TableLayout.LayoutParams.MATCH_PARENT,
+                TableLayout.LayoutParams.WRAP_CONTENT);
+        trParams.setMargins(0, 0, 0, 0);
+        tr.setLayoutParams(trParams);
+        tr.addView(headerSno);
+        tr.addView(headerPalette);
+        tr.addView(headerCrate);
+        scannedItems.addView(tr, trParams);
+    }
+
+    private void addRow(JSONObject responsebody) {
+        if (scannedItems == null) {
+            return;
+        }
+        int textSize = 15;
+        try {
+            if (!responsebody.has("ET_DATA")) {
+                return;
+            }
+            JSONArray etDataArray = responsebody.getJSONArray("ET_DATA");
+            int totalEtRecords = etDataArray.length();
+            if (totalEtRecords <= 0) {
+                return;
+            }
+            for (int recordIndex = 0; recordIndex < totalEtRecords; recordIndex++) {
+                JSONObject etRecord = etDataArray.getJSONObject(recordIndex);
+                String[] data = new String[]{
+                        etRecord.getString("PALETTE"),
+                        etRecord.getString("CRATE"),
+                        etRecord.getString("TANUM"),
+                        etRecord.getString("MESSAGE")
+                };
+                rowsData.add(data);
+
+                TextView tvSno = new TextView(con);
+                tvSno.setText(String.valueOf(rowsData.size()));
+                tvSno.setTextSize(textSize);
+                tvSno.setPadding(5, 2, 0, 2);
+                tvSno.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+                TextView tvPalette = new TextView(con);
+                tvPalette.setText(etRecord.getString("PALETTE"));
+                tvPalette.setTextSize(textSize);
+                tvPalette.setPadding(5, 2, 0, 2);
+                tvPalette.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+                TextView tvCrate = new TextView(con);
+                tvCrate.setText(etRecord.getString("CRATE"));
+                tvCrate.setTextSize(textSize);
+                tvCrate.setPadding(5, 2, 0, 2);
+                tvCrate.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+                TableRow tr = new TableRow(con);
+                TableLayout.LayoutParams trParams = new TableLayout.LayoutParams(
+                        TableLayout.LayoutParams.MATCH_PARENT,
+                        TableLayout.LayoutParams.WRAP_CONTENT);
+                trParams.setMargins(0, 0, 0, 0);
+                tr.setLayoutParams(trParams);
+                tr.setId(rowsData.size());
+                tr.setTag(data);
+                tr.addView(tvSno);
+                tr.addView(tvPalette);
+                tr.addView(tvCrate);
+                scannedItems.addView(tr, trParams);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "addRow", e);
+            box.getErrBox(e);
+            UIFuncs.errorSound(con);
+        }
     }
 
     private void dismissDialog() {
