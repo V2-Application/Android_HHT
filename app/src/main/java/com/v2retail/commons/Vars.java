@@ -396,6 +396,9 @@ public class Vars {
     /** Inbound Putway to BIN — save palette to BIN (IM_USER, IT_DATA → EX_RETURN). */
     public static String ZVND_PUTWAY_SAVE_DATA_RFC = "ZVND_PUTWAY_SAVE_DATA_RFC";
 
+    // ── DC Inbound: VND Box Put to BIN ───────────────────────────────────────────
+    // HU capture is client-side; on BIN scan: BIN_VAL → PALETTE_VAL (IM_PALL = HU) → SAVE.
+
     // ── DC Inbound: HU Picking from BIN (GateLot2) ────────────────────────────────
     /** HU Picking from BIN — validate picklist (IM_USER, IM_PLANT, IM_PICKLIST → ET_DATA, EX_RETURN). */
     public static String ZVND_GATELOT2_PICKLIST_VAL_RFC = "ZVND_GATELOT2_PICKLIST_VAL_RFC";
@@ -405,4 +408,10 @@ public class Vars {
     public static String ZVND_GATELOT2_PALETTE_VAL_RFC = "ZVND_GATELOT2_PALETTE_VAL_RFC";
     /** HU Picking from BIN — save pick transaction (IM_USER, IT_DATA → EX_RETURN). */
     public static String ZVND_GATELOT2_SAVE_DATA_RFC = "ZVND_GATELOT2_SAVE_DATA_RFC";
+
+    // ── DC Inbound: PUT01 HU Wise Scanning ───────────────────────────────────────
+    /** PUT01 — validate scanned HU (IM_HU, IM_USER, IM_PLANT → Data.ET_DATA, Status). */
+    public static String ZVND_PUT01_HU_VAL_RFC = "ZVND_PUT01_HU_VAL_RFC";
+    /** PUT01 — save HU scan after validate (IM_USER, IT_DATA → Status). */
+    public static String ZVND_PUT01_SAVE_DATA_RFC = "ZVND_PUT01_SAVE_DATA_RFC";
 }

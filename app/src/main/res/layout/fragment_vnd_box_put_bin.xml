@@ -17,7 +17,7 @@
             android:layout_margin="5dp"
             android:orientation="vertical">
 
-            <!-- DC Site -->
+            <!-- Plant -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -32,13 +32,13 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="5"
                     android:padding="7dp"
-                    android:text="DC Site:"
+                    android:text="Plant:"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <EditText
-                    android:id="@+id/et_dc_site"
+                    android:id="@+id/et_plant"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
@@ -71,7 +71,7 @@
                     android:textStyle="bold" />
 
                 <EditText
-                    android:id="@+id/et_hu"
+                    android:id="@+id/et_scan_hu"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
@@ -121,7 +121,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- Pallate -->
+            <!-- Scan BIN -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -136,19 +136,21 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="5"
                     android:padding="7dp"
-                    android:text="Pallate:"
+                    android:text="Scan BIN:"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <EditText
-                    android:id="@+id/et_pallate"
+                    android:id="@+id/et_scan_bin"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
                     android:background="@drawable/border_disabled_input"
                     android:enabled="false"
-                    android:hint="Auto fetch"
+                    android:hint="SCAN BIN"
+                    android:imeOptions="actionDone"
+                    android:inputType="textCapCharacters"
                     android:padding="7dp"
                     android:singleLine="true"
                     android:textColor="@color/black"
@@ -156,7 +158,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- PO No -->
+            <!-- BIN -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -171,126 +173,23 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="5"
                     android:padding="7dp"
-                    android:text="PO No:"
+                    android:text="BIN:"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <EditText
-                    android:id="@+id/tv_po"
+                    android:id="@+id/et_bin"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
                     android:background="@drawable/border_disabled_input"
                     android:enabled="false"
-                    android:hint="Auto fetch"
+                    android:hint="—"
                     android:padding="7dp"
                     android:singleLine="true"
                     android:textColor="@color/black"
                     android:textColorHint="#80000000"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- Vendor Inv No -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="Vendor Inv No:"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <EditText
-                    android:id="@+id/tv_inv"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:hint="Auto fetch"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textColorHint="#80000000"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- No of Box / HU qty -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="No of Box/ HU qty:"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <EditText
-                    android:id="@+id/et_box_hu_qty"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:text="0 / 0"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <!-- ToT Scanned HU -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="ToT Scanned HU:"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <EditText
-                    android:id="@+id/et_tot_scanned_hu"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:text="0"
-                    android:textColor="@color/black"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -302,34 +201,6 @@
                 android:padding="8dp"
                 android:textSize="12sp"
                 android:visibility="gone" />
-
-            <!-- Buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_reset"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="#C0392B"
-                    android:text="Reset"
-                    android:textColor="#fff" />
-
-                <Button
-                    android:id="@+id/btn_back"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="#555555"
-                    android:text="Back"
-                    android:textColor="#fff" />
-            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

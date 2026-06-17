@@ -54,7 +54,7 @@ public class FragmentMenuInboundNew extends Fragment implements View.OnClickList
         } else if (id == R.id.btn_put01_hu_scan) {
             f = FragmentPut01HuWiseScanning.newInstance();
         } else if (id == R.id.btn_vnd_box_put_bin) {
-            f = FragmentRdcToRdcHuPutway.newInstance();
+            f = FragmentVndBoxPutBin.newInstance();
         }
 
         if (f != null && getFragmentManager() != null) {

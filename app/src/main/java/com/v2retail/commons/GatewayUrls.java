@@ -38,4 +38,14 @@ public final class GatewayUrls {
         }
         return base + "/noacljsonrfcadaptor?bapiname=" + rfcName + "&aclclientid=android";
     }
+
+    /** REST API path under the login gateway base, e.g. {@code /api/ZVND_PUT01_HU_VAL_RFC}. */
+    public static String apiUrl(String storedGatewayUrl, String apiPath) {
+        String base = baseForNoAclJsonRfc(storedGatewayUrl);
+        if (base.isEmpty()) {
+            return "";
+        }
+        String path = apiPath.startsWith("/") ? apiPath : "/" + apiPath;
+        return base + path;
+    }
 }
