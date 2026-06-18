@@ -204,9 +204,9 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
 
 
 
-//            if (!total_hu.equals("")) {
-//                total_hu_et.setText(total_hu);
-//            }
+            if (total_hu != null && !total_hu.equals("")) {
+                total_hu_et.setText(Util.convertToDoubleString(total_hu));
+            }
             if (!hu_no.equals("")) {
                 hu_no_et.setText(hu_no);
 
@@ -395,7 +395,7 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
 
     private void scanBinData(String binStr){
         boolean flag = true;
-        for (int i = 1; i< bin.size();i++){
+        for (int i = 0; i< bin.size();i++){
             if (bin.get(i).getLGPLA().equals(binStr)){
                 barcode_art_et.requestFocus();
                 scanBin = binStr;
@@ -415,11 +415,12 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
             box = new AlertBox(con);
             EtEanDataModel eanModel = null;
             JSONArray ET_EAN_DATA = responsebody.getJSONArray("ET_EAN_DATA");
-            if(ET_EAN_DATA.length() > 0){
+            if(ET_EAN_DATA.length() > 1){
                 JSONObject jsonObject = ET_EAN_DATA.getJSONObject(1);
                 String EAN11 = jsonObject.getString("EAN11");
                 String MATNR = jsonObject.getString("MATNR");
                 String UMREZ = jsonObject.getString("UMREZ");
+                int umrez = (int) Util.convertStringToDouble(UMREZ);
                 for (EtEanDataModel existingEan: ean) {
                     if(existingEan.getEAN11().equals(EAN11)){
                         eanModel = existingEan;
@@ -434,13 +435,13 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                     ean.add(eanModel);
                 }
                 EtPoDataModel model = null;
-                total_hu = String.valueOf((Integer.valueOf(total_hu) + Integer.valueOf(UMREZ)));
-//                total_hu_et.setText(total_hu);
+                total_hu = String.valueOf((int) Util.convertStringToDouble(total_hu) + umrez);
+                total_hu_et.setText(total_hu);
                 for (int j = 0;j<poData.size();j++){
                     if (poData.get(j).getMATNR().equals(MATNR)) {
                         model = poData.get(j);
-                        model.setVEMNG(String.valueOf(Integer.valueOf(model.getVEMNG()) + Integer.valueOf(UMREZ)));
-                        model.setBDMNG(String.valueOf(Integer.valueOf(model.getBDMNG()) + Integer.valueOf(UMREZ)));
+                        model.setVEMNG(String.valueOf((int) Util.convertStringToDouble(model.getVEMNG()) + umrez));
+                        model.setBDMNG(String.valueOf((int) Util.convertStringToDouble(model.getBDMNG()) + umrez));
                     }
                 }
                 if(model == null){
@@ -472,6 +473,7 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                 EtEanDataModel eanDataModel = ean.get(i);
                 article_no_et.setText(eanDataModel.getMATNR());
                 UMREZ = eanDataModel.getUMREZ();
+                int umrez = (int) Util.convertStringToDouble(UMREZ);
                 EAMMAterial = eanDataModel.getMATNR();
                 if(eanDataModel.getNewEan() != null){
                     if(eanDataModel.getNewEan().equals("New")){
@@ -484,8 +486,9 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                 for (int j = 0;j<poData.size();j++){
                     if (poData.get(j).getMATNR().equals(EAMMAterial)){
                         VEMNG = poData.get(j).getVEMNG();
-                        ahq_et.setText(VEMNG);
+                        ahq_et.setText(Util.convertToDoubleString(VEMNG));
                         BDMNG = poData.get(j).getBDMNG();
+                        int bdmng = (int) Util.convertStringToDouble(BDMNG);
                         try {
                             for (int a=0;a<jsonArray.length();a++){
 
@@ -494,9 +497,9 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                                 String bin = jsonObject1.getString("LGPLA");
                                 if (m.equals(EAMMAterial) && bin.equals(scanBin)){
                                     String sq = jsonObject1.getString("VEMNG");
-                                    sum =  sum + Integer.valueOf(UMREZ);
-                                    if (sum<=Double.valueOf(BDMNG).intValue()) {
-                                        jsonObject1.put("VEMNG", String.valueOf(Integer.valueOf(sq) + Integer.valueOf(UMREZ)));
+                                    sum =  sum + umrez;
+                                    if (sum<=bdmng) {
+                                        jsonObject1.put("VEMNG", String.valueOf((int) Util.convertStringToDouble(sq) + umrez));
                                     }
                                     check=false;
                                     break;
@@ -504,26 +507,26 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                             }
                             if (check) {
                                 sum = 0;
-                                sum =  sum + Integer.valueOf(UMREZ);
+                                sum =  sum + umrez;
                             }
                         }catch (Exception e){
                             e.printStackTrace();
                         }
 
-                        if (sum<=Double.valueOf(BDMNG).intValue()){
-                            ScQty = ScQty+  Integer.valueOf(UMREZ);
+                        if (sum<=bdmng){
+                            ScQty = ScQty+  umrez;
                             tsq_et.setText(String.valueOf(ScQty));
                             if (sum==0){
-                                sq_et.setText(UMREZ);
+                                sq_et.setText(String.valueOf(umrez));
                             }else {
                                 sq_et.setText(String.valueOf(sum));
                             }
 
-                            ahoq_et.setText(String.valueOf(Double.valueOf(BDMNG).intValue()-Integer.valueOf(sq_et.getText().toString())));
+                            ahoq_et.setText(String.valueOf(bdmng - Integer.valueOf(sq_et.getText().toString())));
                             try {
                             if (check){
                                 JSONObject jsonObject = new JSONObject();
-                                jsonObject.put("VEMNG",String.valueOf(Integer.valueOf(UMREZ)));
+                                jsonObject.put("VEMNG",String.valueOf(umrez));
                                 jsonObject.put("MATNR",EAMMAterial);
                                 jsonObject.put("LGPLA",scanBin);
                                 jsonArray.put(jsonObject);

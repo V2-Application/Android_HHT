@@ -320,6 +320,8 @@ public class Vars {
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
     public static String ZSDC_DIRECT_ART_VAL_BARCOD_RFC = "ZSDC_DIRECT_ART_VAL_BARCOD_RFC";
+    /** Article Transfer (V01 To 0001) — HU validate (IM_USER, IM_PLANT, IM_HU → EX_RETURN, EX_HU). */
+    public static String ZSDC_DIRECT_HU_VALIDATE_RFC = "ZSDC_DIRECT_HU_VALIDATE_RFC";
     /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE → EX_BARCODE). */
     public static String ZSDC_DIRECT_ARTICLE_VAL_RFC = "ZSDC_DIRECT_ARTICLE_VAL_RFC";
     /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, ET_DATA). */

@@ -56,6 +56,7 @@ import java.util.Map;
 
 public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implements View.OnClickListener {
 
+    private static final int REQUEST_VALIDATE_HU = 1600;
     private static final int REQUEST_VALIDATE_BARCODE = 1601;
     private static final int REQUEST_SAVE = 1602;
 
@@ -73,7 +74,9 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     FragmentManager fm;
 
     Button btn_back, btn_save;
-    EditText txt_store, txt_scan_barcode, txt_article, txt_article_type, txt_article_size, txt_scan_qty;
+    EditText txt_store, txt_scan_hu, txt_scan_barcode, txt_article, txt_article_type, txt_article_size, txt_scan_qty;
+
+    String validatedHu = "";
 
     Map<String, FloorBarcode> barcodeDataMap = new HashMap<>();
     Map<String, String[]> articleLookupMap = new HashMap<>();
@@ -111,6 +114,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         USER = data.read("USER");
 
         txt_store = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_store);
+        txt_scan_hu = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_scan_hu);
         txt_scan_barcode = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_scan_barcode);
         txt_article = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_article);
         txt_article_type = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_article_type);
@@ -144,15 +148,18 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     private void clear() {
         barcodeDataMap = new HashMap<>();
         articleLookupMap = new HashMap<>();
+        validatedHu = "";
         txt_scan_qty.setText("");
-        UIFuncs.enableInput(con, txt_scan_barcode);
         txt_store.setText(WERKS);
         txt_article.setText("");
         txt_article_type.setText("");
         txt_article_size.setText("");
         txt_scan_qty.setText("");
         txt_scan_barcode.setText("");
-        txt_scan_barcode.requestFocus();
+        UIFuncs.disableInput(con, txt_scan_barcode);
+        txt_scan_hu.setText("");
+        UIFuncs.enableInput(con, txt_scan_hu);
+        txt_scan_hu.requestFocus();
     }
 
     private void clearArticleMeta() {
@@ -171,6 +178,40 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     }
 
     private void addInputEvents() {
+        txt_scan_hu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    String value = UIFuncs.toUpperTrim(txt_scan_hu);
+                    if (!value.isEmpty()) {
+                        validateHu(value);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+        txt_scan_hu.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().toUpperCase().trim();
+                if (!value.isEmpty() && scannerReading) {
+                    validateHu(value);
+                }
+            }
+        });
         txt_scan_barcode.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
@@ -223,6 +264,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                 args.put("IM_USER", USER);
                 args.put("IM_STORE_CODE", WERKS);
                 args.put("IM_BARCODE", barcode);
+                args.put("IM_HU", validatedHu);
                 showProcessingAndSubmit(rfc, REQUEST_VALIDATE_BARCODE, args);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -235,6 +277,52 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                 box.getErrBox(e);
             }
         }
+    }
+
+    public void validateHu(String hu) {
+        if (requestInFlight) {
+            return;
+        }
+        JSONObject args = new JSONObject();
+        try {
+            String rfc = Vars.ZSDC_DIRECT_HU_VALIDATE_RFC;
+            args.put("bapiname", rfc);
+            args.put("IM_USER", USER);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_HU", hu);
+            showProcessingAndSubmit(rfc, REQUEST_VALIDATE_HU, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            requestInFlight = false;
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
+        }
+    }
+
+    private void showHuError(String title, String message) {
+        UIFuncs.errorSound(getContext());
+        AlertBox ab = new AlertBox(getContext());
+        ab.getBox(title, message, (dialog, which) -> {
+            txt_scan_hu.setText("");
+            txt_scan_hu.requestFocus();
+        });
+    }
+
+    private void setHuData(JSONObject responsebody) {
+        String hu = responsebody.optString("EX_HU", "").trim();
+        if (hu.isEmpty()) {
+            hu = UIFuncs.toUpperTrim(txt_scan_hu);
+        }
+        validatedHu = hu;
+        txt_scan_hu.setText(hu);
+        UIFuncs.disableInput(con, txt_scan_hu);
+        UIFuncs.enableInput(con, txt_scan_barcode);
+        txt_scan_barcode.setText("");
+        txt_scan_barcode.requestFocus();
     }
 
     private static String normalizeKey(String value) {
@@ -598,6 +686,10 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                         if (message.isEmpty()) {
                             message = "SAP error";
                         }
+                        if (request == REQUEST_VALIDATE_HU) {
+                            showHuError("Err", message);
+                            return;
+                        }
                         if (request == REQUEST_VALIDATE_BARCODE) {
                             showScanError("Err", message);
                             return;
@@ -605,6 +697,8 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                         UIFuncs.errorSound(getContext());
                         AlertBox box = new AlertBox(getContext());
                         box.getBox("Err", message);
+                    } else if (request == REQUEST_VALIDATE_HU) {
+                        setHuData(responsebody);
                     } else if (request == REQUEST_VALIDATE_BARCODE) {
                         setBarcodeData(responsebody);
                     } else if (request == REQUEST_SAVE) {
