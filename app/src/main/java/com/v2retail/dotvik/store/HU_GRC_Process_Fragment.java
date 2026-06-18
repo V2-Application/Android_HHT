@@ -263,7 +263,18 @@ public class HU_GRC_Process_Fragment extends Fragment {
     }
 
     private void loadInvoiceData(){
+        String invoiceNumber = invoice_number.getText().toString().trim();
+        if (invoiceNumber.isEmpty()) {
+            box.getBox("Alert", "Scan invoice Number!");
+            invoice_number.requestFocus();
+            return;
+        }
         next.requestFocus();
+        try {
+            networkCall();
+        } catch (Exception e) {
+            box.getErrBox(e);
+        }
     }
     private void networkCall() {
         dialog = new ProgressDialog(con);
