@@ -307,18 +307,43 @@ public class FragmentHUGRC extends Fragment implements View.OnClickListener {
         }
     }
 
+    private static boolean isEtHuHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String id = row.optString("EXIDV", "").trim();
+        String huno = row.optString("SAP_HU", "").trim();
+        String invoice = row.optString("VBELN", "").trim();
+        if ("EXIDV".equalsIgnoreCase(id) || "SAP_HU".equalsIgnoreCase(huno) || "VBELN".equalsIgnoreCase(invoice)) {
+            return true;
+        }
+        return id.contains("External Handling Unit") || huno.contains("Handling Unit");
+    }
+
+    private static int etHuStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isEtHuHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     private void setData(JSONObject responsebody){
         try{
             hus = new HashMap<>();
             scannedHus = new HashMap<>();
+            extHus = new HashMap<>();
             JSONArray arrEtHU = responsebody.getJSONArray("ET_HU");
-            int length = arrEtHU.length();
-            for(int i=1; i < length; i++){
-                GRCHU etData = new Gson().fromJson(arrEtHU.get(i).toString(), GRCHU.class);
+            int start = etHuStartIndex(arrEtHU);
+            for (int i = start; i < arrEtHU.length(); i++) {
+                JSONObject row = arrEtHU.getJSONObject(i);
+                if (isEtHuHeaderRow(row)) {
+                    continue;
+                }
+                GRCHU etData = new Gson().fromJson(row.toString(), GRCHU.class);
                 hus.put(UIFuncs.removeLeadingZeros(etData.getHuno()), etData);
                 extHus.put(UIFuncs.removeLeadingZeros(etData.getId()), etData);
             }
-            if(length > 1){
+            if (!hus.isEmpty()) {
                 step2();
             }
         }catch (Exception exce){

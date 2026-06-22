@@ -90,6 +90,15 @@
                 android:textColor="#fff"
                 android:background="#e71821" />
 
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Article Consumption"
+                android:id="@+id/article_consumption"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
         </LinearLayout>
 
     </ScrollView>

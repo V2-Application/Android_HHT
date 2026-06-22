@@ -1486,10 +1486,10 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
             for (Map.Entry<String, PicklistData> dataEntry: etDataMap.entrySet()) {
                 PicklistData etData = dataEntry.getValue();
                 if(etData.getSqty() > 0){
-                    if(etData.isShortScan() && !etData.isConfirmShortScan()){
-                        box.getBox("Confirm", "Please check the checkboxes to confirm save with short count");
-                        return null;
-                    }
+                    //   if(etData.isShortScan() && !etData.isConfirmShortScan()){
+                    //     box.getBox("Confirm", "Please check the checkboxes to confirm save with short count");
+                    //     return null;
+                    // }
                     ScanData data = new ScanData().newInstance(etData, UIFuncs.toUpperTrim(txt_scanned_empty_crate_2), null);
                     data.setSclose(etData.isShortScan() ? "X":"");
                     String scanDataJsonString = new Gson().toJson(data);

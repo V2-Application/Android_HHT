@@ -35,9 +35,9 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -78,7 +78,10 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
 
     String validatedHu = "";
 
-    Map<String, FloorBarcode> barcodeDataMap = new HashMap<>();
+    // Article-level data for the validated HU, keyed by article (MATNR). Holds available qty/type/size/bin.
+    Map<String, FloorBarcode> huArtDataMap = new HashMap<>();
+    // EAN -> article mapping for the validated HU, keyed by scanned BARCODE. Holds MATNR + UMREZ.
+    Map<String, FloorBarcode> eanArtDataMap = new HashMap<>();
     Map<String, String[]> articleLookupMap = new HashMap<>();
 
     public FragmentDirectPickingV01ArticleTransfer0001() {
@@ -146,7 +149,8 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     }
 
     private void clear() {
-        barcodeDataMap = new HashMap<>();
+        huArtDataMap = new HashMap<>();
+        eanArtDataMap = new HashMap<>();
         articleLookupMap = new HashMap<>();
         validatedHu = "";
         txt_scan_qty.setText("");
@@ -252,31 +256,8 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         if (requestInFlight) {
             return;
         }
-        if (barcodeDataMap.containsKey(barcode)) {
-            updateQtyAfterScan(UIFuncs.toUpperTrim(txt_scan_barcode));
-            txt_scan_barcode.setText("");
-            txt_scan_barcode.requestFocus();
-        } else {
-            JSONObject args = new JSONObject();
-            try {
-                String rfc = Vars.ZSDC_DIRECT_ARTICLE_VAL_RFC;
-                args.put("bapiname", rfc);
-                args.put("IM_USER", USER);
-                args.put("IM_STORE_CODE", WERKS);
-                args.put("IM_BARCODE", barcode);
-                args.put("IM_HU", validatedHu);
-                showProcessingAndSubmit(rfc, REQUEST_VALIDATE_BARCODE, args);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
-                requestInFlight = false;
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
-            }
-        }
+        // Barcode validation is done entirely against the local maps populated on HU scan.
+        updateQtyAfterScan(normalizeKey(barcode));
     }
 
     public void validateHu(String hu) {
@@ -313,16 +294,92 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     }
 
     private void setHuData(JSONObject responsebody) {
-        String hu = responsebody.optString("EX_HU", "").trim();
+        String hu = UIFuncs.removeLeadingZeros(responsebody.optString("EX_HU", "").trim());
         if (hu.isEmpty()) {
             hu = UIFuncs.toUpperTrim(txt_scan_hu);
         }
         validatedHu = hu;
+
+        huArtDataMap = new HashMap<>();
+        eanArtDataMap = new HashMap<>();
+        try {
+            parseHuArtData(responsebody.optJSONArray("ET_HU_ART_DATA"));
+            parseEanArtData(responsebody.optJSONArray("ET_EAN_ART_DATA"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        if (huArtDataMap.isEmpty()) {
+            showHuError("No Data", "No article data returned for this HU");
+            return;
+        }
+
         txt_scan_hu.setText(hu);
         UIFuncs.disableInput(con, txt_scan_hu);
         UIFuncs.enableInput(con, txt_scan_barcode);
         txt_scan_barcode.setText("");
         txt_scan_barcode.requestFocus();
+    }
+
+    // Parses ET_HU_ART_DATA rows (HU, QTY, MATERIAL, BIN) into huArtDataMap keyed by article (MATERIAL).
+    // Available qty (VERME) is aggregated across rows of the same material; BIN is kept for the save payload.
+    private void parseHuArtData(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return;
+        }
+        int start = SapJsonRows.startIndex(arr, "MATERIAL", "QTY", "HU");
+        for (int i = start; i < arr.length(); i++) {
+            JSONObject row = arr.optJSONObject(i);
+            if (row == null || SapJsonRows.isMetadataRow(row, "MATERIAL", "QTY", "HU")) {
+                continue;
+            }
+            String material = row.optString("MATERIAL", "").trim();
+            String key = normalizeKey(material);
+            if (key.isEmpty()) {
+                continue;
+            }
+            double qty = Util.convertStringToDouble(row.optString("QTY", "0"));
+            String bin = row.optString("BIN", "").trim();
+            FloorBarcode art = huArtDataMap.get(key);
+            if (art == null) {
+                art = new FloorBarcode();
+                art.setMatnr(material);
+                art.setVerme(Util.formatDouble(qty));
+                art.setScanQty("0");
+                art.setLgpla(bin);
+                huArtDataMap.put(key, art);
+            } else {
+                double total = Util.convertStringToDouble(art.getVerme()) + qty;
+                art.setVerme(Util.formatDouble(total));
+                if ((art.getLgpla() == null || art.getLgpla().trim().isEmpty()) && !bin.isEmpty()) {
+                    art.setLgpla(bin);
+                }
+            }
+        }
+    }
+
+    // Parses ET_EAN_ART_DATA rows (EAN, UMREZ, MATERIAL) into eanArtDataMap keyed by EAN.
+    private void parseEanArtData(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return;
+        }
+        int start = SapJsonRows.startIndex(arr, "EAN", "MATERIAL", "UMREZ");
+        for (int i = start; i < arr.length(); i++) {
+            JSONObject row = arr.optJSONObject(i);
+            if (row == null || SapJsonRows.isMetadataRow(row, "EAN", "MATERIAL", "UMREZ")) {
+                continue;
+            }
+            String ean = row.optString("EAN", "").trim();
+            String key = normalizeKey(ean);
+            if (key.isEmpty()) {
+                continue;
+            }
+            FloorBarcode mapping = new FloorBarcode();
+            mapping.setBarcode(ean);
+            mapping.setMatnr(row.optString("MATERIAL", "").trim());
+            mapping.setUmrez(row.optString("UMREZ", "").trim());
+            eanArtDataMap.put(key, mapping);
+        }
     }
 
     private static String normalizeKey(String value) {
@@ -354,15 +411,14 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         }
     }
 
-    private void lookupArticle(String articleNo, String barcodeKey) {
+    private void lookupArticle(String articleNo) {
         String articleKey = normalizeKey(articleNo);
-        String bKey = normalizeKey(barcodeKey);
         if (articleKey.isEmpty()) {
             return;
         }
 
         if (articleLookupMap.containsKey(articleKey)) {
-            applyArticleLookup(articleKey, bKey);
+            applyArticleLookup(articleKey);
             return;
         }
 
@@ -383,7 +439,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                             String articleType = response.optString("article_type", "").trim();
                             String articleSize = mapArticleSize(response.optString("article_size", "").trim());
                             articleLookupMap.put(articleKey, new String[]{articleType, articleSize});
-                            applyArticleLookup(articleKey, bKey);
+                            applyArticleLookup(articleKey);
                         }
                     },
                     error -> hideArticleLookupLoading()
@@ -408,9 +464,8 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         return s;
     }
 
-    private void applyArticleLookup(String articleKey, String barcodeKey) {
+    private void applyArticleLookup(String articleKey) {
         String aKey = normalizeKey(articleKey);
-        String bKey = normalizeKey(barcodeKey);
         String[] values = articleLookupMap.get(aKey);
         if (values == null) {
             return;
@@ -420,10 +475,10 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
             values[1] = mapArticleSize(values[1]);
         }
 
-        FloorBarcode barcodeData = barcodeDataMap.get(bKey);
-        if (barcodeData != null) {
-            if (values[0] != null && !values[0].isEmpty()) barcodeData.setArtType(values[0]);
-            if (values[1] != null && !values[1].isEmpty()) barcodeData.setArtSize(values[1]);
+        FloorBarcode art = huArtDataMap.get(aKey);
+        if (art != null) {
+            if (values[0] != null && !values[0].isEmpty()) art.setArtType(values[0]);
+            if (values[1] != null && !values[1].isEmpty()) art.setArtSize(values[1]);
         }
 
         String currentArticle = normalizeKey(UIFuncs.toUpperTrim(txt_article));
@@ -431,32 +486,6 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
             if (values[0] != null && !values[0].isEmpty()) txt_article_type.setText(values[0]);
             if (values[1] != null && !values[1].isEmpty()) txt_article_size.setText(values[1]);
         }
-    }
-
-    private static boolean isBarcodeEtDataHeaderRow(JSONObject row) {
-        if (row == null) {
-            return true;
-        }
-        String barcode = row.optString("BARCODE", "").trim();
-        String matnr = row.optString("MATNR", "").trim();
-        String umrez = row.optString("UMREZ", "").trim();
-        if ("BARCODE".equalsIgnoreCase(barcode) || "MATNR".equalsIgnoreCase(matnr) || "UMREZ".equalsIgnoreCase(umrez)) {
-            return true;
-        }
-        if (barcode.contains("International Article Number")) {
-            return true;
-        }
-        if (matnr.equalsIgnoreCase("Material Number")) {
-            return true;
-        }
-        return umrez.contains("Numerator for Conversion");
-    }
-
-    private static int barcodeEtDataStartIndex(JSONArray arr) throws JSONException {
-        if (arr == null || arr.length() == 0) {
-            return 0;
-        }
-        return isBarcodeEtDataHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
     }
 
     private static JSONObject parseReturnObject(JSONObject responsebody) throws JSONException {
@@ -496,89 +525,50 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         return "E".equals(type) || "A".equals(type);
     }
 
-    private boolean addBarcodeRecord(JSONObject row) {
-        if (row == null || isBarcodeEtDataHeaderRow(row)) {
-            return false;
-        }
-        FloorBarcode barcodeData = new Gson().fromJson(row.toString(), FloorBarcode.class);
-        if (barcodeData == null || barcodeData.getBarcode() == null || barcodeData.getBarcode().trim().isEmpty()) {
-            return false;
-        }
-        barcodeDataMap.put(barcodeData.getBarcode().trim().toUpperCase(), barcodeData);
-        return true;
-    }
-
-    public void setBarcodeData(JSONObject responsebody) {
-        try {
-            boolean anyRecord = false;
-            JSONArray etDataArray = responsebody.optJSONArray("ET_DATA");
-            if (etDataArray != null && etDataArray.length() > 0) {
-                int start = barcodeEtDataStartIndex(etDataArray);
-                for (int i = start; i < etDataArray.length(); i++) {
-                    if (addBarcodeRecord(etDataArray.getJSONObject(i))) {
-                        anyRecord = true;
-                    }
-                }
-            }
-            if (!anyRecord && responsebody.has("EX_BARCODE")
-                    && responsebody.get("EX_BARCODE") instanceof JSONObject) {
-                anyRecord = addBarcodeRecord(responsebody.getJSONObject("EX_BARCODE"));
-            }
-            if (anyRecord) {
-                String scannedBarcode = UIFuncs.toUpperTrim(txt_scan_barcode);
-                FloorBarcode scannedData = barcodeDataMap.get(normalizeKey(scannedBarcode));
-                if (scannedData != null) {
-                    lookupArticle(scannedData.getMatnr(), scannedBarcode);
-                }
-                updateQtyAfterScan(scannedBarcode);
-            } else {
-                box.getBox("No Records", "No records returned by the server", (dialog, which) -> {
-                    clearArticleMeta();
-                    txt_scan_barcode.setText("");
-                    txt_scan_barcode.requestFocus();
-                });
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            AlertBox box = new AlertBox(getContext());
-            box.getErrBox(e);
-        }
-        txt_scan_barcode.setText("");
-        txt_scan_barcode.requestFocus();
-    }
-
     private void updateQtyAfterScan(String barcode) {
-        if (barcodeDataMap.containsKey(barcode)) {
-            FloorBarcode barcodeData = barcodeDataMap.get(barcode);
-            double sqty = Util.convertStringToDouble(barcodeData.getScanQty());
-            double rqty = Util.convertStringToDouble(barcodeData.getVerme());
-            double umrez = Util.convertStringToDouble(barcodeData.getUmrez());
-            if (umrez <= 0) umrez = 1;
-            sqty = sqty + umrez;
-            if (sqty > rqty) {
-                box.getBox("Invalid", "Already scanned maximum allowed Qty " + rqty, (dialog, which) -> {
-                    clearArticleMeta();
-                    txt_scan_barcode.setText("");
-                    txt_scan_barcode.requestFocus();
-                });
-                return;
-            }
-            txt_article.setText(barcodeData.getMatnr());
-            if (barcodeData.getArtType() != null) {
-                txt_article_type.setText(barcodeData.getArtType());
-            }
-            if (barcodeData.getArtSize() != null) {
-                txt_article_size.setText(barcodeData.getArtSize());
-            }
-            txt_scan_qty.setText(Util.formatDouble(sqty));
-            barcodeData.setScanQty(Util.formatDouble(sqty));
+        // Resolve the scanned EAN/barcode to an article using the local EAN map.
+        FloorBarcode ean = eanArtDataMap.get(barcode);
+        if (ean == null) {
+            showScanError("Invalid", "Scanned Barcode is invalid and not part of this HU");
             return;
         }
-        box.getBox("Invalid", "Scanned Barcode is invalid and not available in Records", (dialog, which) -> {
-            clearArticleMeta();
-            txt_scan_barcode.setText("");
-            txt_scan_barcode.requestFocus();
-        });
+
+        String matnr = normalizeKey(ean.getMatnr());
+        FloorBarcode art = huArtDataMap.get(matnr);
+        if (art == null) {
+            showScanError("Invalid", "Article " + ean.getMatnr() + " is not available in this HU");
+            return;
+        }
+
+        double sqty = Util.convertStringToDouble(art.getScanQty()) + 1;
+        double rqty = Util.convertStringToDouble(art.getVerme());
+        if (rqty > 0 && sqty > rqty) {
+            box.getBox("Invalid", "Already scanned maximum allowed Qty " + Util.formatDouble(rqty), (dialog, which) -> {
+                clearArticleMeta();
+                txt_scan_barcode.setText("");
+                txt_scan_barcode.requestFocus();
+            });
+            return;
+        }
+
+        art.setScanQty(Util.formatDouble(sqty));
+        art.setBarcode(ean.getBarcode());
+
+        txt_article.setText(art.getMatnr());
+        if (art.getArtType() != null) {
+            txt_article_type.setText(art.getArtType());
+        }
+        if (art.getArtSize() != null) {
+            txt_article_size.setText(art.getArtSize());
+        }
+        txt_scan_qty.setText(Util.formatDouble(sqty));
+
+        // Fill article type/size from the lookup service if not provided in the HU data.
+        if (art.getArtType() == null || art.getArtType().trim().isEmpty()
+                || art.getArtSize() == null || art.getArtSize().trim().isEmpty()) {
+            lookupArticle(art.getMatnr());
+        }
+
         txt_scan_barcode.setText("");
         txt_scan_barcode.requestFocus();
     }
@@ -586,9 +576,20 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     private JSONArray getScanDataToSubmit() {
         try {
             JSONArray arrScanData = new JSONArray();
-            for (Map.Entry<String, FloorBarcode> floorBarcodeEntry : barcodeDataMap.entrySet()) {
-                String scanDataJsonString = new Gson().toJson(floorBarcodeEntry.getValue());
-                JSONObject itDataJson = new JSONObject(scanDataJsonString);
+            for (Map.Entry<String, FloorBarcode> entry : huArtDataMap.entrySet()) {
+                FloorBarcode art = entry.getValue();
+                double sqty = Util.convertStringToDouble(art.getScanQty());
+                if (sqty <= 0) {
+                    continue;
+                }
+                JSONObject itDataJson = new JSONObject();
+                // ET_DATA uses structure ZSDC_FLRBARCODE_ST
+                itDataJson.put("BARCODE", art.getBarcode() != null ? art.getBarcode() : "");
+                itDataJson.put("WERKS", WERKS);
+                itDataJson.put("MATNR", art.getMatnr());
+                itDataJson.put("LGPLA", art.getLgpla() != null ? art.getLgpla() : "");
+                itDataJson.put("VERME", art.getVerme() != null ? art.getVerme() : "0");
+                itDataJson.put("SCAN_QTY", Util.formatDouble(sqty));
                 arrScanData.put(itDataJson);
             }
             return arrScanData;
@@ -599,29 +600,28 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     }
 
     private void save() {
-        if (barcodeDataMap.size() == 0) {
+        JSONObject args = new JSONObject();
+        JSONArray dataToSave = getScanDataToSubmit();
+        if (dataToSave == null || dataToSave.length() == 0) {
             box.getBox("Invalid", "No records to submit. Please scan some barcodes");
             return;
         }
-        JSONObject args = new JSONObject();
-        JSONArray dataToSave = getScanDataToSubmit();
-        if (dataToSave != null) {
-            try {
-                args.put("bapiname", Vars.ZSDC_DIRECT_ART_V01_0001_RFC);
-                args.put("IM_USER", USER);
-                args.put("IM_STORE_CODE", WERKS);
-                args.put("ET_DATA", dataToSave);
-                showProcessingAndSubmit(Vars.ZSDC_DIRECT_ART_V01_0001_RFC, REQUEST_SAVE, args);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                UIFuncs.errorSound(con);
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
-                AlertBox box = new AlertBox(getContext());
-                box.getErrBox(e);
+        try {
+            args.put("bapiname", Vars.ZSDC_DIRECT_ART_V01_0001_RFC);
+            args.put("IM_USER", USER);
+            args.put("IM_STORE_CODE", WERKS);
+            args.put("IM_HU", validatedHu);
+            args.put("ET_DATA", dataToSave);
+            showProcessingAndSubmit(Vars.ZSDC_DIRECT_ART_V01_0001_RFC, REQUEST_SAVE, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
             }
+            AlertBox box = new AlertBox(getContext());
+            box.getErrBox(e);
         }
     }
 
@@ -690,17 +690,11 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                             showHuError("Err", message);
                             return;
                         }
-                        if (request == REQUEST_VALIDATE_BARCODE) {
-                            showScanError("Err", message);
-                            return;
-                        }
                         UIFuncs.errorSound(getContext());
                         AlertBox box = new AlertBox(getContext());
                         box.getBox("Err", message);
                     } else if (request == REQUEST_VALIDATE_HU) {
                         setHuData(responsebody);
-                    } else if (request == REQUEST_VALIDATE_BARCODE) {
-                        setBarcodeData(responsebody);
                     } else if (request == REQUEST_SAVE) {
                         String message = returnobj != null
                                 ? returnobj.optString("MESSAGE", "Saved successfully.").trim()

@@ -46,6 +46,7 @@ public class DashBoard extends Fragment implements
     Button save_picklist;
     Button paperless_picking;
     Button ecomm;
+    Button article_consumption;
 
     Context con;
     FragmentManager fm;
@@ -100,6 +101,7 @@ public class DashBoard extends Fragment implements
 
         Rf_idScanner  =  (Button) view.findViewById(R.id.Rf_idScanner);
         save_picklist = view.findViewById(R.id.picklist_save);
+        article_consumption = view.findViewById(R.id.article_consumption);
 
         inbound.setOnClickListener(this);
         outbound.setOnClickListener(this);
@@ -110,6 +112,7 @@ public class DashBoard extends Fragment implements
 
         Rf_idScanner.setOnClickListener(this);
         save_picklist.setOnClickListener(this);
+        article_consumption.setOnClickListener(this);
 
         return view;
     }
@@ -198,6 +201,9 @@ public class DashBoard extends Fragment implements
                 break;
             case R.id.paperless_picking:
                 fragment = new PaperLessDate();  //new
+                break;
+            case R.id.article_consumption:
+                fragment = new FragmentArticleConsumption();  //new
                 break;
         }
 
