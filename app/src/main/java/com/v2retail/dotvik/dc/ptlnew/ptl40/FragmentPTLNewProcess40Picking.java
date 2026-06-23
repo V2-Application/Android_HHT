@@ -1293,7 +1293,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
         cbSelect.setPadding(5, 2, 0, 2);
         cbSelect.setChecked(data.isConfirmShortScan());
         cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            data.setConfirmShortScan(true);
+            data.setConfirmShortScan(isChecked);
         });
         cbSelect.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
         cbSelect.setHeight(Util.dpToPx(con, 30));
@@ -1491,7 +1491,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                     //     return null;
                     // }
                     ScanData data = new ScanData().newInstance(etData, UIFuncs.toUpperTrim(txt_scanned_empty_crate_2), null);
-                    data.setSclose(etData.isShortScan() ? "X":"");
+                    data.setSclose(etData.isConfirmShortScan() ? "X":"");
                     String scanDataJsonString = new Gson().toJson(data);
                     JSONObject itDataJson = new JSONObject(scanDataJsonString);
                     arrScanData.put(itDataJson);
@@ -1618,6 +1618,15 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     step3(0);
                                                     step2(2);
+                                                    txt_empty_crate.post(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            txt_empty_crate.setText("");
+                                                            txt_scan_msa_bin.setText("");
+                                                            txt_scanned_msa_bin.setText("");
+                                                            txt_empty_crate.requestFocus();
+                                                        }
+                                                    });
                                                 }
                                             });
                                         }

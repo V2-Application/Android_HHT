@@ -42,7 +42,6 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
-import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -83,14 +82,11 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
     ArrayAdapter<String> zoneAdapter;
     List<String> stations = new ArrayList<String>();
     ArrayAdapter<String> stationsAdapter;
-    List<String> storeFloors = new ArrayList<String>();
-    ArrayAdapter<String> storeFloorAdapter;
     Map<String, Map<String, ZoneStation>> hubZoneDataMap = new LinkedHashMap<>();
 
     boolean spinnerTouched = false;
-    boolean storeFloorSpinnerTouched = false;
 
-    Spinner dd_zone_list, dd_station_list, dd_store_floor_list;
+    Spinner dd_zone_list, dd_station_list;
     Button btn_back;
     EditText txt_scan_store, txt_store, txt_scan_ext_hu, txt_ext_hu;
 
@@ -133,8 +129,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
         dd_station_list.setSelection(0);
         dd_zone_list = rootView.findViewById(R.id.ptl_new_hu_zone_store_mapping_dd_zone);
         dd_zone_list.setSelection(0);
-        dd_store_floor_list = rootView.findViewById(R.id.ptl_new_hu_zone_store_mapping_dd_store_floor);
-        dd_store_floor_list.setSelection(0);
 
         txt_scan_store = rootView.findViewById(R.id.txt_ptl_new_hu_zone_store_mapping_scan_store);
         txt_store = rootView.findViewById(R.id.txt_ptl_new_hu_zone_store_mapping_store);
@@ -152,11 +146,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
         stationsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         dd_station_list.setAdapter(stationsAdapter);
         dd_station_list.setOnTouchListener((v, me) -> {spinnerTouched = true; v.performClick(); return false;});
-
-        storeFloorAdapter = new ArrayAdapter<String>(activity, android.R.layout.simple_list_item_1, storeFloors);
-        storeFloorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        dd_store_floor_list.setAdapter(storeFloorAdapter);
-        dd_store_floor_list.setOnTouchListener((v, me) -> {storeFloorSpinnerTouched = true; v.performClick(); return false;});
 
         btn_back.setOnClickListener(this);
 
@@ -292,25 +281,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
             }
         });
 
-        dd_store_floor_list.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (storeFloorSpinnerTouched) {
-                    if (dd_store_floor_list.getSelectedItem() != null
-                            && dd_store_floor_list.getSelectedItemPosition() > 0
-                            && !dd_store_floor_list.getSelectedItem().toString().isEmpty()) {
-                        UIFuncs.enableInput(con, txt_scan_ext_hu);
-                        txt_scan_ext_hu.requestFocus();
-                    }
-                    storeFloorSpinnerTouched = false;
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
         txt_scan_store.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
@@ -402,78 +372,7 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
         txt_ext_hu.setText("");
         txt_scan_store.setText("");
         txt_store.setText("");
-        resetStoreFloorList();
         getZoneStationsList();
-    }
-
-    private void resetStoreFloorList() {
-        storeFloors.clear();
-        storeFloors.add("Select");
-        if (storeFloorAdapter != null) {
-            ((BaseAdapter) dd_store_floor_list.getAdapter()).notifyDataSetChanged();
-        }
-        dd_store_floor_list.setEnabled(false);
-        dd_store_floor_list.setSelection(0);
-        dd_store_floor_list.invalidate();
-    }
-
-    /**
-     * Maps {@code ES_FLOOR} ({@code ZSDC_FLRMSTR_STR}) from {@code ZWM_PTL_VALIDATE_STORE_V3}.
-     */
-    private void setStoreFloorList(JSONObject responsebody) {
-        try {
-            resetStoreFloorList();
-            Object esFloor = responsebody.opt("ES_FLOOR");
-            if (esFloor instanceof JSONArray) {
-                JSONArray arr = (JSONArray) esFloor;
-                int start = SapJsonRows.startIndex(arr, "FLOOR");
-                for (int i = start; i < arr.length(); i++) {
-                    JSONObject row = arr.optJSONObject(i);
-                    if (row == null || SapJsonRows.isMetadataRow(row, "FLOOR")) {
-                        continue;
-                    }
-                    addStoreFloorOption(row.optString("FLOOR", "").trim());
-                }
-            } else if (esFloor instanceof JSONObject) {
-                JSONObject row = (JSONObject) esFloor;
-                if (!SapJsonRows.isMetadataRow(row, "FLOOR")) {
-                    addStoreFloorOption(row.optString("FLOOR", "").trim());
-                }
-            }
-            if (storeFloors.size() <= 1) {
-                box.getBox("No Floors Found", "No floor data returned for this store");
-                txt_scan_store.requestFocus();
-                return;
-            }
-            ((BaseAdapter) dd_store_floor_list.getAdapter()).notifyDataSetChanged();
-            dd_store_floor_list.setEnabled(true);
-            dd_store_floor_list.invalidate();
-            if (storeFloors.size() == 2) {
-                dd_store_floor_list.setSelection(1);
-                UIFuncs.enableInput(con, txt_scan_ext_hu);
-                txt_scan_ext_hu.requestFocus();
-            } else {
-                dd_store_floor_list.setSelection(0);
-                dd_store_floor_list.requestFocus();
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            box.getErrBox(e);
-        }
-    }
-
-    private void addStoreFloorOption(String floor) {
-        if (!floor.isEmpty() && !storeFloors.contains(floor)) {
-            storeFloors.add(floor);
-        }
-    }
-
-    private String getSelectedStoreFloor() {
-        if (dd_store_floor_list.getSelectedItem() == null
-                || dd_store_floor_list.getSelectedItemPosition() <= 0) {
-            return "";
-        }
-        return dd_store_floor_list.getSelectedItem().toString().trim();
     }
 
     private void setStation(String zone){
@@ -517,13 +416,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
     }
 
     private void validateExtHU(String value){
-        String floor = getSelectedStoreFloor();
-        if (floor.isEmpty()) {
-            box.getBox("Invalid", "Please select Store FLR");
-            dd_store_floor_list.requestFocus();
-            txt_scan_ext_hu.setText("");
-            return;
-        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_VALIDATE_HU_V3);
@@ -533,7 +425,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
             args.put("IM_STORE", UIFuncs.toUpperTrim(txt_store));
             args.put("IM_HU", value);
             args.put("IM_ZONE_ST", dd_station_list.getSelectedItem().toString());
-            args.put("IM_FLOOR", floor);
             showProcessingAndSubmit(Vars.ZWM_PTL_VALIDATE_HU_V3, REQUEST_VALIDATE_EXT_HU, args);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -609,7 +500,6 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
                                         if (request == REQUEST_VALIDATE_STORE) {
-                                            resetStoreFloorList();
                                             txt_scan_store.setText("");
                                             txt_scan_store.requestFocus();
                                         }
@@ -626,8 +516,8 @@ public class FragmentPTLNewProcess40ZoneStoreHUMapping extends Fragment implemen
                                             txt_scan_store.setText("");
                                             txt_scan_ext_hu.setText("");
                                             txt_ext_hu.setText("");
-                                            UIFuncs.disableInput(con, txt_scan_ext_hu);
-                                            setStoreFloorList(responsebody);
+                                            UIFuncs.enableInput(con, txt_scan_ext_hu);
+                                            txt_scan_ext_hu.requestFocus();
                                         }
                                         else if (request == REQUEST_VALIDATE_EXT_HU) {
                                             txt_ext_hu.setText(UIFuncs.toUpperTrim(txt_scan_ext_hu));

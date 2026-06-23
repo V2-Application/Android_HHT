@@ -99,7 +99,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     EditText txt_scan_station, txt_station, txt_hub;
     EditText txt_scan_crate, txt_crate;
-    EditText txt_scan_article, txt_article, txt_proposed_store, txt_store_floor;
+    EditText txt_scan_article, txt_article, txt_proposed_store;
     EditText txt_scan_hu, txt_hu, txt_pending_qty;
     Button btn_reset;
 
@@ -207,7 +207,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_scan_article = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_article);
         txt_article = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_article);
         txt_proposed_store = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_proposed_store);
-        txt_store_floor = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_store_floor);
 
         txt_scan_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_scan_hu);
         txt_hu = rootView.findViewById(R.id.txt_ptl_new_article_putway_storewise_hu);
@@ -314,7 +313,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_scan_article.setText("");
         txt_article.setText("");
         txt_proposed_store.setText("");
-        txt_store_floor.setText("");
         txt_scan_hu.setText("");
         txt_hu.setText("");
         txt_pending_qty.setText("");
@@ -343,7 +341,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_scan_article.setText("");
         txt_article.setText("");
         txt_proposed_store.setText("");
-        txt_store_floor.setText("");
         txt_scan_hu.setText("");
         txt_hu.setText("");
         txt_pending_qty.setText("");
@@ -581,7 +578,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_crate.setText("");
             txt_article.setText("");
             txt_proposed_store.setText("");
-            txt_store_floor.setText("");
             txt_scan_article.setText("");
             txt_pending_qty.setText("");
             txt_scan_hu.setText("");
@@ -667,7 +663,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 } else {
                     txt_article.setText(matnr);
                     txt_proposed_store.setText(scanData.getStore());
-                    txt_store_floor.setText(scanData.getFloor() == null ? "" : scanData.getFloor());
                     txt_scan_hu.setText("");
                     txt_hu.setText("");
                     this.currentScan = scanData;
@@ -808,9 +803,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             store = UIFuncs.toUpperTrim(txt_proposed_store);
         }
         String floor = p.getFloor() == null ? "" : nz(p.getFloor());
-        if (floor.isEmpty()) {
-            floor = UIFuncs.toUpperTrim(txt_store_floor);
-        }
 
         if (crateVal.isEmpty() || article.isEmpty() || store.isEmpty()) {
             UIFuncs.errorSound(con);
@@ -944,7 +936,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         txt_scan_article.setText("");
         txt_article.setText("");
         txt_proposed_store.setText("");
-        txt_store_floor.setText("");
         txt_scan_hu.setText("");
         txt_hu.setText("");
         UIFuncs.disableInput(con, txt_scan_hu);
@@ -1133,7 +1124,6 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_article.setText("");
             txt_article.setText("");
             txt_proposed_store.setText("");
-            txt_store_floor.setText("");
             txt_scan_hu.setText("");
             txt_hu.setText("");
             txt_pending_qty.setText("");
