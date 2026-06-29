@@ -37,6 +37,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.v2retail.ApplicationController;
@@ -342,13 +343,28 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
         });
     }
 
-    private void loadBinData(){
+    private void showProgress(){
+        dismissDialog();
         dialog = new ProgressDialog(getContext());
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
+    }
+
+    private void dismissDialog(){
+        if (dialog != null) {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+            dialog = null;
+        }
+    }
+
+    private void loadBinData(){
+        showProgress();
         String binStr = bin_et.getText().toString();
         if (binStr.equals("") || binStr.length() == 0 || binStr == null) {
+            dismissDialog();
             box.getBox( "Alert","Scan Bin Number");
             return;
         }
@@ -370,13 +386,12 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
     }
 
     private void loadBarcodeData(){
-        dialog = new ProgressDialog(getContext());
-        dialog.setMessage("Please wait...");
-        dialog.setCancelable(false);
-        dialog.show();
+        showProgress();
         String barcodeStr = barcode_art_et.getText().toString();
         if (barcodeStr==null||barcodeStr.equals("")||barcodeStr.isEmpty()){
+            dismissDialog();
             box.getBox( "Alert","Scan BarCode");
+            return;
         }
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
@@ -407,7 +422,24 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
             bin_et.setText("");
             bin_et.requestFocus();
         }
-        dialog.dismiss();
+        dismissDialog();
+    }
+
+    private boolean matnrEquals(String matnr1, String matnr2) {
+        if (matnr1 == null || matnr2 == null) {
+            return false;
+        }
+        return UIFuncs.removeLeadingZeros(matnr1.trim())
+                .equalsIgnoreCase(UIFuncs.removeLeadingZeros(matnr2.trim()));
+    }
+
+    private EtPoDataModel findPoData(String matnr) {
+        for (EtPoDataModel po : poData) {
+            if (matnrEquals(po.getMATNR(), matnr)) {
+                return po;
+            }
+        }
+        return null;
     }
 
     private void addAndScanEan(JSONObject responsebody){
@@ -415,12 +447,25 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
             box = new AlertBox(con);
             EtEanDataModel eanModel = null;
             JSONArray ET_EAN_DATA = responsebody.getJSONArray("ET_EAN_DATA");
-            if(ET_EAN_DATA.length() > 1){
-                JSONObject jsonObject = ET_EAN_DATA.getJSONObject(1);
+            String scannedEan = UIFuncs.toUpperTrim(barcode_art_et);
+            JSONObject jsonObject = null;
+            for (int i = SapJsonRows.startIndex(ET_EAN_DATA, "EAN11", "MATNR"); i < ET_EAN_DATA.length(); i++) {
+                JSONObject row = ET_EAN_DATA.getJSONObject(i);
+                if (SapJsonRows.isMetadataRow(row, "EAN11", "MATNR")) {
+                    continue;
+                }
+                if (row.getString("EAN11").equalsIgnoreCase(scannedEan)) {
+                    jsonObject = row;
+                    break;
+                }
+            }
+            if (jsonObject == null && ET_EAN_DATA.length() == 1) {
+                jsonObject = ET_EAN_DATA.getJSONObject(0);
+            }
+            if(jsonObject != null){
                 String EAN11 = jsonObject.getString("EAN11");
                 String MATNR = jsonObject.getString("MATNR");
                 String UMREZ = jsonObject.getString("UMREZ");
-                int umrez = (int) Util.convertStringToDouble(UMREZ);
                 for (EtEanDataModel existingEan: ean) {
                     if(existingEan.getEAN11().equals(EAN11)){
                         eanModel = existingEan;
@@ -434,24 +479,19 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                     eanModel.setNewEan("Validate");
                     ean.add(eanModel);
                 }
-                EtPoDataModel model = null;
-                total_hu = String.valueOf((int) Util.convertStringToDouble(total_hu) + umrez);
-                total_hu_et.setText(total_hu);
-                for (int j = 0;j<poData.size();j++){
-                    if (poData.get(j).getMATNR().equals(MATNR)) {
-                        model = poData.get(j);
-                        model.setVEMNG(String.valueOf((int) Util.convertStringToDouble(model.getVEMNG()) + umrez));
-                        model.setBDMNG(String.valueOf((int) Util.convertStringToDouble(model.getBDMNG()) + umrez));
-                    }
-                }
-                if(model == null){
-                    poData.add(new EtPoDataModel(MATNR,UMREZ,UMREZ));
+                EtPoDataModel model = findPoData(MATNR);
+                if (model == null) {
+                    dismissDialog();
+                    box.getBox("Alert", "HU quantity not found for this article");
+                    return;
                 }
                 scanBarcodeData(UIFuncs.toUpperTrim(barcode_art_et));
             }else{
+                dismissDialog();
                 box.getBox("No Data Found", "Do data returned by server matching this EAN");
             }
         }catch(Exception exce){
+            dismissDialog();
             box.getErrBox(exce);
         }
     }
@@ -465,11 +505,12 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
         boolean check = true;
         boolean notFound = true;
         if (scanBin.equals("")||scanBin.isEmpty()){
+            dismissDialog();
             box.getBox( "Alert","First Scan Bin");
             return;
         }
-        for (int i = 0;i<ean.size();i++){
-            if (ean.get(i).getEAN11().equals(barcodeStr)){
+        for (int i = 0; i < ean.size(); i++) {
+            if (ean.get(i).getEAN11().equalsIgnoreCase(barcodeStr.trim())) {
                 EtEanDataModel eanDataModel = ean.get(i);
                 article_no_et.setText(eanDataModel.getMATNR());
                 UMREZ = eanDataModel.getUMREZ();
@@ -483,65 +524,61 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
                         eanDataModel.setNewEan("New");
                     }
                 }
-                for (int j = 0;j<poData.size();j++){
-                    if (poData.get(j).getMATNR().equals(EAMMAterial)){
-                        VEMNG = poData.get(j).getVEMNG();
-                        ahq_et.setText(Util.convertToDoubleString(VEMNG));
-                        BDMNG = poData.get(j).getBDMNG();
-                        int bdmng = (int) Util.convertStringToDouble(BDMNG);
-                        try {
-                            for (int a=0;a<jsonArray.length();a++){
-
-                                JSONObject jsonObject1 = jsonArray.getJSONObject(a);
-                                String m = jsonObject1.getString("MATNR");
-                                String bin = jsonObject1.getString("LGPLA");
-                                if (m.equals(EAMMAterial) && bin.equals(scanBin)){
-                                    String sq = jsonObject1.getString("VEMNG");
-                                    sum =  sum + umrez;
-                                    if (sum<=bdmng) {
-                                        jsonObject1.put("VEMNG", String.valueOf((int) Util.convertStringToDouble(sq) + umrez));
-                                    }
-                                    check=false;
-                                    break;
-                                }
-                            }
-                            if (check) {
-                                sum = 0;
-                                sum =  sum + umrez;
-                            }
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-
-                        if (sum<=bdmng){
-                            ScQty = ScQty+  umrez;
-                            tsq_et.setText(String.valueOf(ScQty));
-                            if (sum==0){
-                                sq_et.setText(String.valueOf(umrez));
-                            }else {
-                                sq_et.setText(String.valueOf(sum));
-                            }
-
-                            ahoq_et.setText(String.valueOf(bdmng - Integer.valueOf(sq_et.getText().toString())));
-                            try {
-                            if (check){
-                                JSONObject jsonObject = new JSONObject();
-                                jsonObject.put("VEMNG",String.valueOf(umrez));
-                                jsonObject.put("MATNR",EAMMAterial);
-                                jsonObject.put("LGPLA",scanBin);
-                                jsonArray.put(jsonObject);
-                            }
-                            Log.v(TAG,"Save Data-->"+jsonArray.toString());
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-
-                        }else {
-                            box.getBox("Alert", "Scanned Qty can't be greater than Open Qty!");
-                        }
-
-                    }
+                EtPoDataModel poModel = findPoData(EAMMAterial);
+                if (poModel == null) {
+                    dismissDialog();
+                    box.getBox("Alert", "HU quantity not found for this article");
+                    return;
                 }
+                VEMNG = poModel.getVEMNG();
+                ahq_et.setText(Util.convertToDoubleString(VEMNG));
+                BDMNG = poModel.getBDMNG();
+                int bdmng = (int) Util.convertStringToDouble(BDMNG);
+                try {
+                    for (int a=0;a<jsonArray.length();a++){
+                        JSONObject jsonObject1 = jsonArray.getJSONObject(a);
+                        String m = jsonObject1.getString("MATNR");
+                        String bin = jsonObject1.getString("LGPLA");
+                        if (matnrEquals(m, EAMMAterial) && bin.equals(scanBin)){
+                            String sq = jsonObject1.getString("VEMNG");
+                            sum = (int) Util.convertStringToDouble(sq) + umrez;
+                            if (sum<=bdmng) {
+                                jsonObject1.put("VEMNG", String.valueOf(sum));
+                            }
+                            check=false;
+                            break;
+                        }
+                    }
+                    if (check) {
+                        sum = umrez;
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+                if (sum<=bdmng){
+                    ScQty = ScQty+  umrez;
+                    tsq_et.setText(String.valueOf(ScQty));
+                    sq_et.setText(String.valueOf(sum));
+                    ahoq_et.setText(String.valueOf(bdmng - sum));
+                    try {
+                        if (check){
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("VEMNG",String.valueOf(umrez));
+                            jsonObject.put("MATNR",EAMMAterial);
+                            jsonObject.put("LGPLA",scanBin);
+                            jsonArray.put(jsonObject);
+                        }
+                        Log.v(TAG,"Save Data-->"+jsonArray.toString());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }else {
+                    dismissDialog();
+                    box.getBox("Alert", "Scanned Qty can't be greater than Open Qty!");
+                }
+
                 notFound = false;
                 break;
             }
@@ -553,9 +590,7 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
         }
         barcode_art_et.setText("");
         barcode_art_et.requestFocus();
-        if(dialog != null){
-            dialog.dismiss();
-        }
+        dismissDialog();
     }
 
     @Override
@@ -927,14 +962,11 @@ public class Scan_grc_putway_Process_Fragment extends Fragment implements View.O
     }
 
     void saveNetworkCall() {
-        dialog = new ProgressDialog(getContext());
-        dialog.setMessage("Please wait...");
-        dialog.setCancelable(false);
-        dialog.show();
+        showProgress();
 
         if (jsonArray.length()<=0){
+            dismissDialog();
             box.getBox("Alert", "Scan All Details");
-            dialog.dismiss();
             return;
         }
 

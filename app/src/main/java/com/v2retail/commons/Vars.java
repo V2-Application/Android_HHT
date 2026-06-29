@@ -324,7 +324,7 @@ public class Vars {
     public static String ZSDC_DIRECT_HU_VALIDATE_RFC = "ZSDC_DIRECT_HU_VALIDATE_RFC";
     /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE → EX_BARCODE). */
     public static String ZSDC_DIRECT_ARTICLE_VAL_RFC = "ZSDC_DIRECT_ARTICLE_VAL_RFC";
-    /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, ET_DATA). */
+    /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, IM_HU, ET_DATA). */
     public static String ZSDC_DIRECT_ART_V01_0001_RFC = "ZSDC_DIRECT_ART_V01_0001_RFC";
     public static String ZSDC_DIRECT_ART_VAL1_SAVE1_RFC = "ZSDC_DIRECT_ART_VAL1_SAVE1_RFC";
     public static String ARTICLE_LOOKUP_URL = "https://sap-api.v2retail.net/api/article-lookup";
@@ -416,4 +416,14 @@ public class Vars {
     public static String ZVND_PUT01_HU_VAL_RFC = "ZVND_PUT01_HU_VAL_RFC";
     /** PUT01 — save HU scan after validate (IM_USER, IT_DATA → Status). */
     public static String ZVND_PUT01_SAVE_DATA_RFC = "ZVND_PUT01_SAVE_DATA_RFC";
+
+    // ── Store Inbound: HU Wise Gate Entry ────────────────────────────────────────
+    /** HU Wise Gate Entry — update gate entry per HU scan (IT_GATE_ENTRY → EV_SUBRC, EV_MESSAGE). */
+    public static String Z_HU_GATE_ENTRY_UPDATE = "Z_HU_GATE_ENTRY_UPDATE";
+
+    // ── Store: Article Consumption ─────────────────────────────────────────────────
+    /** Article Consumption — validate scanned EAN (IV_EAN, IV_WERKS → EV_MATNR, EV_MEINS, EV_QTY, EV_SUBRC, EV_MSG). */
+    public static String ZRFC_ART_CONS_VALIDATE_EAN = "ZRFC_ART_CONS_VALIDATE_EAN";
+    /** Article Consumption — post scan data (IV_WERKS, IV_LGORT, IV_REF_DOC, IT_SCAN_ITEMS → EV_MBLNR, EV_MJAHR, EV_SUBRC, EV_MSG). */
+    public static String ZRFC_ART_CONS_POST = "ZRFC_ART_CONS_POST";
 }

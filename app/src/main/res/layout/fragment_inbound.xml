@@ -26,6 +26,15 @@
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
             android:textColor="#fff"
+            android:id="@+id/huWiseGateEntry"
+            android:background="#e71821"
+            android:text="HU Wise Gate Entry" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
             android:id="@+id/msa_inbound_putway_0002"
             android:background="#e71821"
             android:visibility="gone"

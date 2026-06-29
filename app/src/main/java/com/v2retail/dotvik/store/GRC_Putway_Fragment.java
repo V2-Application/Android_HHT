@@ -38,6 +38,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.v2retail.ApplicationController;
@@ -389,28 +390,37 @@ public class GRC_Putway_Fragment extends Fragment implements View.OnClickListene
                                         JSONArray ET_LAGP = responsebody.getJSONArray("ET_LAGP");
                                         JSONArray ET_HU_ITEM = responsebody.getJSONArray("ET_HU_ITEM");
                                         String EX_VEMNG = responsebody.getString("EX_VEMNG");
-                                        for (int i =1;i<ET_EAN_DATA.length();i++){
+                                        for (int i = SapJsonRows.startIndex(ET_EAN_DATA, "EAN11", "MATNR"); i < ET_EAN_DATA.length(); i++) {
                                             JSONObject jsonObject = ET_EAN_DATA.getJSONObject(i);
+                                            if (SapJsonRows.isMetadataRow(jsonObject, "EAN11", "MATNR")) {
+                                                continue;
+                                            }
                                             String MANDT = jsonObject.getString("MANDT");
                                             String MATNR = jsonObject.getString("MATNR");
                                             String EAN11 = jsonObject.getString("EAN11");
                                             String UMREZ = jsonObject.getString("UMREZ");
                                             String EANNR = jsonObject.getString("EANNR");
-                                            etEanDataModels.add(new EtEanDataModel(MATNR,UMREZ,MANDT,EAN11,EANNR));
+                                            etEanDataModels.add(new EtEanDataModel(MATNR, UMREZ, MANDT, EAN11, EANNR));
                                         }
 
-                                        for (int i =1;i<ET_LAGP.length();i++){
+                                        for (int i = SapJsonRows.startIndex(ET_LAGP, "LGPLA"); i < ET_LAGP.length(); i++) {
                                             JSONObject jsonObject = ET_LAGP.getJSONObject(i);
+                                            if (SapJsonRows.isMetadataRow(jsonObject, "LGPLA")) {
+                                                continue;
+                                            }
                                             String LGPLA = jsonObject.getString("LGPLA");
                                             etBinModels.add(new EtBinModel(LGPLA));
                                         }
-                                        for (int i =1;i<ET_HU_ITEM.length();i++){
+                                        for (int i = SapJsonRows.startIndex(ET_HU_ITEM, "MATNR", "VEMNG"); i < ET_HU_ITEM.length(); i++) {
                                             JSONObject jsonObject = ET_HU_ITEM.getJSONObject(i);
+                                            if (SapJsonRows.isMetadataRow(jsonObject, "MATNR", "VEMNG")) {
+                                                continue;
+                                            }
                                             String MATNR = jsonObject.getString("MATNR");
                                             String VEMNG = jsonObject.getString("VEMNG");
                                             String BDMNG = jsonObject.getString("BDMNG");
 
-                                            etPoDataModels.add(new EtPoDataModel(MATNR,VEMNG,BDMNG));
+                                            etPoDataModels.add(new EtPoDataModel(MATNR, VEMNG, BDMNG));
                                         }
 
                                         Bundle bundle = new Bundle();

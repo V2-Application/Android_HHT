@@ -57,6 +57,15 @@
             android:id="@+id/ptl_new_grt_process"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test Print"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/ptl_new_test_print"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>

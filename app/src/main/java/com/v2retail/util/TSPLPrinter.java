@@ -125,6 +125,18 @@ public class TSPLPrinter {
         }
     }
 
+    /** Converts SAP date (YYYYMMDD) to DD-MM-YYYY for printing. Returns input as-is if it can't be parsed. */
+    private String formatPrintDate(String rawDate) {
+        if (rawDate == null) {
+            return "";
+        }
+        String d = rawDate.trim();
+        if (d.length() == 8 && d.matches("\\d{8}")) {
+            return d.substring(6, 8) + "-" + d.substring(4, 6) + "-" + d.substring(0, 4);
+        }
+        return d;
+    }
+
     private String buildHuPrintCommand(JSONObject huObj, String copies) {
 
         String werks = "HDXX";
@@ -146,7 +158,7 @@ public class TSPLPrinter {
                 hub = String.format("HUB:- %s / %s", hub, hubName);
                 qty = String.format("Qty %s", Util.convertToDoubleString(huObj.getString("VEMNG")));
                 hhtid = String.format("HHT ID %s", UIFuncs.removeLeadingZeros(huObj.getString("HHT_ID")));
-                date = String.format("Date:- %s", huObj.getString("DATUM"));
+                date = String.format("Date:- %s", formatPrintDate(huObj.getString("DATUM")));
                 weight = String.format("HU Wt:- %s %s", huObj.getString("WEIGHT")+huObj.getString("GEWEI"),huObj.getString("PRIORITY"));
                 tvstext = huObj.getString("TVS_TEXT");
                 huno = removeLeadingZeros(huObj.getString("SAP_HU"));

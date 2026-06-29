@@ -28,7 +28,7 @@ public class InboundFragment extends Fragment implements View.OnClickListener {
 
     Button hru_grc;
     Button grc_putway;
-    Button floor_to_processg,fullHuPutway,storeBinConsPutway,putway_0002;
+    Button floor_to_processg,fullHuPutway,huWiseGateEntry,storeBinConsPutway,putway_0002;
     Button proceesg_to_msa;
     Button article_scan;
     Button storeBinConsolidation;
@@ -87,6 +87,7 @@ public class InboundFragment extends Fragment implements View.OnClickListener {
         floor_to_processg = (Button) view.findViewById(R.id.floortoprocessG);
         proceesg_to_msa = (Button) view.findViewById(R.id.processgtomsa);
         fullHuPutway = (Button) view.findViewById(R.id.fullHuPutway);
+        huWiseGateEntry = (Button) view.findViewById(R.id.huWiseGateEntry);
         putway_0002 = (Button) view.findViewById(R.id.msa_inbound_putway_0002);
         storeBinConsolidation = (Button) view.findViewById(R.id.storeBinConsolidation);
         storeBinConsPutway = (Button) view.findViewById(R.id.storeBinConsPutway);
@@ -97,6 +98,7 @@ public class InboundFragment extends Fragment implements View.OnClickListener {
             floor_to_processg.setOnClickListener(this);
             proceesg_to_msa.setOnClickListener(this);
             fullHuPutway.setOnClickListener(this);
+            huWiseGateEntry.setOnClickListener(this);
             storeBinConsolidation.setOnClickListener(this);
             storeBinConsPutway.setOnClickListener(this);
             putway_0002.setOnClickListener(this);
@@ -155,6 +157,9 @@ public class InboundFragment extends Fragment implements View.OnClickListener {
 
             case R.id.fullHuPutway:
                 fragment = new FullHuPutwayFragment();
+                break;
+            case R.id.huWiseGateEntry:
+                fragment = HuWiseGateEntryFragment.newInstance();
                 break;
             case R.id.msa_inbound_putway_0002:
                 fragment = FragmentMsaInboundPutway0002.newInstance("MSA > Inbound >");

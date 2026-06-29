@@ -48,6 +48,15 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
     FragmentManager fm;
     private OnFragmentInteractionListener mListener;
 
+    private void disableAndGreyOut(Button button) {
+        if (button == null) return;
+        button.setEnabled(false);
+        button.setClickable(false);
+        button.setAlpha(0.45f);
+        button.setBackgroundColor(0xFF7A7A7A);
+        button.setTextColor(0xFFEEEEEE);
+    }
+
     public OutWardFragment() {
         // Required empty public constructor
     }
@@ -117,6 +126,10 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         tvs_paperless_picking.setOnClickListener(this);
         tvs_paperless_picking_live_hu.setOnClickListener(this);
         hu_swap_print.setOnClickListener(this);
+
+        disableAndGreyOut(picking);
+        disableAndGreyOut(paperless_picking);
+        disableAndGreyOut(tvs_paperless_picking);
 
         return view;
     }

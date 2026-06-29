@@ -66,7 +66,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -112,6 +111,8 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
     int totalScanned = 0;
     int totalBin = 0;
     int currentStep = 1;
+    /** When true, the next picklist API response refreshes step-2 scan fields and the bin/crate table. */
+    boolean reloadAfterOperation = false;
 
     public FragmentPTLNewProcess40Picking() {
         // Required empty public constructor
@@ -545,40 +546,12 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                 toastMsg = "Empty Bin / Short Crate processed successfully";
             }
             Toast.makeText(getContext(), toastMsg, Toast.LENGTH_LONG).show();
-
-            String shortedBin = UIFuncs.toUpperTrim(txt_scanned_msa_bin);
-            removeScannedBinFromList(shortedBin);
-
-            txt_scan_msa_bin.setText("");
-            txt_scanned_msa_bin.setText("");
-                      txt_scan_msa_bin.requestFocus();
+            reloadPicklistTableAfterOperation();
         } catch (JSONException e) {
             e.printStackTrace();
             AlertBox b = new AlertBox(getContext());
             b.getErrBox(e);
         }
-    }
-
-    /** Removes every list row whose bin matches the shorted MSA bin, then refreshes the table + counter. */
-    private void removeScannedBinFromList(String bin){
-        if (bin == null || bin.trim().isEmpty() || picklistDataMap == null || picklistDataMap.isEmpty()) {
-            return;
-        }
-        String target = bin.trim();
-        Iterator<Map.Entry<String, ETPickData>> it = picklistDataMap.entrySet().iterator();
-        while (it.hasNext()) {
-            ETPickData data = it.next().getValue();
-            String rowBin = (data == null || data.getLgbin() == null) ? "" : data.getLgbin().trim();
-            if (rowBin.equalsIgnoreCase(target)) {
-                it.remove();
-            }
-        }
-        totalBin = picklistDataMap.size();
-        if (totalScanned > totalBin) {
-            totalScanned = totalBin;
-        }
-        populateBinCrateTable();
-        txt_scanned_bin.setText(totalScanned + " / " + totalBin);
     }
 
     private void clear(){
@@ -845,12 +818,37 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
 
     private void advanceToPickStep2() {
         totalBin = Math.max(1, picklistDataMap.size());
-        step2(1);
+        if (reloadAfterOperation) {
+            reloadAfterOperation = false;
+            totalScanned = 0;
+            step2(2);
+        } else {
+            step2(1);
+        }
         populateBinCrateTable();
+        txt_scanned_bin.setText(totalScanned + " / " + totalBin);
+    }
+
+    /** Re-fetches picklist bin/crate rows from SAP after a successful step-2 or step-3 operation. */
+    private void reloadPicklistTableAfterOperation() {
+        String picklistNo = UIFuncs.toUpperTrim(txt_picklistno);
+        if (picklistNo.isEmpty()) {
+            picklistNo = UIFuncs.toUpperTrim(txt_picklist);
+        }
+        if (picklistNo.isEmpty()) {
+            totalScanned = 0;
+            populateBinCrateTable();
+            txt_scanned_bin.setText(totalScanned + " / " + totalBin);
+            txt_empty_crate.requestFocus();
+            return;
+        }
+        reloadAfterOperation = true;
+        getPicklistListData(picklistNo);
     }
 
     private void getPicklistListData(String value){
         if (!ensureSapUserId()) {
+            reloadAfterOperation = false;
             return;
         }
         JSONObject args = new JSONObject();
@@ -905,6 +903,14 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                 totalBin = 1;
                 advanceToPickStep2();
             } else {
+                if (reloadAfterOperation) {
+                    reloadAfterOperation = false;
+                    totalScanned = 0;
+                    totalBin = 0;
+                    step2(2);
+                    populateBinCrateTable();
+                    txt_scanned_bin.setText(totalScanned + " / " + totalBin);
+                }
                 box.getBox("Empty", "Picklist Data is Empty");
             }
         } catch (JSONException e) {
@@ -1571,6 +1577,9 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                 String type = returnobj.getString("TYPE");
                                 if (type != null) {
                                     if (type.equals("E")) {
+                                        if (request == REQUEST_GET_PICKLIST_DATA) {
+                                            reloadAfterOperation = false;
+                                        }
                                         AlertBox box = new AlertBox(getContext());
                                         box.getBox("Err", returnobj.getString("MESSAGE"));
                                         if (request == REQUEST_BIN_DATA) {
@@ -1612,21 +1621,12 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                                         }
                                         else if (request == REQUEST_VALIDATE_MSA_CRATE) {
                                             clearFieldsForNextScan(responsebody);
-                                        }else if (request == REQUEST_SAVE) {
+                                        }                                        else if (request == REQUEST_SAVE) {
                                             box.getBox("Success", responsebody.get("EX_TANUM").toString(), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     step3(0);
-                                                    step2(2);
-                                                    txt_empty_crate.post(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            txt_empty_crate.setText("");
-                                                            txt_scan_msa_bin.setText("");
-                                                            txt_scanned_msa_bin.setText("");
-                                                            txt_empty_crate.requestFocus();
-                                                        }
-                                                    });
+                                                    reloadPicklistTableAfterOperation();
                                                 }
                                             });
                                         }

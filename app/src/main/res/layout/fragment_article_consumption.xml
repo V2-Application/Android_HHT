@@ -68,18 +68,36 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <EditText
-                    android:id="@+id/txt_article_consumption_barcode"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
-                    android:background="@drawable/border"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
+                    android:orientation="vertical">
+
+                    <EditText
+                        android:id="@+id/txt_article_consumption_barcode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/border"
+                        android:imeOptions="actionDone"
+                        android:maxLines="1"
+                        android:padding="7dp"
+                        android:singleLine="true"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/txt_article_consumption_scanned_barcode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="7dp"
+                        android:paddingTop="2dp"
+                        android:paddingEnd="7dp"
+                        android:textColor="@color/colorSuccess"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Article -->
@@ -131,38 +149,80 @@
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <RadioGroup
-                    android:id="@+id/rg_article_consumption_uom"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:weightSum="2">
 
-                    <RadioButton
-                        android:id="@+id/rb_article_consumption_single"
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:id="@+id/btn_article_consumption_single"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:buttonTint="@color/colorPrimary"
-                        android:checked="true"
-                        android:text="UOM-SINGLE  — EA"
-                        android:textColor="@color/black"
-                        android:textSize="15sp" />
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_uom_option_selected"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="10dp">
 
-                    <RadioButton
-                        android:id="@+id/rb_article_consumption_pack"
-                        android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="UOM-SINGLE"
+                            android:textColor="@color/black"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="EA"
+                            android:textColor="@color/textSecondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/btn_article_consumption_pack"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:buttonTint="@color/colorInfo"
-                        android:text="UOM-PACK"
-                        android:textColor="@color/black"
-                        android:textSize="15sp" />
-                </RadioGroup>
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_uom_option_unselected"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="UOM-PACK"
+                            android:textColor="@color/black"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txt_article_consumption_pack_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="PAC"
+                            android:textColor="@color/textSecondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/txt_article_consumption_uom_note"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="6dp"
                     android:text="auto from material"
                     android:textColor="@color/textHint"
                     android:textSize="12sp" />
@@ -178,30 +238,82 @@
                 android:padding="2dp"
                 android:weightSum="12">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="Scan Qty"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:orientation="vertical"
+                    android:padding="7dp">
 
-                <EditText
-                    android:id="@+id/txt_article_consumption_scan_qty"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Scan Qty"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txt_article_consumption_scan_qty_uom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="(in EA)"
+                        android:textColor="@color/textSecondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
                     android:background="@drawable/border"
-                    android:gravity="center"
-                    android:imeOptions="actionDone"
-                    android:inputType="numberDecimal"
-                    android:maxLines="1"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="2dp">
+
+                    <Button
+                        android:id="@+id/btn_article_consumption_scan_qty_minus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:padding="8dp"
+                        android:text="-"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/txt_article_consumption_scan_qty"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.2"
+                        android:background="@android:color/transparent"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:imeOptions="actionDone"
+                        android:inputType="number"
+                        android:maxLines="1"
+                        android:padding="7dp"
+                        android:singleLine="true"
+                        android:text="0"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btn_article_consumption_scan_qty_plus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:padding="8dp"
+                        android:text="+"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Total Scan Qty -->
@@ -215,21 +327,35 @@
                 android:padding="14dp"
                 android:weightSum="12">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="6"
-                    android:text="Total Scan Qty (EA)"
-                    android:textColor="@color/colorSuccess"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Scan Qty"
+                        android:textColor="@color/colorSuccess"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="(EA)"
+                        android:textColor="@color/colorSuccess"
+                        android:textSize="12sp" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/txt_article_consumption_total_qty"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="6"
-                    android:gravity="end"
+                    android:gravity="end|center_vertical"
                     android:text="0 EA"
                     android:textColor="@color/colorSuccess"
                     android:textSize="18sp"
