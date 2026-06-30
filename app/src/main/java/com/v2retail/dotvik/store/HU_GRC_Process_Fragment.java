@@ -334,6 +334,28 @@ public class HU_GRC_Process_Fragment extends Fragment {
         }, 1000);
     }
 
+    /**
+     * Dev JSON RFC adapter returns data rows only; production SAP often prefixes
+     * result tables with a column-name template row at index 0.
+     */
+    private static boolean isEtHusHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String huNo = row.optString("HU_NO", "").trim();
+        if ("HU_NO".equalsIgnoreCase(huNo)) {
+            return true;
+        }
+        return huNo.contains("Handling Unit");
+    }
+
+    private static int etHusStartIndex(JSONArray arr) throws JSONException {
+        if (arr == null || arr.length() == 0) {
+            return 0;
+        }
+        return isEtHusHeaderRow(arr.getJSONObject(0)) ? 1 : 0;
+    }
+
     private void sendAndRequestResponse(String date_string, String invoice_no_string , String store_number_string) {
 
 
@@ -396,14 +418,18 @@ public class HU_GRC_Process_Fragment extends Fragment {
                                             return;
                                         } else {
                                             JSONArray arrHu = responsebody.getJSONArray("ET_HUS");
-                                            if(arrHu.length() > 1){
-                                                List<String> hus = new ArrayList<>();
-                                                for(int i=1; i < arrHu.length(); i++){
-                                                    hus.add(UIFuncs.removeLeadingZeros(
-                                                            arrHu.getJSONObject(i).getString("HU_NO")));
+                                            List<String> hus = new ArrayList<>();
+                                            int start = etHusStartIndex(arrHu);
+                                            for (int i = start; i < arrHu.length(); i++) {
+                                                JSONObject row = arrHu.getJSONObject(i);
+                                                if (isEtHusHeaderRow(row)) {
+                                                    continue;
                                                 }
+                                                hus.add(UIFuncs.removeLeadingZeros(row.getString("HU_NO")));
+                                            }
+                                            if (!hus.isEmpty()) {
                                                 Bundle args=new Bundle();
-                                                args.putString("TTL_HU", (arrHu.length() - 1)+"");
+                                                args.putString("TTL_HU", String.valueOf(hus.size()));
                                                 args.putString("store_name",WERKS);
                                                 args.putSerializable("hu_list", (Serializable) hus);
                                                 Fragment fragment = new Scan_HU_GRC_Fragment();
