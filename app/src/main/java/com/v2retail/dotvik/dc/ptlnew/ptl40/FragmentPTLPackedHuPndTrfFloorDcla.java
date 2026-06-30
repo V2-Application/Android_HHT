@@ -85,6 +85,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
 
     private String validatedPallet = "";
     private String validatedHu = "";
+    private String validatedHub = "";
 
     public FragmentPTLPackedHuPndTrfFloorDcla() {
     }
@@ -372,7 +373,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
                 if (request == REQUEST_VALIDATE_PALLET) {
                     clearAfterPalletValidateFailure();
                 } else if (request == REQUEST_VALIDATE_HU) {
-                    clearAfterHuValidateFailure();
+                    rejectInvalidHuScan();
                 }
                 return;
             }
@@ -384,9 +385,10 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
                 UIFuncs.enableInput(con, txtScanHu);
                 txtScanHu.requestFocus();
             } else if (request == REQUEST_VALIDATE_HU) {
-                applyHuValidateSuccess(responsebody);
-                txtScanHu.setText("");
-                txtScanHu.requestFocus();
+                if (applyHuValidateSuccess(responsebody)) {
+                    txtScanHu.setText("");
+                    txtScanHu.requestFocus();
+                }
             } else if (request == REQUEST_SAVE) {
                 applySaveSuccess(responsebody);
                 box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message,
@@ -410,6 +412,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
 
         String hub = extractHubFromResponse(responsebody);
         if (!TextUtils.isEmpty(hub)) {
+            validatedHub = hub;
             txtHub.setText(hub);
         }
 
@@ -419,16 +422,25 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         }
     }
 
-    private void applyHuValidateSuccess(JSONObject responsebody) {
+    private boolean applyHuValidateSuccess(JSONObject responsebody) {
+        String scannedHuHub = extractEsHubWerks(responsebody);
+        if (!TextUtils.isEmpty(validatedHub) && !TextUtils.isEmpty(scannedHuHub)
+                && !validatedHub.equalsIgnoreCase(scannedHuHub)) {
+            rejectInvalidHuScan();
+            UIFuncs.errorSound(con);
+            box.getBox("Validation", "The scanned HU belongs to a different HUB.");
+            return false;
+        }
+
         String hu = firstNonEmpty(
                 UIFuncs.toUpperTrim(txtScanHu),
                 UIFuncs.toUpperTrim(txtHu));
         validatedHu = hu;
         txtHu.setText(hu);
 
-        String hub = extractEsHubWerks(responsebody);
-        if (!TextUtils.isEmpty(hub)) {
-            txtHub.setText(hub);
+        if (!TextUtils.isEmpty(scannedHuHub)) {
+            validatedHub = scannedHuHub;
+            txtHub.setText(scannedHuHub);
         }
 
         String store = extractEsStoreWerks(responsebody);
@@ -436,10 +448,8 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
             txtStore.setText(store);
         }
 
-        String noOfHu = extractReturnNumber(responsebody);
-        if (!TextUtils.isEmpty(noOfHu)) {
-            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
-        }
+        incrementNoOfHuCount();
+        return true;
     }
 
     private void applySaveSuccess(JSONObject responsebody) {
@@ -542,25 +552,41 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         }
     }
 
+    private void incrementNoOfHuCount() {
+        int currentCount = parseIntSafe(UIFuncs.toUpperTrim(txtNoOfHu));
+        txtNoOfHu.setText(String.valueOf(currentCount + 1));
+    }
+
+    private static int parseIntSafe(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private void clearAfterPalletValidateFailure() {
         validatedPallet = "";
+        validatedHub = "";
         txtPallet.setText("");
         txtHub.setText("");
         txtNoOfHu.setText("");
         txtScanPallet.requestFocus();
     }
 
-    private void clearAfterHuValidateFailure() {
+    private void rejectInvalidHuScan() {
         validatedHu = "";
-        txtHu.setText("");
-        txtStore.setText("");
-        txtNoOfHu.setText("");
+        txtScanHu.setText("");
         txtScanHu.requestFocus();
     }
 
     private void resetScreen() {
         validatedPallet = "";
         validatedHu = "";
+        validatedHub = "";
         txtScanPallet.setText("");
         txtPallet.setText("");
         txtScanHu.setText("");

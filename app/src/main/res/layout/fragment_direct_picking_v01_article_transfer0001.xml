@@ -36,9 +36,12 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_store"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/input_underline_disabled"
                     android:enabled="false"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
@@ -71,11 +74,53 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_scan_hu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
+                    android:background="@drawable/input_underline"
                     android:imeOptions="actionDone"
                     android:maxLines="1"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:padding="7dp"
+                android:text="HU Total Qty"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7">
+
+                <EditText
+                    android:id="@+id/txt_direct_picking_v01_article_transfer_0001_hu_total_qty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/input_underline_disabled"
+                    android:enabled="false"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
@@ -109,10 +154,13 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_scan_barcode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
+                    android:background="@drawable/input_underline"
                     android:imeOptions="actionDone"
                     android:maxLines="1"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:singleLine="true"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
@@ -147,9 +195,12 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_article"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/input_underline_disabled"
                     android:enabled="false"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
@@ -182,9 +233,12 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_article_type"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/input_underline_disabled"
                     android:enabled="false"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
@@ -217,9 +271,12 @@
                     android:id="@+id/txt_direct_picking_v01_article_transfer_0001_article_size"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
+                    android:background="@drawable/input_underline_disabled"
                     android:enabled="false"
-                    android:padding="7dp"
+                    android:paddingStart="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="8dp"
                     android:textColor="@color/black"
                     android:textSize="16sp" />
             </RelativeLayout>
@@ -228,36 +285,165 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="2dp"
             android:weightSum="12">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
-                android:padding="7dp"
-                android:text="Scan Qty."
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_weight="6"
+                android:orientation="vertical">
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="7">
-
-                <EditText
-                    android:id="@+id/txt_direct_picking_v01_article_transfer_0001_sqty"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-            </RelativeLayout>
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="72dp"
+                        android:maxLines="1"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="4dp"
+                        android:singleLine="true"
+                        android:text="HU.S.Q."
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/txt_direct_picking_v01_article_transfer_0001_sqty"
+                        android:layout_width="52dp"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/input_underline_disabled"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:paddingStart="4dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="72dp"
+                        android:maxLines="1"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="4dp"
+                        android:singleLine="true"
+                        android:text="HU.T.Q."
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/txt_direct_picking_v01_article_transfer_0001_tqty"
+                        android:layout_width="52dp"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/input_underline_disabled"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:paddingStart="4dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="6"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="72dp"
+                        android:maxLines="1"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:singleLine="true"
+                        android:text="T.R.Q."
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/txt_direct_picking_v01_article_transfer_0001_trqty"
+                        android:layout_width="52dp"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/input_underline_disabled"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:paddingStart="4dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="72dp"
+                        android:maxLines="1"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:singleLine="true"
+                        android:text="T.A.Q."
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/txt_direct_picking_v01_article_transfer_0001_taqty"
+                        android:layout_width="52dp"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/input_underline_disabled"
+                        android:enabled="false"
+                        android:gravity="center"
+                        android:paddingStart="4dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
     <LinearLayout

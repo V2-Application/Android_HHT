@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
@@ -74,9 +75,11 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     FragmentManager fm;
 
     Button btn_back, btn_save;
-    EditText txt_store, txt_scan_hu, txt_scan_barcode, txt_article, txt_article_type, txt_article_size, txt_scan_qty;
+    EditText txt_store, txt_scan_hu, txt_hu_total_qty, txt_scan_barcode, txt_article, txt_article_type, txt_article_size;
+    EditText txt_scan_qty, txt_trqty, txt_tqty, txt_taqty;
 
     String validatedHu = "";
+    double huTotalQty = 0;
 
     // Article-level data for the validated HU, keyed by article (MATNR). Holds available qty/type/size/bin.
     Map<String, FloorBarcode> huArtDataMap = new HashMap<>();
@@ -118,11 +121,15 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
 
         txt_store = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_store);
         txt_scan_hu = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_scan_hu);
+        txt_hu_total_qty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_hu_total_qty);
         txt_scan_barcode = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_scan_barcode);
         txt_article = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_article);
         txt_article_type = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_article_type);
         txt_article_size = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_article_size);
         txt_scan_qty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_sqty);
+        txt_trqty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_trqty);
+        txt_tqty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_tqty);
+        txt_taqty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_taqty);
 
         btn_back = rootView.findViewById(R.id.btn_direct_picking_v01_article_transfer_0001_back);
         btn_save = rootView.findViewById(R.id.btn_direct_picking_v01_article_transfer_0001_save);
@@ -153,22 +160,59 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         eanArtDataMap = new HashMap<>();
         articleLookupMap = new HashMap<>();
         validatedHu = "";
-        txt_scan_qty.setText("");
+        huTotalQty = 0;
+        clearQtyFields();
         txt_store.setText(WERKS);
         txt_article.setText("");
         txt_article_type.setText("");
         txt_article_size.setText("");
-        txt_scan_qty.setText("");
+        if (txt_hu_total_qty != null) txt_hu_total_qty.setText("");
         txt_scan_barcode.setText("");
-        UIFuncs.disableInput(con, txt_scan_barcode);
+        disableUnderlineInput(txt_scan_barcode);
         txt_scan_hu.setText("");
-        UIFuncs.enableInput(con, txt_scan_hu);
+        enableUnderlineInput(txt_scan_hu);
         txt_scan_hu.requestFocus();
+    }
+
+    private void enableUnderlineInput(EditText view) {
+        view.setBackground(ContextCompat.getDrawable(con, R.drawable.input_underline));
+        view.setEnabled(true);
+        view.requestFocus();
+    }
+
+    private void disableUnderlineInput(EditText view) {
+        view.setBackground(ContextCompat.getDrawable(con, R.drawable.input_underline_disabled));
+        view.setEnabled(false);
     }
 
     private void clearArticleMeta() {
         if (txt_article_type != null) txt_article_type.setText("");
         if (txt_article_size != null) txt_article_size.setText("");
+        if (txt_scan_qty != null) txt_scan_qty.setText("");
+        if (txt_trqty != null) txt_trqty.setText("");
+        if (txt_tqty != null) txt_tqty.setText("");
+    }
+
+    private void clearQtyFields() {
+        if (txt_scan_qty != null) txt_scan_qty.setText("");
+        if (txt_trqty != null) txt_trqty.setText("");
+        if (txt_tqty != null) txt_tqty.setText("");
+        if (txt_taqty != null) txt_taqty.setText("");
+    }
+
+    private double getTotalScannedQty() {
+        double total = 0;
+        for (FloorBarcode art : huArtDataMap.values()) {
+            total += Util.convertStringToDouble(art.getScanQty());
+        }
+        return total;
+    }
+
+    private void updateQtyFields(FloorBarcode art, double sqty, double totalQty) {
+        txt_scan_qty.setText(Util.formatDouble(sqty));
+        txt_tqty.setText(Util.formatDouble(totalQty));
+        txt_trqty.setText(Util.formatDouble(totalQty - sqty));
+        txt_taqty.setText(Util.formatDouble(getTotalScannedQty()));
     }
 
     private void showScanError(String title, String message) {
@@ -288,6 +332,8 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         UIFuncs.errorSound(getContext());
         AlertBox ab = new AlertBox(getContext());
         ab.getBox(title, message, (dialog, which) -> {
+            huTotalQty = 0;
+            if (txt_hu_total_qty != null) txt_hu_total_qty.setText("");
             txt_scan_hu.setText("");
             txt_scan_hu.requestFocus();
         });
@@ -302,6 +348,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
 
         huArtDataMap = new HashMap<>();
         eanArtDataMap = new HashMap<>();
+        huTotalQty = 0;
         try {
             parseHuArtData(responsebody.optJSONArray("ET_HU_ART_DATA"));
             parseEanArtData(responsebody.optJSONArray("ET_EAN_ART_DATA"));
@@ -315,8 +362,9 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         }
 
         txt_scan_hu.setText(hu);
-        UIFuncs.disableInput(con, txt_scan_hu);
-        UIFuncs.enableInput(con, txt_scan_barcode);
+        txt_hu_total_qty.setText(Util.formatDouble(huTotalQty));
+        disableUnderlineInput(txt_scan_hu);
+        enableUnderlineInput(txt_scan_barcode);
         txt_scan_barcode.setText("");
         txt_scan_barcode.requestFocus();
     }
@@ -327,6 +375,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         if (arr == null || arr.length() == 0) {
             return;
         }
+        huTotalQty = 0;
         int start = SapJsonRows.startIndex(arr, "MATERIAL", "QTY", "HU");
         for (int i = start; i < arr.length(); i++) {
             JSONObject row = arr.optJSONObject(i);
@@ -339,6 +388,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                 continue;
             }
             double qty = Util.convertStringToDouble(row.optString("QTY", "0"));
+            huTotalQty += qty;
             String bin = row.optString("BIN", "").trim();
             FloorBarcode art = huArtDataMap.get(key);
             if (art == null) {
@@ -561,7 +611,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         if (art.getArtSize() != null) {
             txt_article_size.setText(art.getArtSize());
         }
-        txt_scan_qty.setText(Util.formatDouble(sqty));
+        updateQtyFields(art, sqty, rqty);
 
         // Fill article type/size from the lookup service if not provided in the HU data.
         if (art.getArtType() == null || art.getArtType().trim().isEmpty()

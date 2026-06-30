@@ -121,7 +121,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="3dp"
                         android:textColor="@color/textPrimary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <EditText
                         android:id="@+id/txt_ptl_new_article_putway_storewise_hub"
@@ -137,7 +138,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="3dp"
                         android:textColor="@color/textPrimary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -223,7 +225,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="3dp"
                         android:textColor="@color/textPrimary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -274,7 +277,7 @@
                         android:minHeight="40dp"
                         android:text="Proposed Store"
                         android:textColor="@color/textPrimary"
-                        android:textSize="15sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -303,7 +306,8 @@
                         android:singleLine="true"
                         android:textColor="@color/textPrimary"
                         android:textColorHint="@color/textSecondary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <EditText
                         android:id="@+id/txt_ptl_new_article_putway_storewise_article"
@@ -319,7 +323,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="3dp"
                         android:textColor="@color/textPrimary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <EditText
                         android:id="@+id/txt_ptl_new_article_putway_storewise_proposed_store"
@@ -422,7 +427,8 @@
                         android:paddingEnd="8dp"
                         android:paddingBottom="3dp"
                         android:textColor="@color/textPrimary"
-                        android:textSize="11sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
