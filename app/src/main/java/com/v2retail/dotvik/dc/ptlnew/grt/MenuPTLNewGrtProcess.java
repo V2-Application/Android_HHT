@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.BackPressHandler;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.dc.grt.GRTCratePickingProcess;
 import com.v2retail.dotvik.dc.grt.GRTComboPalettePutway;
@@ -40,6 +41,7 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getParentFragmentManager();
+        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
     }
 
     @Override

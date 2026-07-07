@@ -111,6 +111,15 @@
             </LinearLayout>
 
             <Button
+                android:id="@+id/ptl_grt_process"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="GRT Process (PTL)"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
                 android:id="@+id/cla_process"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

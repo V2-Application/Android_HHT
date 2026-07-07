@@ -31,6 +31,15 @@ public class MenuDirectPickingV01To0001 extends Fragment implements
 
     private OnFragmentInteractionListener mListener;
 
+    private void disableAndGreyOut(Button button) {
+        if (button == null) return;
+        button.setEnabled(false);
+        button.setClickable(false);
+        button.setAlpha(0.45f);
+        button.setBackgroundColor(0xFF7A7A7A);
+        button.setTextColor(0xFFEEEEEE);
+    }
+
     public MenuDirectPickingV01To0001() {
         // Required empty public constructor
     }
@@ -60,6 +69,9 @@ public class MenuDirectPickingV01To0001 extends Fragment implements
         huwise_article_scan_v01_v09.setOnClickListener(this);
         article_putway_0001.setOnClickListener(this);
         article_transfer_v01_0001.setOnClickListener(this);
+
+        disableAndGreyOut(huwise_article_scan_v01_v09);
+        disableAndGreyOut(article_putway_0001);
 
         return view;
     }

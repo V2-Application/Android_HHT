@@ -39,6 +39,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.dotvik.R;
@@ -787,14 +788,17 @@ public class GRTScanning01Fragment extends Fragment implements View.OnClickListe
                                         return;
                                     } else {
 
-                                        boolean flag = true;
-                                        boolean unScanFlag = true;
-
                                         JSONArray ET_EAN_DATA = responsebody.getJSONArray("ET_EAN_DATA");
-                                        JSONObject jsonObject = new JSONObject();
                                         Log.v("Data",ET_EAN_DATA.toString());
-                                        for (int i =1;i<ET_EAN_DATA.length();i++){
+                                        int eanStart = SapJsonRows.startIndex(ET_EAN_DATA, "EAN11", "MATNR");
+                                        for (int i = eanStart; i < ET_EAN_DATA.length(); i++) {
                                             JSONObject data = ET_EAN_DATA.getJSONObject(i);
+                                            if (SapJsonRows.isMetadataRow(data, "EAN11", "MATNR")) {
+                                                continue;
+                                            }
+                                            boolean flag = true;
+                                            boolean unScanFlag = true;
+                                            JSONObject jsonObject = new JSONObject();
                                             for (int j=0;j< jsonArray.length();j++){
                                                 JSONObject jsonObject1 = jsonArray.getJSONObject(j);
                                                 if (jsonObject1.getString("MATERIAL").equals(data.get("MATNR"))){
@@ -852,7 +856,6 @@ public class GRTScanning01Fragment extends Fragment implements View.OnClickListe
 
                                         }
 
-                                        Log.v(TAG,jsonObject.toString());
                                         sq.setText(String.valueOf(sum));
                                         tsq.setText(String.valueOf(totalSumQ));
 

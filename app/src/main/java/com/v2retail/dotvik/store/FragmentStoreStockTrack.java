@@ -40,6 +40,7 @@ import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.Util;
@@ -87,6 +88,8 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
         super.onResume();
         if (getActivity() instanceof Home_Activity) {
             ((Home_Activity) getActivity()).setActionBarTitle("Stock Track");
+        } else if (getActivity() instanceof Process_Selection_Activity) {
+            ((Process_Selection_Activity) getActivity()).setActionBarTitle("Stock Track");
         }
     }
 

@@ -48,6 +48,7 @@ import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.BackPressHandler;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
@@ -98,6 +99,7 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getParentFragmentManager();
+        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
     }
 
     @Override
@@ -500,7 +502,7 @@ public class FragmentPTLGrtReceivePalletAtHubSorting extends Fragment implements
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_ptl_grt_receive_pallet_hub_sorting_back) {
-            fm.popBackStack();
+            BackPressHandler.confirmCloseProcess(fm, requireContext());
         }
     }
 }

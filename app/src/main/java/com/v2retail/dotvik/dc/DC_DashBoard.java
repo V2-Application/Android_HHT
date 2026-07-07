@@ -18,6 +18,7 @@ import com.v2retail.dotvik.dc.grt.GRTCratePickingProcess;
 import com.v2retail.dotvik.dc.grt.GRTProcessMenu;
 import com.v2retail.dotvik.dc.ptl.PTLProcessFragment;
 import com.v2retail.dotvik.dc.ptlnew.MenuPTLNewFragment;
+import com.v2retail.dotvik.dc.ptlnew.grt.MenuPTLNewGrtProcess;
 import com.v2retail.dotvik.dc.ptlnew.fullcrate30.MenuPTLNewPickingFullCrate30;
 import com.v2retail.dotvik.dc.ptlnew.ptl40.MenuPTLNewPickingProcess40;
 import com.v2retail.dotvik.dc.ptlnew.withoutpallate.MenuPTLNewPickingWithoutPallateFragment;
@@ -46,6 +47,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         MenuPTLNewPickingWithoutPallateFragment.OnFragmentInteractionListener,
         MenuPTLNewPickingFullCrate30.OnFragmentInteractionListener,
         MenuPTLNewPickingProcess40.OnFragmentInteractionListener,
+        MenuPTLNewGrtProcess.OnFragmentInteractionListener,
         MenuMSABinwisePickingFragment.OnFragmentInteractionListener,
         MenuBinCrateIdentifier.OnFragmentInteractionListener,
         MenuInventoryFragment.OnFragmentInteractionListener
@@ -70,6 +72,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
     Button ptl_process;
     Button cla_process;
     Button ptl_new;
+    Button ptl_grt_process;
     Button msa_binwise_picking;
     Button rdc_to_rdc_hu_putway;
     Button inbound_process_new;
@@ -124,6 +127,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         ptl_process = view.findViewById(R.id.ptl_process);
         cla_process = view.findViewById(R.id.cla_process);
         ptl_new = view.findViewById(R.id.ptl_new);
+        ptl_grt_process = view.findViewById(R.id.ptl_grt_process);
         msa_binwise_picking = view.findViewById(R.id.msa_binwise_picking);
         rdc_to_rdc_hu_putway = view.findViewById(R.id.rdc_to_rdc_hu_putway);
         inbound_process_new = view.findViewById(R.id.inbound_process_new);
@@ -137,6 +141,7 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
         ptl_process.setOnClickListener(this);
         cla_process.setOnClickListener(this);
         ptl_new.setOnClickListener(this);
+        ptl_grt_process.setOnClickListener(this);
         msa_binwise_picking.setOnClickListener(this);
         rdc_to_rdc_hu_putway.setOnClickListener(this);
         inbound_process_new.setOnClickListener(this);
@@ -241,6 +246,9 @@ public class DC_DashBoard extends Fragment implements View.OnClickListener,
                 break;
             case R.id.ptl_new:
                 fragment = new MenuPTLNewFragment();
+                break;
+            case R.id.ptl_grt_process:
+                fragment = MenuPTLNewGrtProcess.newInstance();
                 break;
             case R.id.msa_binwise_picking:
                 fragment = new MenuMSABinwisePickingFragment();

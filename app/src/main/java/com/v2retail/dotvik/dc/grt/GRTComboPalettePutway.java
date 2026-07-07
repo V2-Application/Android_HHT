@@ -2,7 +2,6 @@ package com.v2retail.dotvik.dc.grt;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -43,6 +42,7 @@ import com.v2retail.ApplicationController;
 import com.v2retail.commons.DataHelper;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.BackPressHandler;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.modal.grt.cratepick.ETPickData;
 import com.v2retail.util.AlertBox;
@@ -80,6 +80,7 @@ public class GRTComboPalettePutway extends Fragment {
     Button btnback;
 
     List<String[]> rowsData = new ArrayList<>();
+    private boolean requestInFlight = false;
 
     public GRTComboPalettePutway() {
         // Required empty public constructor
@@ -99,6 +100,7 @@ public class GRTComboPalettePutway extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getFragmentManager();
+        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
     }
 
     @Override
@@ -117,6 +119,7 @@ public class GRTComboPalettePutway extends Fragment {
         txt_palette  = rootView.findViewById(R.id.text_grt_combo_palette_putway_palette);
         btnback = rootView.findViewById(R.id.btn_grt_combo_palette_putway_back);
         scanneditems = rootView.findViewById(R.id.table_grt_combo_palette_putway_scanned_items);
+        generateHeader();
 
         txt_palette.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -198,17 +201,7 @@ public class GRTComboPalettePutway extends Fragment {
         btnback.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("Alert", "Do you want to go back.", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        fm.popBackStack();
-                    }
-                }, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
+                BackPressHandler.confirmCloseProcess(fm, requireContext());
             }
         });
         txt_palette.requestFocus();
@@ -259,6 +252,10 @@ public class GRTComboPalettePutway extends Fragment {
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args){
+        if (requestInFlight) {
+            return;
+        }
+        requestInFlight = true;
 
         dialog = new ProgressDialog(getContext());
 
@@ -273,7 +270,7 @@ public class GRTComboPalettePutway extends Fragment {
                 try {
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
-                    dialog.dismiss();
+                    dismissProgressDialog();
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
                 }
@@ -295,10 +292,7 @@ public class GRTComboPalettePutway extends Fragment {
 
             @Override
             public void onResponse(JSONObject responsebody) {
-                if(dialog!=null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
+                dismissProgressDialog();
 
                 if (responsebody == null) {
                     AlertBox box = new AlertBox(getContext());
@@ -421,14 +415,19 @@ public class GRTComboPalettePutway extends Fragment {
                     err = "Parse Error!";
                 } else err = error.toString();
 
-                if(dialog!=null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
+                dismissProgressDialog();
                 AlertBox box = new AlertBox(getContext());
                 box.getBox("Err", err);
             }
         };
+    }
+
+    private void dismissProgressDialog() {
+        requestInFlight = false;
+        if (dialog != null) {
+            dialog.dismiss();
+            dialog = null;
+        }
     }
 
     private void generateHeader(){
@@ -486,57 +485,29 @@ public class GRTComboPalettePutway extends Fragment {
         scanneditems.addView(tr, trParams);
     }
     public void addRow(JSONObject responsebody) {
-        int leftRowMargin=0;
-        int topRowMargin=0;
-        int rightRowMargin=0;
-        int bottomRowMargin = 0;
-        int textSize = 15;
-        try
-        {
-            JSONArray ET_DATA_ARRAY = responsebody.getJSONArray("ET_DATA");
-            int totalEtRecords = ET_DATA_ARRAY.length();
-            if(totalEtRecords > 0){
-                for(int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++){
-                    JSONObject ET_RECORD  = ET_DATA_ARRAY.getJSONObject(recordIndex);
-                    String [] data = new String[]{ET_RECORD.getString("PALETTE"),ET_RECORD.getString("CRATE"),ET_RECORD.getString("TANUM"),ET_RECORD.getString("MESSAGE")};
-                    rowsData.add(data);
-
-                    TextView tvSno = new TextView(getContext());
-                    tvSno.setText(rowsData.size()+"");
-                    tvSno.setTextSize(textSize);
-                    tvSno.setPadding(5,2,0,2);
-                    tvSno.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
-
-                    TextView tvPalette = new TextView(getContext());
-                    tvPalette.setText(ET_RECORD.getString("PALETTE"));
-                    tvPalette.setTextSize(textSize);
-                    tvPalette.setPadding(5,2,0,2);
-                    tvPalette.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
-
-                    TextView tvCrate = new TextView(getContext());
-                    tvCrate.setText(ET_RECORD.getString("CRATE"));
-                    tvCrate.setTextSize(textSize);
-                    tvCrate.setPadding(5,2,0,2);
-                    tvCrate.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
-
-                    TableRow tr = new TableRow(getContext());
-                    tr.setId(0);
-                    TableLayout.LayoutParams trParams = new TableLayout.LayoutParams(
-                            TableLayout.LayoutParams.MATCH_PARENT,
-                            TableLayout.LayoutParams.WRAP_CONTENT);
-                    trParams.setMargins(leftRowMargin, topRowMargin, rightRowMargin,
-                            bottomRowMargin);
-                    tr.setPadding(0,0,0,0);
-                    tr.setLayoutParams(trParams);
-                    tr.setId(rowsData.size());
-                    tr.setPadding(0,0,0,0);
-                    tr.setLayoutParams(trParams);
-                    tr.addView(tvSno);
-                    tr.addView(tvPalette);
-                    tr.addView(tvCrate);
-                    tr.setTag(data);
-                    scanneditems.addView(tr, trParams);
+        try {
+            JSONArray etDataArray = responsebody.optJSONArray("ET_DATA");
+            boolean rowAdded = false;
+            if (etDataArray != null && etDataArray.length() > 0) {
+                for (int recordIndex = 0; recordIndex < etDataArray.length(); recordIndex++) {
+                    JSONObject etRecord = etDataArray.getJSONObject(recordIndex);
+                    addLocalRow(
+                            etRecord.optString("PALETTE", txt_palette.getText().toString().trim().toUpperCase(Locale.ROOT)),
+                            etRecord.optString("CRATE", txt_crate.getText().toString().trim().toUpperCase(Locale.ROOT)),
+                            etRecord.optString("TANUM", ""),
+                            etRecord.optString("MESSAGE", "")
+                    );
+                    rowAdded = true;
                 }
+            }
+
+            if (!rowAdded) {
+                addLocalRow(
+                        txt_palette.getText().toString().trim().toUpperCase(Locale.ROOT),
+                        txt_crate.getText().toString().trim().toUpperCase(Locale.ROOT),
+                        "",
+                        ""
+                );
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -545,5 +516,47 @@ public class GRTComboPalettePutway extends Fragment {
         }
         txt_crate.setText("");
         txt_crate.requestFocus();
+    }
+
+    private void addLocalRow(String palette, String crate, String tanum, String message) {
+        String[] data = new String[]{palette, crate, tanum, message};
+        rowsData.add(data);
+        appendRowToTable(data, rowsData.size());
+    }
+
+    private void appendRowToTable(String[] data, int serialNo) {
+        int textSize = 15;
+
+        TextView tvSno = new TextView(getContext());
+        tvSno.setText(String.valueOf(serialNo));
+        tvSno.setTextSize(textSize);
+        tvSno.setPadding(5, 2, 0, 2);
+        tvSno.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+        TextView tvPalette = new TextView(getContext());
+        tvPalette.setText(data[0]);
+        tvPalette.setTextSize(textSize);
+        tvPalette.setPadding(5, 2, 0, 2);
+        tvPalette.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+        TextView tvCrate = new TextView(getContext());
+        tvCrate.setText(data[1]);
+        tvCrate.setTextSize(textSize);
+        tvCrate.setPadding(5, 2, 0, 2);
+        tvCrate.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
+
+        TableRow tr = new TableRow(getContext());
+        TableLayout.LayoutParams trParams = new TableLayout.LayoutParams(
+                TableLayout.LayoutParams.MATCH_PARENT,
+                TableLayout.LayoutParams.WRAP_CONTENT);
+        trParams.setMargins(0, 0, 0, 0);
+        tr.setLayoutParams(trParams);
+        tr.setId(serialNo);
+        tr.setPadding(0, 0, 0, 0);
+        tr.addView(tvSno);
+        tr.addView(tvPalette);
+        tr.addView(tvCrate);
+        tr.setTag(data);
+        scanneditems.addView(tr, trParams);
     }
 }

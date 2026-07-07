@@ -41,6 +41,7 @@ import com.v2retail.ApplicationController;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.adapter.GRTPickListAdapter;
+import com.v2retail.dotvik.dc.BackPressHandler;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.modal.grt.cratepick.ETPickList;
 import com.v2retail.dotvik.modal.grt.cratepick.ETSection;
@@ -129,6 +130,7 @@ public class GRTCratePickingProcess extends Fragment implements View.OnClickList
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
         fm = getParentFragmentManager();
+        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
 
     }
 

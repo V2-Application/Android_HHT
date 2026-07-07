@@ -16,7 +16,6 @@ import android.widget.Button;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
-import com.v2retail.dotvik.dc.ptlnew.grt.MenuPTLNewGrtProcess;
 import com.v2retail.dotvik.dc.ptlnew.fullcrate30.MenuPTLNewPickingFullCrate30;
 import com.v2retail.dotvik.dc.ptlnew.ptl40.MenuPTLNewPickingProcess40;
 import com.v2retail.dotvik.dc.ptlnew.withoutpallate.MenuPTLNewPickingWithoutPallateFragment;
@@ -29,15 +28,14 @@ public class MenuPTLNewFragment extends Fragment implements
         View.OnClickListener,
         MenuPTLNewPickingWithPallateFragment.OnFragmentInteractionListener,
         MenuPTLNewPickingFullCrate30.OnFragmentInteractionListener,
-        MenuPTLNewPickingProcess40.OnFragmentInteractionListener,
-        MenuPTLNewGrtProcess.OnFragmentInteractionListener {
+        MenuPTLNewPickingProcess40.OnFragmentInteractionListener {
 
     FragmentManager fm;
     Context con;
     String TAG = MenuPTLNewFragment.class.getName();
     private OnFragmentInteractionListener mListener;
 
-    Button ptl_picking_with_pallete, ptl_picking_without_pallete, ptl_picking_full_crate_30, ptl_new_picking_4_0, ptl_new_grt_process, ptl_new_test_print;
+    Button ptl_picking_with_pallete, ptl_picking_without_pallete, ptl_picking_full_crate_30, ptl_new_picking_4_0, ptl_new_test_print;
     SharedPreferencesData data;
 
     private void disableAndGreyOut(Button button) {
@@ -76,14 +74,12 @@ public class MenuPTLNewFragment extends Fragment implements
         ptl_picking_without_pallete = view.findViewById(R.id.ptl_new_picking_without_pallate);
         ptl_picking_full_crate_30 = view.findViewById(R.id.ptl_new_picking_full_crate_3_0);
         ptl_new_picking_4_0 = view.findViewById(R.id.ptl_new_picking_4_0);
-        ptl_new_grt_process = view.findViewById(R.id.ptl_new_grt_process);
         ptl_new_test_print = view.findViewById(R.id.ptl_new_test_print);
 
         ptl_picking_with_pallete.setOnClickListener(this);
         ptl_picking_without_pallete.setOnClickListener(this);
         ptl_picking_full_crate_30.setOnClickListener(this);
         ptl_new_picking_4_0.setOnClickListener(this);
-        ptl_new_grt_process.setOnClickListener(this);
         ptl_new_test_print.setOnClickListener(this);
 
         // Disable and grey-out these three processes
@@ -148,9 +144,6 @@ public class MenuPTLNewFragment extends Fragment implements
                 break;
             case R.id.ptl_new_picking_4_0:
                 fragment = MenuPTLNewPickingProcess40.newInstance();
-                break;
-            case R.id.ptl_new_grt_process:
-                fragment = MenuPTLNewGrtProcess.newInstance();
                 break;
             case R.id.ptl_new_test_print:
                 testPrint();

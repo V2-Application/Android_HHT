@@ -2,7 +2,6 @@ package com.v2retail.dotvik.dc.grt;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -43,6 +42,7 @@ import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.BackPressHandler;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.CommonUtils;
 import com.v2retail.util.SharedPreferencesData;
@@ -92,6 +92,7 @@ public class GRTComboPaletteReceive extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getFragmentManager();
+        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
     }
 
     @Override
@@ -153,17 +154,7 @@ public class GRTComboPaletteReceive extends Fragment {
         btnback.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AlertBox box = new AlertBox(getContext());
-                box.getBox("Alert", "Do you want to go back.", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        fm.popBackStack();
-                    }
-                }, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
+                BackPressHandler.confirmCloseProcess(fm, requireContext());
             }
         });
         txt_palette.requestFocus();

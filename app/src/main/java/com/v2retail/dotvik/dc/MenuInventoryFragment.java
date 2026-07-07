@@ -15,6 +15,7 @@ import android.widget.Button;
 
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.bincreateidentifier.MenuBinCrateIdentifier;
+import com.v2retail.dotvik.store.FragmentStoreStockTrack;
 
 public class MenuInventoryFragment extends Fragment implements View.OnClickListener {
 
@@ -22,6 +23,7 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
 
     Button btn_v11_to_msa;
     Button btn_stock_take;
+    Button btn_stock_take_offline;
     Button btn_bin_crate_identifier;
     Button btn_msa_live_stock_take;
     Button btn_scan_hu_article;
@@ -80,6 +82,7 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
 
         btn_v11_to_msa = rootView.findViewById(R.id.inventory_menu_v11_to_msa);
         btn_stock_take = rootView.findViewById(R.id.inventory_menu_stock_take);
+        btn_stock_take_offline = rootView.findViewById(R.id.inventory_menu_stock_take_offline);
         btn_bin_crate_identifier = rootView.findViewById(R.id.inventory_menu_bin_crate_identifier);
         btn_msa_live_stock_take = rootView.findViewById(R.id.inventory_menu_msa_live_stock_take);
         btn_scan_hu_article = rootView.findViewById(R.id.inventory_menu_scan_hu_article);
@@ -88,6 +91,7 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
 
         btn_v11_to_msa.setOnClickListener(this);
         btn_stock_take.setOnClickListener(this);
+        btn_stock_take_offline.setOnClickListener(this);
         btn_bin_crate_identifier.setOnClickListener(this);
         btn_msa_live_stock_take.setOnClickListener(this);
         btn_scan_hu_article.setOnClickListener(this);
@@ -106,6 +110,9 @@ public class MenuInventoryFragment extends Fragment implements View.OnClickListe
                 break;
             case R.id.inventory_menu_stock_take:
                 fragment = new Stock_Take_Process_Fragment();
+                break;
+            case R.id.inventory_menu_stock_take_offline:
+                fragment = FragmentStoreStockTrack.newInstance();
                 break;
             case R.id.inventory_menu_bin_crate_identifier:
                 fragment = new MenuBinCrateIdentifier();
