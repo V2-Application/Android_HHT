@@ -1,17 +1,25 @@
 package com.v2retail.dotvik.dc;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.text.InputType;
 import android.widget.EditText;
 import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
@@ -23,15 +31,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.android.volley.Request;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Screen 01 — Unloading: HU Scanning & Putway to Palette
  * Flow: Enter Vehicle → Scan HU ({@link Vars#ZVND_UNLOAD_HU_VALIDATE_RFC}, shows PO/Inv/Vendor)
  *       → Scan Palette ({@link Vars#ZVND_UNLOAD_PALLATE_VALIDATION})
- *       → Auto Save ({@link Vars#ZVND_UNLOAD_SAVE_RFC})
+ *       → Enter HU weight
+ *       → Save ({@link Vars#ZVND_UNLOAD_SAVE_RFC})
  * @version 12.106
  */
 public class FragmentHuScanPutway extends Fragment {
+    private static final String TAG = "FragmentHuScanPutway";
 
     private View view;
     private Activity activity;
@@ -65,19 +77,57 @@ public class FragmentHuScanPutway extends Fragment {
         etSqTsq         = view.findViewById(R.id.hu_et_sq_tsq);
         tvStatus        = view.findViewById(R.id.tv_status);
 
-        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
-                String hu = etHu.getText().toString().trim();
-                if (!hu.isEmpty()) validateHu(hu);
-                return true;
+        etVehicle.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_NEXT
+                        || actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    moveFocusToScanHu();
+                    return true;
+                }
+                return false;
             }
         });
+        addScannerFocusWatcher(etVehicle, new Runnable() {
+            @Override public void run() { moveFocusToScanHu(); }
+        });
+
+        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    String hu = etHu.getText().toString().trim();
+                    if (!hu.isEmpty()) validateHu(hu);
+                    return true;
+                }
+                return false;
+            }
+        });
+        addScannerFocusWatcher(etHu, new Runnable() {
+            @Override public void run() {
+                String hu = etHu.getText().toString().trim();
+                if (!hu.isEmpty()) validateHu(hu);
+            }
+        });
+
         etPalette.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
                 if (!huValidated) { showStatus("Scan HU first.", false); return true; }
                 String p = etPalette.getText().toString().trim();
                 if (!p.isEmpty()) validatePalette(p);
                 return true;
+            }
+        });
+        addScannerFocusWatcher(etPalette, new Runnable() {
+            @Override public void run() {
+                if (!huValidated) {
+                    showStatus("Scan HU first.", false);
+                    return;
+                }
+                String palette = etPalette.getText().toString().trim();
+                if (!palette.isEmpty()) {
+                    validatePalette(palette);
+                }
             }
         });
 
@@ -97,14 +147,58 @@ public class FragmentHuScanPutway extends Fragment {
     private void init() {
         activity = getActivity();
         box = new AlertBox(activity);
-        SharedPreferencesData prefs = new SharedPreferencesData(activity);
-        URL = prefs.read("URL");
-        USER = prefs.read("USER");
-        WERKS = prefs.read("WERKS");
+        refreshSessionValues();
         etDcSite.setText(WERKS);
         etPalette.setEnabled(false);
         clearDisplayFields();
         showStatus("Enter Vehicle No. and scan HU.", true);
+        etVehicle.requestFocus();
+    }
+
+    private void refreshSessionValues() {
+        if (activity == null) {
+            return;
+        }
+        SharedPreferencesData prefs = new SharedPreferencesData(activity);
+        URL = prefs.read("URL") != null ? prefs.read("URL").trim() : "";
+        USER = prefs.getSapUserId();
+        WERKS = prefs.read("WERKS") != null ? prefs.read("WERKS").trim() : "";
+        Log.d(TAG, "Session values -> URL=" + URL + ", USER=" + USER + ", WERKS=" + WERKS);
+    }
+
+    private void moveFocusToScanHu() {
+        if (etVehicle.getText().toString().trim().isEmpty()) {
+            etVehicle.requestFocus();
+            return;
+        }
+        etHu.requestFocus();
+    }
+
+    private void moveFocusToScanPallet() {
+        etPalette.post(new Runnable() {
+            @Override public void run() {
+                etPalette.requestFocus();
+            }
+        });
+    }
+
+    /** Barcode scanners often paste the full code without IME action — detect rapid input. */
+    private void addScannerFocusWatcher(final EditText field, final Runnable onScanComplete) {
+        field.addTextChangedListener(new TextWatcher() {
+            private boolean scannerReading = false;
+
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = before == 0 && start == 0 && count > 2;
+            }
+
+            @Override public void afterTextChanged(Editable s) {
+                if (scannerReading && !s.toString().trim().isEmpty()) {
+                    onScanComplete.run();
+                }
+            }
+        });
     }
 
     private void clearDisplayFields() {
@@ -117,6 +211,7 @@ public class FragmentHuScanPutway extends Fragment {
     }
 
     private void validateHu(final String hu) {
+        refreshSessionValues();
         showProgress("Validating HU...");
         JSONObject p = new JSONObject();
         try {
@@ -152,21 +247,25 @@ public class FragmentHuScanPutway extends Fragment {
 
                         etHu.setEnabled(false);
                         etPalette.setEnabled(true);
-                        etPalette.requestFocus();
+                        moveFocusToScanPallet();
                         showStatus("HU OK: " + hu + " — Scan Pallet.", true);
                     } else {
-                        String msg = ret != null ? ret.optString("MESSAGE", "") : "";
+                        huValidated = false;
+                        validatedHu = "";
+                        clearDisplayFields();
+                        String msg = sapMessage(ret, "HU not valid.");
                         showStatus("HU Error: " + msg, false);
                         etHu.setText("");
                         etHu.requestFocus();
                     }
-                } catch (JSONException e) { showStatus("Parse error", false); }
+                } catch (JSONException e) { showStatus("Parse error while validating HU.", false); }
             }
             @Override public void err(String e) { showStatus("Network: " + e, false); }
         });
     }
 
     private void validatePalette(final String palette) {
+        refreshSessionValues();
         showProgress("Validating Palette...");
         JSONObject p = new JSONObject();
         try {
@@ -184,10 +283,10 @@ public class FragmentHuScanPutway extends Fragment {
                 if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
                     etPalletDisplay.setText(palette);
                     etPalette.setEnabled(false);
-                    showStatus("Palette OK — Saving...", true);
-                    save(palette);
+                    showStatus("Palette OK — Enter weight to save.", true);
+                    showWeightDialog(palette);
                 } else {
-                    String msg = ret != null ? ret.optString("MESSAGE", "") : "";
+                    String msg = sapMessage(ret, "Pallet not valid.");
                     showStatus("Palette Error: " + msg, false);
                     etPalette.setText("");
                     etPalette.requestFocus();
@@ -197,8 +296,60 @@ public class FragmentHuScanPutway extends Fragment {
         });
     }
 
-    private void save(final String palette) {
+    private void showWeightDialog(final String palette) {
+        if (activity == null || activity.isFinishing()) {
+            showStatus("Unable to open weight dialog.", false);
+            etPalette.setEnabled(true);
+            etPalette.requestFocus();
+            return;
+        }
+
+        final EditText etWeight = new EditText(activity);
+        etWeight.setHint("Enter HU Weight");
+        etWeight.setSingleLine(true);
+        etWeight.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        int pad = (int) (16 * activity.getResources().getDisplayMetrics().density);
+        etWeight.setPadding(pad, pad, pad, pad);
+
+        final AlertDialog weightDialog = new AlertDialog.Builder(activity)
+                .setTitle("Enter HU Weight")
+                .setMessage("Enter weight for pallet " + palette)
+                .setView(etWeight)
+                .setCancelable(false)
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    etPalette.setEnabled(true);
+                    etPalette.requestFocus();
+                    showStatus("Weight entry cancelled.", false);
+                })
+                .setPositiveButton("Confirm", null)
+                .create();
+
+        weightDialog.setOnShowListener(dialog -> weightDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String weight = etWeight.getText().toString().trim();
+                    if (weight.isEmpty()) {
+                        etWeight.setError("Enter HU weight");
+                        etWeight.requestFocus();
+                        return;
+                    }
+                    weightDialog.dismiss();
+                    save(palette, weight);
+                }));
+
+        weightDialog.show();
+        etWeight.requestFocus();
+    }
+
+    private void save(final String palette, final String huWeight) {
+        refreshSessionValues();
         String vehicle = etVehicle.getText().toString().trim();
+        if (USER.trim().isEmpty()) {
+            Log.e(TAG, "Save blocked: USER is blank. URL=" + URL + ", WERKS=" + WERKS);
+            showStatus("User can not be blank. Please login again.", false);
+            etPalette.setEnabled(true);
+            etPalette.requestFocus();
+            return;
+        }
         if (vehicle.isEmpty()) {
             showStatus("Enter Vehicle No.", false);
             etPalette.setEnabled(true);
@@ -207,40 +358,68 @@ public class FragmentHuScanPutway extends Fragment {
         }
 
         showProgress("Saving...");
-        JSONObject p = new JSONObject();
-        try {
-            p.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
-            p.put("IM_USER", USER);
-            JSONObject parms = new JSONObject();
-            parms.put("PLANT", WERKS);
-            parms.put("VEHICLE", vehicle);
-            parms.put("EXT_HU", validatedHu);
-            parms.put("PALETTE", palette);
-            parms.put("PO_NO", poNo);
-            parms.put("BILL_NO", billNo);
-            p.put("IM_PARMS", parms);
-        } catch (JSONException e) { dismissProgress(); return; }
+        String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
+        final String saveUrl = base + "/noacljsonrfcadaptor?bapiname=" + Vars.ZVND_UNLOAD_SAVE_RFC + "&aclclientid=android";
+        final Map<String, String> saveParams = new HashMap<>();
+        saveParams.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
+        saveParams.put("IM_USER", USER);
+        saveParams.put("IM_PARMS[0].PLANT", WERKS);
+        saveParams.put("IM_PARMS[0].VEHICLE", vehicle);
+        saveParams.put("IM_PARMS[0].EXT_HU", validatedHu);
+        saveParams.put("IM_PARMS[0].PALETTE", palette);
+        saveParams.put("IM_PARMS[0].PO_NO", poNo);
+        saveParams.put("IM_PARMS[0].BILL_NO", billNo);
+        saveParams.put("IM_PARMS[0].HU_WT", huWeight);
+        Log.d(TAG, "Save request -> " + Vars.ZVND_UNLOAD_SAVE_RFC);
+        Log.d(TAG, "Save url -> " + saveUrl);
+        Log.d(TAG, "Save params -> " + saveParams.toString());
 
-        rfc(Vars.ZVND_UNLOAD_SAVE_RFC, p, new Cb() {
-            @Override public void ok(JSONObject r) {
-                JSONObject ret = r.optJSONObject("EX_RETURN");
-                String type = ret != null ? ret.optString("TYPE", "") : "";
-                if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                    showStatus("Saved! HU " + validatedHu + " to Palette " + palette, true);
-                    resetFields();
-                } else {
-                    String msg = ret != null ? ret.optString("MESSAGE", "") : "";
-                    showStatus("Save Error: " + msg, false);
+        StringRequest req = new StringRequest(Request.Method.POST, saveUrl,
+            new Response.Listener<String>() {
+                @Override public void onResponse(String body) {
+                    dismissProgress();
+                    Log.d(TAG, "Save response -> " + body);
+                    try {
+                        JSONObject r = new JSONObject(body != null ? body : "{}");
+                        JSONObject ret = r.optJSONObject("EX_RETURN");
+                        String type = ret != null ? ret.optString("TYPE", "") : "";
+                        if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
+                            showStatus("Saved! HU " + validatedHu + " to Palette " + palette, true);
+                            resetFields();
+                        } else {
+                            String msg = sapMessage(ret, "Could not save data.");
+                            showStatus("Save Error: " + msg, false);
+                            etPalette.setEnabled(true);
+                            etPalette.requestFocus();
+                        }
+                    } catch (JSONException e) {
+                        showStatus("Parse error while saving.", false);
+                        etPalette.setEnabled(true);
+                        etPalette.requestFocus();
+                    }
+                }
+            },
+            new Response.ErrorListener() {
+                @Override public void onErrorResponse(VolleyError e) {
+                    dismissProgress();
+                    Log.e(TAG, "Save error -> " + (e.getMessage() != null ? e.getMessage() : "Network error"), e);
+                    showStatus("Network: " + (e.getMessage() != null ? e.getMessage() : "Network error"), false);
                     etPalette.setEnabled(true);
                     etPalette.requestFocus();
                 }
+            }) {
+            @Override
+            protected Map<String, String> getParams() {
+                return saveParams;
             }
-            @Override public void err(String e) {
-                showStatus("Network: " + e, false);
-                etPalette.setEnabled(true);
-                etPalette.requestFocus();
+
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
             }
-        });
+        };
+        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
+        ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
     private void resetFields() {
@@ -252,22 +431,38 @@ public class FragmentHuScanPutway extends Fragment {
         etHu.setEnabled(true);
         etPalette.setEnabled(false);
         clearDisplayFields();
-        etHu.requestFocus();
+        etVehicle.requestFocus();
         showStatus("Enter Vehicle No. and scan HU.", true);
     }
 
     private interface Cb { void ok(JSONObject r); void err(String e); }
 
+    private String sapMessage(JSONObject ret, String fallback) {
+        if (ret == null) {
+            return fallback;
+        }
+        String msg = ret.optString("MESSAGE", "").trim();
+        return msg.isEmpty() ? fallback : msg;
+    }
+
     private void rfc(String name, JSONObject params, final Cb cb) {
         String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
         String url = base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android";
+        Log.d(TAG, "RFC request -> " + name);
+        Log.d(TAG, "RFC url -> " + url);
+        Log.d(TAG, "RFC payload -> " + params);
         JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, url, params,
             new Response.Listener<JSONObject>() {
-                @Override public void onResponse(JSONObject r) { dismissProgress(); cb.ok(r); }
+                @Override public void onResponse(JSONObject r) {
+                    dismissProgress();
+                    Log.d(TAG, "RFC response -> " + name + ": " + r);
+                    cb.ok(r);
+                }
             },
             new Response.ErrorListener() {
                 @Override public void onErrorResponse(VolleyError e) {
                     dismissProgress();
+                    Log.e(TAG, "RFC error -> " + name, e);
                     cb.err(e.getMessage() != null ? e.getMessage() : "Network error");
                 }
             });

@@ -78,7 +78,7 @@
                     android:layout_weight="7"
                     android:background="@drawable/border"
                     android:hint="VEHICLE NO"
-                    android:imeOptions="actionDone"
+                    android:imeOptions="actionNext"
                     android:inputType="textCapCharacters"
                     android:padding="7dp"
                     android:singleLine="true"

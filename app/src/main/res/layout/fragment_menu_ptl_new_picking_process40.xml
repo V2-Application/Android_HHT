@@ -134,7 +134,10 @@
                 android:id="@+id/ptl_new_picking_process_4_0_cla_area"
                 android:layout_margin="5dp"
                 android:textColor="#fff"
-                android:background="#e71821" />
+                android:background="#e71821"
+                android:enabled="false"
+                android:clickable="false"
+                android:alpha="0.5" />
 
             <Button
                 android:layout_width="match_parent"

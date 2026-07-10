@@ -1118,18 +1118,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             txt_scan_crate.requestFocus();
         } else if (request == REQUEST_VALIDATE_ZONE_HU) {
             endHuValidateInFlight();
-            // After HU validate error: clear article + HU row and restart from Scan Article.
-            currentScan = null;
-            lastScannedEan11 = "";
-            txt_scan_article.setText("");
-            txt_article.setText("");
-            txt_proposed_store.setText("");
-            txt_scan_hu.setText("");
-            txt_hu.setText("");
-            txt_pending_qty.setText("");
-            UIFuncs.disableInput(con, txt_scan_hu);
-            UIFuncs.enableInput(con, txt_scan_article);
-            txt_scan_article.requestFocus();
+            // After HU validate error: keep article/store context and let the user rescan HU.
+            clearHuScanFields();
         }
     }
 

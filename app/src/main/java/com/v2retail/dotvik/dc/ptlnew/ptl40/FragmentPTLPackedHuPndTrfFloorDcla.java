@@ -238,6 +238,13 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         if (TextUtils.isEmpty(scannedHu)) {
             return;
         }
+        if (!TextUtils.isEmpty(validatedHu) && validatedHu.equalsIgnoreCase(scannedHu.trim())) {
+            UIFuncs.errorSound(con);
+            txtScanHu.setText("");
+            box.getBox("Validation", "This HU is already scanned. Please save before scanning it again.");
+            txtScanHu.requestFocus();
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_HU_V6LIDATE_RFC);
