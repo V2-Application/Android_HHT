@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -37,6 +38,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.Vars;
@@ -61,10 +63,11 @@ import java.util.Map;
  *   2. Gate select  -> {@link Vars#ZWM_GET_GATE_ENTRY_DATA4_RFC}
  *   3. Scan BIN     -> {@link Vars#ZWM_GATE_BIN_VALIDATION4_N}
  *   4. Scan Pallet  -> {@link Vars#ZWM_GATE_PALLATE_VALIDATE4_N}
- *   5. After pick   -> {@link Vars#ZWM_GET_GATE_ENTRY_DATA4_RFC} (refresh table)
+ *   5. After pick   -> clear form + remove gate entry from dropdown
  */
 public class FragmentLotPickingFromBin extends Fragment implements View.OnClickListener {
 
+    private static final String TAG = "FragmentLotPickingFromBin";
     private static final String PLACEHOLDER_PO = "Auto fetch";
     private static final String SPINNER_DEFAULT = "Select Gate Entry No.";
 
@@ -183,6 +186,7 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         URL = prefs.read("URL");
         USER = prefs.read("USER");
         PLANT = prefs.read("WERKS");
+        Log.i(TAG, "Session values -> URL=" + URL + ", USER=" + USER + ", PLANT=" + PLANT);
 
         resetPoDisplay();
         resetBinAndPalletFields();
@@ -234,21 +238,24 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         postRfc(Vars.ZWM_GET_GATE_ENTRY_LIST4_RFC, params, new RfcCallback() {
             @Override
             public void onSuccess(JSONObject response) {
+                // LIST4 returns ET_DATA[].EDOCNO (not IT_DATA)
                 JSONArray etData = getEtDataArray(response);
                 List<String> docNos = new ArrayList<>();
                 if (etData != null) {
                     try {
-                        int start = SapJsonRows.startIndex(etData);
+                        int start = SapJsonRows.startIndex(etData, "EDOCNO", "DOCNO");
                         for (int i = start; i < etData.length(); i++) {
                             JSONObject row = etData.optJSONObject(i);
-                            if (row == null) {
+                            if (row == null
+                                    || SapJsonRows.isMetadataRow(row, "EDOCNO", "DOCNO")) {
                                 continue;
                             }
                             String docNo = row.optString("EDOCNO", "").trim();
                             if (docNo.isEmpty()) {
                                 docNo = row.optString("DOCNO", "").trim();
                             }
-                            if (!docNo.isEmpty()) {
+                            if (!docNo.isEmpty()
+                                    && !docNo.toLowerCase().contains("gate entry")) {
                                 docNos.add(docNo);
                             }
                         }
@@ -266,10 +273,13 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
                 spGateEntry.setSelection(0);
                 ignoreSpinnerSelection = false;
 
+                Log.i(TAG, "Gate Entry bound count=" + docNos.size()
+                        + " from ET_DATA size="
+                        + (etData != null ? etData.length() : 0));
                 if (docNos.isEmpty()) {
                     showStatus("No open gate entries found.", false);
                 } else {
-                    showStatus("Select Gate Entry No.", true);
+                    showStatus("Select Gate Entry No. (" + docNos.size() + ")", true);
                 }
             }
 
@@ -415,11 +425,17 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         postRfc(Vars.ZWM_GATE_PALLATE_VALIDATE4_N, params, new RfcCallback() {
             @Override
             public void onSuccess(JSONObject response) {
-                showStatus(getApiMessage(response, "Pallet validated successfully"), true);
-                validatedBin = "";
-                clearBinAndPalletFields();
+                String message = getApiMessage(response, "Pallet picked successfully");
+                String completedGate = selectedGate;
+                clearFormAfterPick();
+                removeGateEntryFromList(completedGate);
                 hideKeyboard();
-                loadGateEntryData(selectedGate);
+                int remaining = Math.max(0, gateEntryOptions.size() - 1);
+                if (remaining == 0) {
+                    showStatus(message + ". No open gate entries left.", true);
+                } else {
+                    showStatus(message + ". Select next Gate Entry No. (" + remaining + ")", true);
+                }
             }
 
             @Override
@@ -429,6 +445,41 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
                 etScanPallet.requestFocus();
             }
         });
+    }
+
+    /** Clear Gate Entry / PO / BIN / Pallet / table after successful pick. */
+    private void clearFormAfterPick() {
+        selectedGate = "";
+        validatedBin = "";
+        resetPoDisplay();
+        etScanBin.setText("");
+        etBin.setText("");
+        etScanPallet.setText("");
+        etPallet.setText("");
+        disableBinScan();
+        disablePalletScan();
+        buildTableHeader();
+    }
+
+    /** Remove completed gate entry from the dropdown list. */
+    private void removeGateEntryFromList(String gateNo) {
+        if (TextUtils.isEmpty(gateNo) || gateEntryOptions == null) {
+            return;
+        }
+        ignoreSpinnerSelection = true;
+        for (int i = gateEntryOptions.size() - 1; i >= 1; i--) {
+            if (gateNo.equalsIgnoreCase(gateEntryOptions.get(i))) {
+                gateEntryOptions.remove(i);
+                break;
+            }
+        }
+        if (gateEntryAdapter != null) {
+            gateEntryAdapter.notifyDataSetChanged();
+        }
+        if (spGateEntry != null) {
+            spGateEntry.setSelection(0);
+        }
+        ignoreSpinnerSelection = false;
     }
 
     private void populateTable(JSONArray etData) {
@@ -538,16 +589,6 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         }
     }
 
-    private void clearBinAndPalletFields() {
-        etBin.setText("");
-        etPallet.setText("");
-        etScanBin.setText("");
-        etScanPallet.setText("");
-        disablePalletScan();
-        enableBinScan();
-        etScanBin.requestFocus();
-    }
-
     private void enableBinScan() {
         etScanBin.setEnabled(true);
         etScanBin.setBackgroundResource(R.drawable.border);
@@ -622,14 +663,22 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         void onError(String message);
     }
 
-    private void postRfc(String rfcName, JSONObject params, final RfcCallback callback) {
-        String rfcUrl = buildRfcUrl(rfcName);
+    private void postRfc(final String rfcName, JSONObject params, final RfcCallback callback) {
+        String rfcUrl = GatewayUrls.noAclJsonRfcUrl(URL, rfcName);
+        if (rfcUrl.isEmpty()) {
+            callback.onError("Server URL missing. Please log in again.");
+            return;
+        }
+        Log.i(TAG, "RFCrequest->" + rfcName);
+        Log.i(TAG, "RFCurl->" + rfcUrl);
+        Log.i(TAG, "RFCpayload->" + params);
         JsonObjectRequest req = new SapJsonObjectRequest(
                 Request.Method.POST, rfcUrl, params,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         dismissProgress();
+                        Log.i(TAG, "RFCresponse->" + rfcName + ": " + response);
                         if (response == null) {
                             callback.onError("Empty response from server.");
                             return;
@@ -645,6 +694,7 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         dismissProgress();
+                        Log.e(TAG, "RFCerror->" + rfcName + ": " + parseVolleyError(error), error);
                         callback.onError("Network error: " + parseVolleyError(error));
                     }
                 });
@@ -653,21 +703,21 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         queue.add(req);
     }
 
-    private String buildRfcUrl(String rfcName) {
-        String base = URL;
-        if (base.contains("/ValueXMW")) {
-            base = base.replace("/ValueXMW", "");
-        }
-        return base + "/noacljsonrfcadaptor?bapiname=" + rfcName + "&aclclientid=android";
-    }
-
     private boolean isApiSuccess(JSONObject response) {
+        if (response == null) {
+            return false;
+        }
+        // LIST4 may return blank EX_RETURN.TYPE with valid ET_DATA rows
+        JSONArray table = getEtDataArray(response);
+        if (table != null && table.length() > 0) {
+            return true;
+        }
         if (response.has("Status")) {
             return response.optBoolean("Status", false);
         }
         JSONObject ret = response.optJSONObject("EX_RETURN");
         if (ret != null) {
-            String type = ret.optString("TYPE", "");
+            String type = ret.optString("TYPE", "").trim();
             return "S".equalsIgnoreCase(type) || type.isEmpty();
         }
         return response.length() > 0;
@@ -688,22 +738,45 @@ public class FragmentLotPickingFromBin extends Fragment implements View.OnClickL
         return fallback;
     }
 
+    /**
+     * LIST4 / DATA4 return {@code ET_DATA} (EDOCNO, PALETTE, BIN…).
+     * Prefer ET_* first; skip empty arrays so blank IT_DATA does not hide ET_DATA.
+     */
     private JSONArray getEtDataArray(JSONObject response) {
+        if (response == null) {
+            return null;
+        }
+        JSONArray arr = firstNonEmptyArray(response,
+                "ET_DATA", "ET_Data", "IT_DATA", "IT_Data");
+        if (arr != null) {
+            return arr;
+        }
         JSONObject data = response.optJSONObject("Data");
         if (data != null) {
-            JSONArray arr = data.optJSONArray("ET_Data");
-            if (arr == null) {
-                arr = data.optJSONArray("ET_DATA");
+            return firstNonEmptyArray(data,
+                    "ET_DATA", "ET_Data", "IT_DATA", "IT_Data");
+        }
+        return null;
+    }
+
+    private JSONArray firstNonEmptyArray(JSONObject obj, String... keys) {
+        if (obj == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            JSONArray arr = obj.optJSONArray(key);
+            if (arr != null && arr.length() > 0) {
+                return arr;
             }
+        }
+        // Prefer a present empty array over null (caller may still handle empty)
+        for (String key : keys) {
+            JSONArray arr = obj.optJSONArray(key);
             if (arr != null) {
                 return arr;
             }
         }
-        JSONArray arr = response.optJSONArray("ET_DATA");
-        if (arr == null) {
-            arr = response.optJSONArray("ET_Data");
-        }
-        return arr;
+        return null;
     }
 
     private void showStatus(String msg, boolean ok) {

@@ -168,6 +168,15 @@ public final class SapJsonRows {
         if ("crate".equalsIgnoreCase(val)) {
             return true;
         }
+        if (v.contains("gate entry")) {
+            return true;
+        }
+        if (v.contains("purchasing document")) {
+            return true;
+        }
+        if (v.contains("grt no") || v.startsWith("grt ")) {
+            return true;
+        }
         if (v.startsWith("section")) {
             return true;
         }

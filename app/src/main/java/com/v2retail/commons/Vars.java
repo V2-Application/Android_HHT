@@ -373,7 +373,7 @@ public class Vars {
     public static String ZWM_GATE_BIN_VALIDATION3_N = "ZWM_GATE_BIN_VALIDATION3_N";
 
     // ── LOT Picking (Pallet Picking from BIN) ────────────────────────────────────
-    /** LOT Picking — load open gate entries (IM_USER, IM_PLANT → ET_Data.EDOCNO). */
+    /** LOT Picking — load open gate entries (IM_USER, IM_PLANT → ET_DATA.EDOCNO). */
     public static String ZWM_GET_GATE_ENTRY_LIST4_RFC = "ZWM_GET_GATE_ENTRY_LIST4_RFC";
     /** LOT Picking — PO + table for selected gate entry (IM_USER, IM_PLANT, IM_GET → EX_PO, ET_Data). */
     public static String ZWM_GET_GATE_ENTRY_DATA4_RFC = "ZWM_GET_GATE_ENTRY_DATA4_RFC";
@@ -395,7 +395,7 @@ public class Vars {
     public static String ZVND_PUTWAY_BIN_VAL_RFC = "ZVND_PUTWAY_BIN_VAL_RFC";
     /** Inbound Putway to BIN — validate palette (IM_USER, IM_PLANT, IM_BIN, IM_PALL → ET_DATA, EX_RETURN). */
     public static String ZVND_PUTWAY_PALETTE_VAL_RFC = "ZVND_PUTWAY_PALETTE_VAL_RFC";
-    /** Inbound Putway to BIN — save palette to BIN (IM_USER, IT_DATA → EX_RETURN). */
+    /** Inbound Putway to BIN — save (IM_USER, IT_DATA: PLANT/LGPLA/PALETTE → EX_RETURN). */
     public static String ZVND_PUTWAY_SAVE_DATA_RFC = "ZVND_PUTWAY_SAVE_DATA_RFC";
 
     // ── DC Inbound: VND Box Put to BIN ───────────────────────────────────────────

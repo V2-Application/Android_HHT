@@ -3,9 +3,14 @@ package com.v2retail.dotvik.dc;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import androidx.fragment.app.Fragment;
@@ -33,6 +38,7 @@ import com.android.volley.Request;
  * @version 12.106
  */
 public class FragmentInboundPutwayToBin extends Fragment {
+    private static final String TAG = "FragmentInboundPutwayToBin";
 
     private View view;
     private Activity activity;
@@ -68,18 +74,48 @@ public class FragmentInboundPutwayToBin extends Fragment {
         tvStatus         = view.findViewById(R.id.tv_status);
 
         etBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
-                String b = etBin.getText().toString().trim();
-                if (!b.isEmpty()) validateBin(b);
-                return true;
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_NEXT) {
+                    String b = etBin.getText().toString().trim();
+                    if (!b.isEmpty()) validateBin(b);
+                    return true;
+                }
+                return false;
             }
         });
+        addScannerFocusWatcher(etBin, new Runnable() {
+            @Override public void run() {
+                String b = etBin.getText().toString().trim();
+                if (!b.isEmpty()) validateBin(b);
+            }
+        });
+
         etPalette.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
-                if (!binValidated) { showStatus("Scan BIN first.", false); return true; }
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_NEXT) {
+                    if (!binValidated) {
+                        showStatus("Scan BIN first.", false);
+                        return true;
+                    }
+                    String p = etPalette.getText().toString().trim();
+                    if (!p.isEmpty()) validatePalette(p);
+                    return true;
+                }
+                return false;
+            }
+        });
+        addScannerFocusWatcher(etPalette, new Runnable() {
+            @Override public void run() {
+                if (!binValidated) {
+                    showStatus("Scan BIN first.", false);
+                    return;
+                }
                 String p = etPalette.getText().toString().trim();
                 if (!p.isEmpty()) validatePalette(p);
-                return true;
             }
         });
 
@@ -94,6 +130,16 @@ public class FragmentInboundPutwayToBin extends Fragment {
             ((Process_Selection_Activity) getActivity())
                     .setActionBarTitle("HU PUTWAY TO BIN");
         }
+        // Keep cursor on Scan BIN when screen opens / resumes (unless palette is active)
+        if (etBin != null && etBin.isEnabled() && !binValidated) {
+            etBin.post(new Runnable() {
+                @Override public void run() { etBin.requestFocus(); }
+            });
+        } else if (etPalette != null && etPalette.isEnabled()) {
+            etPalette.post(new Runnable() {
+                @Override public void run() { etPalette.requestFocus(); }
+            });
+        }
     }
 
     private void init() {
@@ -107,6 +153,28 @@ public class FragmentInboundPutwayToBin extends Fragment {
         etPalette.setEnabled(false);
         clearDisplayFields();
         showStatus("Scan Destination BIN.", true);
+        etBin.post(new Runnable() {
+            @Override public void run() { etBin.requestFocus(); }
+        });
+    }
+
+    /** Barcode scanners often paste the full code without IME action — detect rapid input. */
+    private void addScannerFocusWatcher(final EditText field, final Runnable onScanComplete) {
+        field.addTextChangedListener(new TextWatcher() {
+            private boolean scannerReading = false;
+
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = before == 0 && start == 0 && count > 2;
+            }
+
+            @Override public void afterTextChanged(Editable s) {
+                if (scannerReading && !s.toString().trim().isEmpty()) {
+                    onScanComplete.run();
+                }
+            }
+        });
     }
 
     private void clearDisplayFields() {
@@ -138,7 +206,9 @@ public class FragmentInboundPutwayToBin extends Fragment {
                     etBinDisplay.setText(bin);
                     etBin.setEnabled(false);
                     etPalette.setEnabled(true);
-                    etPalette.requestFocus();
+                    etPalette.post(new Runnable() {
+                        @Override public void run() { etPalette.requestFocus(); }
+                    });
                     showStatus("BIN OK: " + bin + " — Scan Palette.", true);
                 } else {
                     String msg = ret != null ? ret.optString("MESSAGE", "") : "";
@@ -204,14 +274,13 @@ public class FragmentInboundPutwayToBin extends Fragment {
         showProgress("Saving...");
         JSONObject p = new JSONObject();
         try {
+            // ZVND_PUTWAY_SAVE_DATA_RFC: IM_USER + IT_DATA (PLANT, LGPLA, PALETTE)
             p.put("bapiname", Vars.ZVND_PUTWAY_SAVE_DATA_RFC);
             p.put("IM_USER", USER);
             JSONObject row = new JSONObject();
             row.put("PLANT", WERKS);
-            row.put("BIN", validatedBin);
+            row.put("LGPLA", validatedBin);
             row.put("PALETTE", validatedPall);
-            row.put("PO_NO", poNo);
-            row.put("BILL_NO", billNo);
             JSONArray it = new JSONArray();
             it.put(row);
             p.put("IT_DATA", it);
@@ -221,13 +290,18 @@ public class FragmentInboundPutwayToBin extends Fragment {
             @Override public void ok(JSONObject r) {
                 JSONObject ret = r.optJSONObject("EX_RETURN");
                 String type = ret != null ? ret.optString("TYPE", "") : "";
+                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
                 if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
                     totScannedBin++;
                     etTotScannedBin.setText(String.valueOf(totScannedBin));
-                    showStatus("Saved! Palette " + validatedPall + " to BIN " + validatedBin, true);
-                    partialReset();
+                    if (msg.isEmpty()) {
+                        msg = "Saved! Palette " + validatedPall + " to BIN " + validatedBin;
+                    }
+                    partialReset(msg);
                 } else {
-                    String msg = ret != null ? ret.optString("MESSAGE", "") : "";
+                    if (msg.isEmpty()) {
+                        msg = "Could not save data.";
+                    }
                     showStatus("Save Error: " + msg, false);
                     etPalette.setEnabled(true);
                     etPalette.requestFocus();
@@ -241,7 +315,7 @@ public class FragmentInboundPutwayToBin extends Fragment {
         });
     }
 
-    private void partialReset() {
+    private void partialReset(String statusMsg) {
         binValidated = false;
         validatedBin = "";
         validatedPall = "";
@@ -251,22 +325,32 @@ public class FragmentInboundPutwayToBin extends Fragment {
         etPaletteDisplay.setText("");
         etBin.setEnabled(true);
         etPalette.setEnabled(false);
-        etBin.requestFocus();
-        showStatus("BIN cleared — Scan next BIN.", true);
+        etBin.post(new Runnable() {
+            @Override public void run() { etBin.requestFocus(); }
+        });
+        showStatus(statusMsg, true);
     }
 
     private interface Cb { void ok(JSONObject r); void err(String e); }
 
     private void rfc(String name, JSONObject params, final Cb cb) {
         String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
-        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST,
-                base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android", params,
+        String url = base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android";
+        Log.d(TAG, "RFC request -> " + name);
+        Log.d(TAG, "RFC url -> " + url);
+        Log.d(TAG, "RFC payload -> " + params);
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, url, params,
             new Response.Listener<JSONObject>() {
-                @Override public void onResponse(JSONObject r) { dismissProgress(); cb.ok(r); }
+                @Override public void onResponse(JSONObject r) {
+                    dismissProgress();
+                    Log.d(TAG, "RFC response -> " + name + ": " + r);
+                    cb.ok(r);
+                }
             },
             new Response.ErrorListener() {
                 @Override public void onErrorResponse(VolleyError e) {
                     dismissProgress();
+                    Log.e(TAG, "RFC error -> " + name, e);
                     cb.err(e.getMessage() != null ? e.getMessage() : "Network error");
                 }
             });

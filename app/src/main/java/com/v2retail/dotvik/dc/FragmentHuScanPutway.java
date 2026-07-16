@@ -15,11 +15,12 @@ import android.view.inputmethod.EditorInfo;
 import android.text.InputType;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.view.Gravity;
 import androidx.fragment.app.Fragment;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
@@ -31,8 +32,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.android.volley.Request;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Screen 01 — Unloading: HU Scanning & Putway to Palette
@@ -358,68 +357,60 @@ public class FragmentHuScanPutway extends Fragment {
         }
 
         showProgress("Saving...");
-        String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
-        final String saveUrl = base + "/noacljsonrfcadaptor?bapiname=" + Vars.ZVND_UNLOAD_SAVE_RFC + "&aclclientid=android";
-        final Map<String, String> saveParams = new HashMap<>();
-        saveParams.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
-        saveParams.put("IM_USER", USER);
-        saveParams.put("IM_PARMS[0].PLANT", WERKS);
-        saveParams.put("IM_PARMS[0].VEHICLE", vehicle);
-        saveParams.put("IM_PARMS[0].EXT_HU", validatedHu);
-        saveParams.put("IM_PARMS[0].PALETTE", palette);
-        saveParams.put("IM_PARMS[0].PO_NO", poNo);
-        saveParams.put("IM_PARMS[0].BILL_NO", billNo);
-        saveParams.put("IM_PARMS[0].HU_WT", huWeight);
-        Log.d(TAG, "Save request -> " + Vars.ZVND_UNLOAD_SAVE_RFC);
-        Log.d(TAG, "Save url -> " + saveUrl);
-        Log.d(TAG, "Save params -> " + saveParams.toString());
+        // ZVND_UNLOAD_SAVE_RFC: IM_USER + IM_PARMS (ZTT_UNLOAD_SAVE / ZSTR_UNLOAD_SAVE)
+        // → EX_RETURN (BAPIRET2)
+        JSONObject p = new JSONObject();
+        try {
+            p.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
+            p.put("IM_USER", USER);
 
-        StringRequest req = new StringRequest(Request.Method.POST, saveUrl,
-            new Response.Listener<String>() {
-                @Override public void onResponse(String body) {
-                    dismissProgress();
-                    Log.d(TAG, "Save response -> " + body);
-                    try {
-                        JSONObject r = new JSONObject(body != null ? body : "{}");
-                        JSONObject ret = r.optJSONObject("EX_RETURN");
-                        String type = ret != null ? ret.optString("TYPE", "") : "";
-                        if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                            showStatus("Saved! HU " + validatedHu + " to Palette " + palette, true);
-                            resetFields();
-                        } else {
-                            String msg = sapMessage(ret, "Could not save data.");
-                            showStatus("Save Error: " + msg, false);
-                            etPalette.setEnabled(true);
-                            etPalette.requestFocus();
-                        }
-                    } catch (JSONException e) {
-                        showStatus("Parse error while saving.", false);
-                        etPalette.setEnabled(true);
-                        etPalette.requestFocus();
+            JSONObject row = new JSONObject();
+            row.put("PLANT", WERKS);
+            row.put("VEHICLE", vehicle);
+            row.put("EXT_HU", validatedHu);
+            row.put("PALETTE", palette);
+            row.put("PO_NO", poNo != null ? poNo : "");
+            row.put("BILL_NO", billNo != null ? billNo : "");
+            row.put("HU_WT", huWeight);
+
+            JSONArray imParms = new JSONArray();
+            imParms.put(row);
+            p.put("IM_PARMS", imParms);
+        } catch (JSONException e) {
+            dismissProgress();
+            showStatus("Could not build save request.", false);
+            etPalette.setEnabled(true);
+            etPalette.requestFocus();
+            return;
+        }
+
+        rfc(Vars.ZVND_UNLOAD_SAVE_RFC, p, new Cb() {
+            @Override public void ok(JSONObject r) {
+                JSONObject ret = r.optJSONObject("EX_RETURN");
+                String type = ret != null ? ret.optString("TYPE", "") : "";
+                if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
+                    String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
+                    if (!msg.isEmpty()) {
+                        showBottomToast(msg);
                     }
-                }
-            },
-            new Response.ErrorListener() {
-                @Override public void onErrorResponse(VolleyError e) {
-                    dismissProgress();
-                    Log.e(TAG, "Save error -> " + (e.getMessage() != null ? e.getMessage() : "Network error"), e);
-                    showStatus("Network: " + (e.getMessage() != null ? e.getMessage() : "Network error"), false);
+                    resetFields();
+                } else {
+                    String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
+                    if (msg.isEmpty()) {
+                        msg = "Could not save data.";
+                    }
+                    showStatus("Save Error: " + msg, false);
                     etPalette.setEnabled(true);
                     etPalette.requestFocus();
                 }
-            }) {
-            @Override
-            protected Map<String, String> getParams() {
-                return saveParams;
             }
 
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
+            @Override public void err(String e) {
+                showStatus("Network: " + e, false);
+                etPalette.setEnabled(true);
+                etPalette.requestFocus();
             }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        });
     }
 
     private void resetFields() {
@@ -443,6 +434,15 @@ public class FragmentHuScanPutway extends Fragment {
         }
         String msg = ret.optString("MESSAGE", "").trim();
         return msg.isEmpty() ? fallback : msg;
+    }
+
+    private void showBottomToast(String message) {
+        if (activity == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+        Toast toast = Toast.makeText(activity, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
     }
 
     private void rfc(String name, JSONObject params, final Cb cb) {

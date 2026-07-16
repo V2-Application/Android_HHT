@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,9 +15,9 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -32,6 +35,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.Vars;
@@ -53,6 +57,7 @@ import java.util.List;
  */
 public class FragmentGateEntryLotPutway extends Fragment implements View.OnClickListener {
 
+    private static final String TAG = "FragmentGateEntryLotPutway";
     private static final String PLACEHOLDER_PO  = "Automatically as per Gate entry";
     private static final String SPINNER_DEFAULT = "Select Gate Entry No";
 
@@ -61,7 +66,7 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
     private AlertBox box;
 
     private EditText etDcSite;
-    private Spinner spGateEntry;
+    private AutoCompleteTextView actvGateEntry;
     private TextView tvPoNo;
     private TextView tvVendorInv;
     private EditText etPallet;
@@ -72,7 +77,6 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
 
     private ArrayAdapter<String> gateEntryAdapter;
     private final List<String> gateEntryOptions = new ArrayList<>();
-    private boolean ignoreSpinnerSelection = false;
 
     private String URL = "";
     private String USER = "";
@@ -94,7 +98,7 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         View view = inflater.inflate(R.layout.fragment_gate_entry_lot_putway, container, false);
 
         etDcSite = view.findViewById(R.id.gate_et_dc_site);
-        spGateEntry = view.findViewById(R.id.gate_sp_gate_entry);
+        actvGateEntry = view.findViewById(R.id.gate_actv_gate_entry);
         tvPoNo = view.findViewById(R.id.gate_tv_po_no);
         tvVendorInv = view.findViewById(R.id.gate_tv_vendor_inv);
         etPallet = view.findViewById(R.id.gate_et_pallet);
@@ -110,6 +114,7 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
                         || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
                         && event.getAction() == KeyEvent.ACTION_DOWN)) {
                     String pallet = etPallet.getText().toString().trim();
@@ -121,20 +126,39 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
                 return false;
             }
         });
+        addScannerFocusWatcher(etPallet, new Runnable() {
+            @Override
+            public void run() {
+                String pallet = etPallet.getText().toString().trim();
+                if (!pallet.isEmpty()) {
+                    validatePallet(pallet);
+                }
+            }
+        });
 
         etBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
                         || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
                         && event.getAction() == KeyEvent.ACTION_DOWN)) {
-                    String box = etBox.getText().toString().trim();
-                    if (!box.isEmpty()) {
-                        onBoxScanned(box);
+                    String boxNo = etBox.getText().toString().trim();
+                    if (!boxNo.isEmpty()) {
+                        onBoxScanned(boxNo);
                     }
                     return true;
                 }
                 return false;
+            }
+        });
+        addScannerFocusWatcher(etBox, new Runnable() {
+            @Override
+            public void run() {
+                String boxNo = etBox.getText().toString().trim();
+                if (!boxNo.isEmpty()) {
+                    onBoxScanned(boxNo);
+                }
             }
         });
 
@@ -158,34 +182,78 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         URL = prefs.read("URL");
         USER = prefs.read("USER");
         WERKS = prefs.read("WERKS");
+        Log.d(TAG, "Session values -> URL=" + URL + ", USER=" + USER + ", WERKS=" + WERKS);
 
         etDcSite.setText(WERKS);
         resetGateEntryDetails();
-        setupGateEntrySpinner();
+        setupGateEntryDropdown();
         updateFieldStates();
         loadGateEntryList();
     }
 
-    private void setupGateEntrySpinner() {
+    private void setupGateEntryDropdown() {
         gateEntryOptions.clear();
-        gateEntryOptions.add(SPINNER_DEFAULT);
         gateEntryAdapter = new ArrayAdapter<>(
-                activity, android.R.layout.simple_spinner_item, gateEntryOptions);
-        gateEntryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spGateEntry.setAdapter(gateEntryAdapter);
-        spGateEntry.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                activity, android.R.layout.simple_dropdown_item_1line, gateEntryOptions);
+        actvGateEntry.setAdapter(gateEntryAdapter);
+        actvGateEntry.setThreshold(1);
+        actvGateEntry.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (ignoreSpinnerSelection || position <= 0) {
-                    return;
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Object item = parent.getItemAtPosition(position);
+                if (item != null) {
+                    trySelectGateEntry(item.toString());
                 }
-                onGateEntrySelected(gateEntryOptions.get(position));
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+        actvGateEntry.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                    trySelectGateEntry(actvGateEntry.getText().toString());
+                    return true;
+                }
+                return false;
+            }
+        });
+        actvGateEntry.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (gateEntryAdapter != null && gateEntryAdapter.getCount() > 0) {
+                    actvGateEntry.showDropDown();
+                }
+            }
+        });
+    }
+
+    private void trySelectGateEntry(String raw) {
+        String gateNo = raw != null ? raw.trim() : "";
+        if (gateNo.isEmpty() || SPINNER_DEFAULT.equalsIgnoreCase(gateNo)) {
+            return;
+        }
+        String match = findGateEntryMatch(gateNo);
+        if (match == null) {
+            showError("Invalid Gate Entry No. Please select from the list.");
+            actvGateEntry.requestFocus();
+            actvGateEntry.showDropDown();
+            return;
+        }
+        actvGateEntry.setText(match, false);
+        actvGateEntry.dismissDropDown();
+        if (!match.equals(selectedGate)) {
+            onGateEntrySelected(match);
+        }
+    }
+
+    private String findGateEntryMatch(String gateNo) {
+        for (String docNo : gateEntryOptions) {
+            if (docNo != null && docNo.equalsIgnoreCase(gateNo)) {
+                return docNo;
+            }
+        }
+        return null;
     }
 
     private void loadGateEntryList() {
@@ -210,18 +278,18 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         postRfc(Vars.ZWM_GET_GATE_ENTRY_LIST_RFC, params, new RfcCallback() {
             @Override
             public void onSuccess(JSONObject response) {
-                JSONArray etData = getEtDataArray(response);
+                JSONArray itData = getTableDataArray(response);
                 List<String> docNos = new ArrayList<>();
-                if (etData != null) {
+                if (itData != null) {
                     try {
-                        int start = SapJsonRows.startIndex(etData);
-                        for (int i = start; i < etData.length(); i++) {
-                            JSONObject row = etData.optJSONObject(i);
-                            if (row == null) {
+                        int start = SapJsonRows.startIndex(itData, "DOCNO");
+                        for (int i = start; i < itData.length(); i++) {
+                            JSONObject row = itData.optJSONObject(i);
+                            if (row == null || SapJsonRows.isMetadataRow(row, "DOCNO")) {
                                 continue;
                             }
                             String docNo = row.optString("DOCNO", "").trim();
-                            if (!docNo.isEmpty()) {
+                            if (!docNo.isEmpty() && !docNo.toLowerCase().contains("gate entry")) {
                                 docNos.add(docNo);
                             }
                         }
@@ -231,18 +299,17 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
                     }
                 }
 
-                ignoreSpinnerSelection = true;
                 gateEntryOptions.clear();
-                gateEntryOptions.add(SPINNER_DEFAULT);
                 gateEntryOptions.addAll(docNos);
                 gateEntryAdapter.notifyDataSetChanged();
-                spGateEntry.setSelection(0);
-                ignoreSpinnerSelection = false;
+                actvGateEntry.setText("", false);
+                selectedGate = "";
 
                 if (docNos.isEmpty()) {
                     showStatus("No open gate entries found.", false);
                 } else {
-                    showStatus("Select Gate Entry No.", true);
+                    showStatus("Search / select Gate Entry No. (" + docNos.size() + ")", true);
+                    actvGateEntry.requestFocus();
                 }
             }
 
@@ -280,18 +347,27 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         postRfc(Vars.ZWM_GET_GATE_ENTRY_DATA_RFC, params, new RfcCallback() {
             @Override
             public void onSuccess(JSONObject response) {
-                JSONArray etData = getEtDataArray(response);
+                JSONArray table = getTableDataArray(response);
                 String poNo = "";
                 String invNo = "";
-                if (etData != null) {
+                if (table != null) {
                     try {
-                        int start = SapJsonRows.startIndex(etData);
-                        if (start < etData.length()) {
-                            JSONObject row = etData.optJSONObject(start);
-                            if (row != null) {
-                                poNo = row.optString("VPONO", "").trim();
-                                invNo = row.optString("INVNO", "").trim();
+                        // Skip SAP metadata row 0 (VPONO="Purchasing Document Number", INVNO="GRT No 1")
+                        // and bind the first real IT_DATA row.
+                        int start = SapJsonRows.startIndex(table, "VPONO", "INVNO");
+                        for (int i = start; i < table.length(); i++) {
+                            JSONObject row = table.optJSONObject(i);
+                            if (row == null || SapJsonRows.isMetadataRow(row, "VPONO", "INVNO")) {
+                                continue;
                             }
+                            String rowPo = row.optString("VPONO", "").trim();
+                            String rowInv = row.optString("INVNO", "").trim();
+                            if (isGateEntryDataHeader(rowPo, rowInv)) {
+                                continue;
+                            }
+                            poNo = rowPo;
+                            invNo = rowInv;
+                            break;
                         }
                     } catch (JSONException e) {
                         showError("Failed to parse gate entry data.");
@@ -315,6 +391,12 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
             clearPalletField();
             return;
         }
+        if (isRequestInProgress()) {
+            return;
+        }
+        if (!TextUtils.isEmpty(validatedPallet) && validatedPallet.equals(pallet)) {
+            return;
+        }
 
         showProgress("Validating pallet...");
         JSONObject params = new JSONObject();
@@ -334,8 +416,8 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
             @Override
             public void onSuccess(JSONObject response) {
                 validatedPallet = pallet;
-                etPallet.setText(pallet);
                 etPallet.setEnabled(false);
+                etPallet.setText(pallet);
                 etBox.setEnabled(true);
                 etBox.requestFocus();
                 updateCompleteButton();
@@ -354,6 +436,12 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         if (TextUtils.isEmpty(selectedGate) || TextUtils.isEmpty(validatedPallet)) {
             showError("Please fill all required fields (Gate Entry, Pallet, Box)");
             etBox.setText("");
+            return;
+        }
+        if (isRequestInProgress()) {
+            return;
+        }
+        if (!TextUtils.isEmpty(pendingBox) && pendingBox.equals(boxBarcode)) {
             return;
         }
         pendingBox = boxBarcode;
@@ -422,17 +510,22 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         postRfc(Vars.ZWM_GATE_BOX3N, params, new RfcCallback() {
             @Override
             public void onSuccess(JSONObject response) {
+                // Keep scanned box value until Complete succeeds.
                 pendingBox = "";
-                etBox.setText("");
-                etBox.requestFocus();
+                etBox.setText(boxBarcode);
+                etBox.setEnabled(true);
+                etBox.setSelection(etBox.getText().length());
+                updateCompleteButton();
                 showStatus(getApiMessage(response, "Box submitted successfully"), true);
             }
 
             @Override
             public void onError(String message) {
+                pendingBox = "";
                 showError(message);
-                etBox.setText("");
+                etBox.setText(boxBarcode);
                 etBox.requestFocus();
+                etBox.selectAll();
             }
         });
     }
@@ -471,9 +564,7 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
                 box.getBox("Success", msg, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (getFragmentManager() != null) {
-                            getFragmentManager().popBackStack();
-                        }
+                        clearFormAfterComplete();
                     }
                 }, null);
             }
@@ -483,6 +574,23 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
                 showError(message != null ? message : "Failed to save gate entry");
             }
         });
+    }
+
+    /** Clear Gate Entry / PO / Inv / Pallet / Box only after Complete success. */
+    private void clearFormAfterComplete() {
+        selectedGate = "";
+        validatedPallet = "";
+        pendingBox = "";
+        actvGateEntry.setText("", false);
+        resetGateEntryDetails();
+        etPallet.setText("");
+        etBox.setText("");
+        etPallet.setEnabled(false);
+        etBox.setEnabled(false);
+        updateCompleteButton();
+        showStatus("Search / select Gate Entry No.", true);
+        actvGateEntry.requestFocus();
+        loadGateEntryList();
     }
 
     private void resetGateEntryDetails() {
@@ -558,14 +666,50 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         void onError(String message);
     }
 
-    private void postRfc(String rfcName, JSONObject params, final RfcCallback callback) {
-        String rfcUrl = buildRfcUrl(rfcName);
+    /** Barcode scanners often paste the full code without IME action — auto-fire RFC. */
+    private void addScannerFocusWatcher(final EditText field, final Runnable onScanComplete) {
+        field.addTextChangedListener(new TextWatcher() {
+            private boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = before == 0 && start == 0 && count > 2;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (scannerReading && !s.toString().trim().isEmpty()) {
+                    scannerReading = false;
+                    onScanComplete.run();
+                }
+            }
+        });
+    }
+
+    private boolean isRequestInProgress() {
+        return dialog != null && dialog.isShowing();
+    }
+
+    private void postRfc(final String bapiname, JSONObject params, final RfcCallback callback) {
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, bapiname);
+        if (url.isEmpty()) {
+            callback.onError("Server URL missing. Please log in again.");
+            return;
+        }
+        Log.d(TAG, "RFC request -> " + bapiname);
+        Log.d(TAG, "RFC url -> " + url);
+        Log.d(TAG, "RFC payload -> " + params);
         JsonObjectRequest req = new SapJsonObjectRequest(
-                Request.Method.POST, rfcUrl, params,
+                Request.Method.POST, url, params,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         dismissProgress();
+                        Log.d(TAG, "RFC response -> " + bapiname + ": " + response);
                         if (response == null) {
                             callback.onError("Empty response from server.");
                             return;
@@ -581,20 +725,13 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         dismissProgress();
+                        Log.e(TAG, "RFC error -> " + bapiname, error);
                         callback.onError("Network error: " + parseVolleyError(error));
                     }
                 });
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
         RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
         queue.add(req);
-    }
-
-    private String buildRfcUrl(String rfcName) {
-        String base = URL;
-        if (base.contains("/ValueXMW")) {
-            base = base.replace("/ValueXMW", "");
-        }
-        return base + "/noacljsonrfcadaptor?bapiname=" + rfcName + "&aclclientid=android";
     }
 
     private boolean isApiSuccess(JSONObject response) {
@@ -624,20 +761,49 @@ public class FragmentGateEntryLotPutway extends Fragment implements View.OnClick
         return fallback;
     }
 
-    private JSONArray getEtDataArray(JSONObject response) {
+    /** SAP template values for gate-entry data columns (not business data). */
+    private boolean isGateEntryDataHeader(String vpono, String invNo) {
+        String po = vpono != null ? vpono.toLowerCase() : "";
+        String inv = invNo != null ? invNo.toLowerCase() : "";
+        if (po.contains("purchasing document") || po.contains("document number")) {
+            return true;
+        }
+        if (inv.contains("grt no") || inv.startsWith("grt ") || inv.contains("invoice")) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Prefers IT_DATA (list RFC), then ET_DATA / Data wrapper. */
+    private JSONArray getTableDataArray(JSONObject response) {
+        if (response == null) {
+            return null;
+        }
+        JSONArray arr = response.optJSONArray("IT_DATA");
+        if (arr == null) {
+            arr = response.optJSONArray("IT_Data");
+        }
+        if (arr == null) {
+            arr = response.optJSONArray("ET_DATA");
+        }
+        if (arr == null) {
+            arr = response.optJSONArray("ET_Data");
+        }
+        if (arr != null) {
+            return arr;
+        }
         JSONObject data = response.optJSONObject("Data");
         if (data != null) {
-            JSONArray arr = data.optJSONArray("ET_Data");
+            arr = data.optJSONArray("IT_DATA");
+            if (arr == null) {
+                arr = data.optJSONArray("IT_Data");
+            }
             if (arr == null) {
                 arr = data.optJSONArray("ET_DATA");
             }
-            if (arr != null) {
-                return arr;
+            if (arr == null) {
+                arr = data.optJSONArray("ET_Data");
             }
-        }
-        JSONArray arr = response.optJSONArray("ET_DATA");
-        if (arr == null) {
-            arr = response.optJSONArray("ET_Data");
         }
         return arr;
     }

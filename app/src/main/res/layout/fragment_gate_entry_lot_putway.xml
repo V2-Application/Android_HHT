@@ -72,14 +72,21 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <Spinner
-                    android:id="@+id/gate_sp_gate_entry"
+                <AutoCompleteTextView
+                    android:id="@+id/gate_actv_gate_entry"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="7"
                     android:background="@drawable/border"
-                    android:padding="4dp"
-                    android:spinnerMode="dropdown" />
+                    android:completionThreshold="1"
+                    android:hint="Search / Select Gate Entry No"
+                    android:imeOptions="actionDone"
+                    android:inputType="text"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textColorHint="#80000000"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <!-- PO No -->
