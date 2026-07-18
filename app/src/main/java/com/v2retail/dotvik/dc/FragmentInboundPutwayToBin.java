@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
@@ -46,13 +48,11 @@ public class FragmentInboundPutwayToBin extends Fragment {
     private AlertBox box;
 
     private EditText etDcSite, etBin, etBinDisplay, etPalette, etPaletteDisplay;
-    private EditText etPo, etInv, etVendor, etScanBinBox, etTotScannedBin;
-    private TextView tvStatus;
+    private EditText etPo, etInv, etVendor, etScanBinBox;
 
     private String URL = "", USER = "", WERKS = "";
     private boolean binValidated = false;
     private String validatedBin = "", validatedPall = "", poNo = "", billNo = "", vendorName = "";
-    private int totScannedBin = 0;
 
     public FragmentInboundPutwayToBin() {}
     public static FragmentInboundPutwayToBin newInstance() { return new FragmentInboundPutwayToBin(); }
@@ -70,8 +70,6 @@ public class FragmentInboundPutwayToBin extends Fragment {
         etInv            = view.findViewById(R.id.tv_inv);
         etVendor         = view.findViewById(R.id.tv_vendor);
         etScanBinBox     = view.findViewById(R.id.et_scan_bin_box);
-        etTotScannedBin  = view.findViewById(R.id.et_tot_scanned_bin);
-        tvStatus         = view.findViewById(R.id.tv_status);
 
         etBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -292,8 +290,6 @@ public class FragmentInboundPutwayToBin extends Fragment {
                 String type = ret != null ? ret.optString("TYPE", "") : "";
                 String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
                 if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                    totScannedBin++;
-                    etTotScannedBin.setText(String.valueOf(totScannedBin));
                     if (msg.isEmpty()) {
                         msg = "Saved! Palette " + validatedPall + " to BIN " + validatedBin;
                     }
@@ -359,11 +355,16 @@ public class FragmentInboundPutwayToBin extends Fragment {
     }
 
     private void showStatus(String msg, boolean ok) {
-        if (tvStatus == null) return;
-        tvStatus.setVisibility(View.VISIBLE);
-        tvStatus.setText(msg);
-        tvStatus.setBackgroundColor(ok ? 0xFFE8F5E9 : 0xFFFFEBEE);
-        tvStatus.setTextColor(ok ? 0xFF065F46 : 0xFFB71C1C);
+        showBottomToast(msg);
+    }
+
+    private void showBottomToast(String message) {
+        if (activity == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+        Toast toast = Toast.makeText(activity, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
     }
 
     private void showProgress(String msg) {

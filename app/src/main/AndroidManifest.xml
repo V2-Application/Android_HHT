@@ -25,7 +25,8 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name="com.v2retail.dotvik.scanner.ScannerActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <meta-data
             android:name="io.sentry.dsn"
@@ -78,19 +79,22 @@
         <activity
             android:name="com.v2retail.dotvik.SplashScreen"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.Launcher"></activity>
         <activity
             android:name="com.v2retail.dotvik.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
-            android:launchMode="singleTask" /> <!-- <activity -->
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" /> <!-- <activity -->
         <!-- android:name=".ScannerActivity" -->
         <!-- android:label="@string/scanner_activity" -->
         <!-- android:launchMode="singleTask" > -->
         <!-- </activity> -->
         <activity
             android:name="com.v2retail.dotvik.IPActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

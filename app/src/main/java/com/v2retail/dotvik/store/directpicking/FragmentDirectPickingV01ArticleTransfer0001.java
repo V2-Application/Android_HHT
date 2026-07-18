@@ -212,7 +212,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         txt_scan_qty.setText(Util.formatDouble(sqty));
         txt_tqty.setText(Util.formatDouble(totalQty));
         txt_trqty.setText(Util.formatDouble(totalQty - sqty));
-        txt_taqty.setText(Util.formatDouble(getTotalScannedQty()));
+        txt_taqty.setText(Util.formatDouble(huTotalQty - getTotalScannedQty()));
     }
 
     private void showScanError(String title, String message) {
@@ -363,6 +363,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
 
         txt_scan_hu.setText(hu);
         txt_hu_total_qty.setText(Util.formatDouble(huTotalQty));
+        txt_taqty.setText(Util.formatDouble(huTotalQty));
         disableUnderlineInput(txt_scan_hu);
         enableUnderlineInput(txt_scan_barcode);
         txt_scan_barcode.setText("");
@@ -590,7 +591,11 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
             return;
         }
 
-        double sqty = Util.convertStringToDouble(art.getScanQty()) + 1;
+        double umrez = Util.convertStringToDouble(ean.getUmrez());
+        if (umrez <= 0) {
+            umrez = 1;
+        }
+        double sqty = Util.convertStringToDouble(art.getScanQty()) + umrez;
         double rqty = Util.convertStringToDouble(art.getVerme());
         if (rqty > 0 && sqty > rqty) {
             box.getBox("Invalid", "Already scanned maximum allowed Qty " + Util.formatDouble(rqty), (dialog, which) -> {

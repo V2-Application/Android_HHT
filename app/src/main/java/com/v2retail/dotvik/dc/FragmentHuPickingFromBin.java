@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -43,6 +46,7 @@ import java.util.Set;
  */
 public class FragmentHuPickingFromBin extends Fragment {
 
+    private static final String TAG = "HuPickingFromBin";
     private static final String SPINNER_DEFAULT = "Select";
 
     private View view;
@@ -53,7 +57,6 @@ public class FragmentHuPickingFromBin extends Fragment {
     private EditText etDcSite, etBin, etBinDisplay, etPalette, etPaletteDisplay;
     private EditText etPo, etInv, etScanBinBox, etTotScannedBin;
     private Spinner spPicklist;
-    private TextView tvStatus;
 
     private ArrayAdapter<String> picklistAdapter;
     private final List<String> picklistOptions = new ArrayList<>();
@@ -81,7 +84,6 @@ public class FragmentHuPickingFromBin extends Fragment {
         etInv            = view.findViewById(R.id.tv_inv);
         etScanBinBox     = view.findViewById(R.id.et_scan_bin_box);
         etTotScannedBin  = view.findViewById(R.id.et_tot_scanned_bin);
-        tvStatus         = view.findViewById(R.id.tv_status);
 
         etBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
@@ -176,7 +178,10 @@ public class FragmentHuPickingFromBin extends Fragment {
                         if (row == null) {
                             continue;
                         }
-                        String pl = row.optString("PICKLIST", "").trim();
+                        String pl = row.optString("ZPICK_NO", "").trim();
+                        if (pl.isEmpty()) {
+                            pl = row.optString("PICKLIST", "").trim();
+                        }
                         if (pl.isEmpty()) {
                             pl = row.optString("PICKLIST_NO", "").trim();
                         }
@@ -238,8 +243,14 @@ public class FragmentHuPickingFromBin extends Fragment {
                         JSONArray et = r.optJSONArray("ET_DATA");
                         if (et != null && et.length() > 0) {
                             JSONObject row = et.getJSONObject(0);
-                            poNo = row.optString("PO_NO", "");
-                            invNo = row.optString("INV_NO", "");
+                            poNo = row.optString("VPONO", "");
+                            if (poNo.isEmpty()) {
+                                poNo = row.optString("PO_NO", "");
+                            }
+                            invNo = row.optString("INVNO", "");
+                            if (invNo.isEmpty()) {
+                                invNo = row.optString("INV_NO", "");
+                            }
                             if (invNo.isEmpty()) {
                                 invNo = row.optString("BILL_NO", "");
                             }
@@ -356,9 +367,9 @@ public class FragmentHuPickingFromBin extends Fragment {
             p.put("bapiname", Vars.ZVND_GATELOT2_SAVE_DATA_RFC);
             p.put("IM_USER", USER);
             JSONObject row = new JSONObject();
-            row.put("PLANT", WERKS);
-            row.put("PICKLIST", vPl);
-            row.put("BIN", vBin);
+            row.put("WERKS", WERKS);
+            row.put("ZPICK_NO", vPl);
+            row.put("LGPLA", vBin);
             row.put("PALETTE", vPall);
             JSONArray it = new JSONArray();
             it.put(row);
@@ -421,15 +432,27 @@ public class FragmentHuPickingFromBin extends Fragment {
 
     private interface Cb { void ok(JSONObject r); void err(String e); }
 
-    private void rfc(String name, JSONObject params, final Cb cb) {
+    private void rfc(final String name, JSONObject params, final Cb cb) {
         String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
+        String url = base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android";
+        Log.d(TAG, "RFC [" + name + "] URL -> " + url);
+        Log.d(TAG, "RFC [" + name + "] REQUEST -> " + params.toString());
         JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST,
-                base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android", params,
+                url, params,
             new Response.Listener<JSONObject>() {
-                @Override public void onResponse(JSONObject r) { dismissProgress(); cb.ok(r); }
+                @Override public void onResponse(JSONObject r) {
+                    Log.d(TAG, "RFC [" + name + "] RESPONSE -> " + r.toString());
+                    dismissProgress();
+                    cb.ok(r);
+                }
             },
             new Response.ErrorListener() {
                 @Override public void onErrorResponse(VolleyError e) {
+                    Log.e(TAG, "RFC [" + name + "] ERROR -> " + e.toString(), e);
+                    if (e.networkResponse != null) {
+                        Log.e(TAG, "RFC [" + name + "] HTTP " + e.networkResponse.statusCode
+                                + " BODY -> " + new String(e.networkResponse.data));
+                    }
                     dismissProgress();
                     cb.err(e.getMessage() != null ? e.getMessage() : "Network error");
                 }
@@ -439,11 +462,12 @@ public class FragmentHuPickingFromBin extends Fragment {
     }
 
     private void showStatus(String msg, boolean ok) {
-        if (tvStatus == null) return;
-        tvStatus.setVisibility(View.VISIBLE);
-        tvStatus.setText(msg);
-        tvStatus.setBackgroundColor(ok ? 0xFFE8F5E9 : 0xFFFFEBEE);
-        tvStatus.setTextColor(ok ? 0xFF065F46 : 0xFFB71C1C);
+        if (activity == null || msg == null || msg.trim().isEmpty()) {
+            return;
+        }
+        Toast toast = Toast.makeText(activity, msg, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
     }
 
     private void showProgress(String msg) {

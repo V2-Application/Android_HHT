@@ -332,49 +332,6 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- ToT Scanned BIN -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="2dp"
-                android:weightSum="12">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="5"
-                    android:padding="7dp"
-                    android:text="ToT Scanned BIN:"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <EditText
-                    android:id="@+id/et_tot_scanned_bin"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:background="@drawable/border_disabled_input"
-                    android:enabled="false"
-                    android:padding="7dp"
-                    android:singleLine="true"
-                    android:text="0"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tv_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:padding="8dp"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
         </LinearLayout>
     </ScrollView>
 

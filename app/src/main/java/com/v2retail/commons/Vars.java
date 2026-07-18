@@ -303,9 +303,9 @@ public class Vars {
     /** PTL V64/V65 — Lorry Loading Processing (IM_USER, IM_PLANT, IM_PALETTE) → EX_HUB, EX_STORE, EX_PALETTE_CNT, EX_RETURN. */
     public static String ZWM_PTL_HU_V64_V65 = "ZWM_PTL_HU_V64_V65";
     /** PTL-GRT Floor HUB Wise Crate Tag — scan HUB validate (IM_USER, IM_PLANT, IM_HUB) → EX_RETURN. */
-    public static String ZWM_PTL_GRT_HUB_VALIDATE = "ZWM_PTL_GRT_HUB_VALIDATE";
+    public static String ZWM_PTL_GRT_HUB_VALIDATE = "ZWM_PTL_GRT_HUB_VLDT";
     /** PTL-GRT Floor HUB Wise Crate Tag — scan crate validate (IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE) → EX_RETURN. */
-    public static String ZWM_PTL_GRT_HUB_CRATE_VALIDATE = "ZWM_PTL_GRT_HUB_CRATE_VALIDATE";
+    public static String ZWM_PTL_GRT_HUB_CRATE_VALIDATE = "ZWM_PTL_GRT_HUB_CRATE_VLDT";
     /** PTL-GRT Hub Sorting — MSA crate validate (IM_USER, IM_WERKS, IM_CRATE) → EX_RETURN, ET_DATA, ET_EAN_DATA. */
     public static String ZWM_PTL_GRT_MSA_CRATE_VALIDATE = "ZWM_PTL_GRT_MSA_CRATE_VALIDATE";
     /** PTL-GRT Hub Sorting — tag crate at HUB (IM_USER, IM_WERKS, IM_SOURCE_CRATE, IT_DATA) → EX_RETURN. */
