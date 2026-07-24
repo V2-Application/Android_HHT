@@ -310,6 +310,8 @@ public class Vars {
     public static String ZWM_PTL_GRT_MSA_CRATE_VALIDATE = "ZWM_PTL_GRT_MSA_CRATE_VALIDATE";
     /** PTL-GRT Hub Sorting — tag crate at HUB (IM_USER, IM_WERKS, IM_SOURCE_CRATE, IT_DATA) → EX_RETURN. */
     public static String ZWM_PTL_HUB_ARTICLE_TAG_CRATE = "ZWM_PTL_HUB_ARTICLE_TAG_CRATE";
+    /** PTL-GRT Hub Sorting — save cached crate details (IM_USER, IM_WERKS, IM_CRATE, IM_MSA_CRATE, IM_NATURE, IT_DATA/ZECOM_CANCEL_QC_PUTAWAY_ST) → EX_RETURN. */
+    public static String ZGRTRET_SAVE_CRATE_DETAILS = "ZGRTRET_SAVE_CRATE_DETAILS";
     /** PTL-GRT HUB HU/Crate Closed — close crate (IM_USER, IM_PLANT, IM_FLOOR, IM_CRATE) → EX_RETURN. */
     public static String ZWM_PTL_GRT_CRATE_CLOSE = "ZWM_PTL_GRT_CRATE_CLOSE";
     /** PTL-GRT Palette Tag With Crate — validate palette (IM_USER, IM_PALETTE, IM_PLANT, IM_FLOOR) → EX_RETURN. */

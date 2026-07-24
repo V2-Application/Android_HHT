@@ -1,29 +1,30 @@
 package com.v2retail.dotvik.dc.ptlnew.grt;
 
 import android.app.ProgressDialog;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.android.volley.AuthFailureError;
@@ -57,6 +58,7 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -64,8 +66,10 @@ import java.util.Map;
 /**
  * PTL-GRT — Hub Sorting, Scan Crate.
  * <ul>
- *   <li>Crate validate: {@link Vars#ZWM_PTL_GRT_MSA_CRATE_VALIDATE}</li>
- *   <li>Hub tag save: {@link Vars#ZWM_PTL_HUB_ARTICLE_TAG_CRATE}</li>
+ *   <li>MSA Crate validate: {@link Vars#ZWM_PTL_GRT_MSA_CRATE_VALIDATE}</li>
+ *   <li>MSA REV Crate validate: {@link Vars#GRT_PUTAWAY_VALIDATE_CRATE}</li>
+ *   <li>Matched articles: {@link Vars#ZWM_PTL_HUB_ARTICLE_TAG_CRATE} after HUB crate scan.</li>
+ *   <li>Unmatched articles are cached and saved via {@link Vars#ZGRTRET_SAVE_CRATE_DETAILS}.</li>
  * </ul>
  */
 public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.OnClickListener {
@@ -75,6 +79,11 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private static final List<String> FLOOR_OPTIONS = Arrays.asList("0", "1", "2", "3", "4", "5");
     private static final int REQUEST_VALIDATE_CRATE = 5911;
     private static final int REQUEST_TAG_HUB = 5912;
+    private static final int REQUEST_VALIDATE_REV_CRATE = 5913;
+    private static final int REQUEST_SAVE_CACHE = 5914;
+    private static final String UNMATCHED_PROPOSED_HUB = "DH24";
+    private static final String LOCAL_PREFS = "ptl_grt_hub_sorting";
+    private static final String LOCAL_SESSION = "pending_session";
 
     private FragmentManager fm;
     private Context con;
@@ -84,26 +93,41 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private String WERKS = "";
     private String USER = "";
 
-    private Spinner ddFloor;
+    private TextView ddFloor;
     private EditText txtScanCrate;
     private EditText txtCrate;
+    private EditText txtEmptyCrateScan;
+    private EditText txtEmptyCrate;
     private EditText txtScanArticle;
     private EditText txtArticle;
-    private EditText txtScanQty;
     private EditText txtProposedHub;
-    private EditText txtScanHub;
+    private EditText txtHubMapCrate;
     private Button btnBack;
+    private Button btnSave;
 
     private boolean floorSelected = false;
     private String validatedCrate = "";
+    private String emptyCrate = "";
+    private String hubMapCrate = "";
     private Map<String, JSONObject> etDataMap = new HashMap<>();
     private Map<String, JSONObject> eanDataMap = new HashMap<>();
     private Map<String, Double> scannedQtyByArticle = new HashMap<>();
+    private JSONArray referenceEtData = new JSONArray();
+    private JSONArray referenceEanData = new JSONArray();
+    private JSONArray pendingScans = new JSONArray();
+    private SharedPreferences localPreferences;
 
     private String currentArticle = "";
     private JSONObject currentEtRow = null;
     private double currentMaxQty = 0;
     private double currentScannedQty = 0;
+    private double currentScanQty = 0;
+    private boolean autoTagInProgress = false;
+    /** Guards against the scanner double-firing (text watcher + trailing Enter). */
+    private boolean crateValidateInProgress = false;
+    private boolean revCrateValidateInProgress = false;
+    private String lastArticleScanValue = "";
+    private long lastArticleScanAtMs = 0;
 
     public FragmentPTLGrtHubSortingScanCrate() {
     }
@@ -116,7 +140,21 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getParentFragmentManager();
-        BackPressHandler.registerCloseProcessBackPress(this, fm::popBackStack);
+        requireActivity().getOnBackPressedDispatcher().addCallback(this,
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        if (pendingScans.length() > 0) {
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Unsaved Data")
+                                    .setMessage("Save the locally stored scans before leaving this process.")
+                                    .setPositiveButton("OK", null)
+                                    .show();
+                        } else {
+                            BackPressHandler.confirmCloseProcess(fm, requireContext());
+                        }
+                    }
+                });
     }
 
     @Override
@@ -131,53 +169,113 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
+        localPreferences = con.getSharedPreferences(LOCAL_PREFS, Context.MODE_PRIVATE);
 
         ddFloor = root.findViewById(R.id.dd_ptl_grt_hub_sorting_scan_crate_floor);
         txtScanCrate = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan);
         txtCrate = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_crate);
+        txtEmptyCrateScan = root.findViewById(R.id.txt_ptl_grt_hub_sorting_empty_crate_scan);
+        txtEmptyCrate = root.findViewById(R.id.txt_ptl_grt_hub_sorting_empty_crate);
         txtScanArticle = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan_article);
         txtArticle = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_article);
-        txtScanQty = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan_qty);
         txtProposedHub = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_proposed_hub);
-        txtScanHub = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan_hub);
+        txtHubMapCrate = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan_hub);
         btnBack = root.findViewById(R.id.btn_ptl_grt_hub_sorting_scan_crate_back);
+        btnSave = root.findViewById(R.id.btn_ptl_grt_hub_sorting_scan_crate_save);
 
         setupFloorDropdown();
         addCrateScanEvents();
+        addEmptyCrateScanEvents();
         addArticleScanEvents();
-        addHubScanEvents();
+        addHubMapCrateEvents();
         btnBack.setOnClickListener(this);
-        resetScreen();
+        btnSave.setOnClickListener(this);
+        // Always open HUB SORTING as a fresh page.
+        clearLocalSession();
+        resetAfterFloorChange();
+        ddFloor.setEnabled(true);
+        ddFloor.setText(FLOOR_OPTIONS.get(0));
+        floorSelected = true;
+        UIFuncs.enableInput(con, txtScanCrate);
+        updateActionButtons();
+        txtScanCrate.post(() -> txtScanCrate.requestFocus());
 
         return root;
     }
 
+    @Override
+    public void onPause() {
+        persistLocalSession();
+        super.onPause();
+    }
+
     private void setupFloorDropdown() {
-        FragmentActivity activity = getActivity();
-        if (activity == null) {
+        ddFloor.setText(FLOOR_OPTIONS.get(0));
+        floorSelected = true;
+        ddFloor.setClickable(true);
+        ddFloor.setFocusable(true);
+        ddFloor.setEnabled(true);
+        ddFloor.setOnClickListener(v -> showFloorPicker());
+    }
+
+    private void showFloorPicker() {
+        if (!isAdded()) {
             return;
         }
-        ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(
-                activity,
-                android.R.layout.simple_list_item_1,
-                FLOOR_OPTIONS);
-        floorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        ddFloor.setAdapter(floorAdapter);
-        ddFloor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                floorSelected = true;
-                UIFuncs.enableInput(con, txtScanCrate);
-                resetAfterFloorChange();
-                txtScanCrate.requestFocus();
-            }
+        // Lock floor only after article scans are stored locally.
+        if (pendingScans != null && pendingScans.length() > 0) {
+            box.getBox("Floor Locked",
+                    "Save or clear scanned articles before changing FLOOR.");
+            return;
+        }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                floorSelected = false;
-                UIFuncs.disableInput(con, txtScanCrate);
-            }
-        });
+        final String[] floors = FLOOR_OPTIONS.toArray(new String[0]);
+        int checked = FLOOR_OPTIONS.indexOf(getSelectedFloor());
+        if (checked < 0) {
+            checked = 0;
+        }
+
+        new AlertDialog.Builder(requireActivity())
+                .setTitle("Select Floor")
+                .setSingleChoiceItems(floors, checked, (dialog, which) -> {
+                    String previous = getSelectedFloor();
+                    String selected = FLOOR_OPTIONS.get(which);
+                    dialog.dismiss();
+                    if (selected.equals(previous)) {
+                        return;
+                    }
+                    applyFloorSelection(selected);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void applyFloorSelection(String selected) {
+        Runnable apply = () -> {
+            ddFloor.setText(selected);
+            floorSelected = true;
+            ddFloor.setEnabled(true);
+            resetAfterFloorChange();
+            clearLocalSession();
+            UIFuncs.enableInput(con, txtScanCrate);
+            txtScanCrate.requestFocus();
+            updateActionButtons();
+        };
+
+        boolean hasProgress = !TextUtils.isEmpty(validatedCrate)
+                || !TextUtils.isEmpty(emptyCrate)
+                || !TextUtils.isEmpty(hubMapCrate);
+        if (!hasProgress) {
+            apply.run();
+            return;
+        }
+
+        new AlertDialog.Builder(requireActivity())
+                .setTitle("Change Floor")
+                .setMessage("Changing FLOOR will clear current crate data. Continue?")
+                .setPositiveButton("Yes", (d, w) -> apply.run())
+                .setNegativeButton("No", null)
+                .show();
     }
 
     private void addCrateScanEvents() {
@@ -215,6 +313,71 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         });
     }
 
+    private void addEmptyCrateScanEvents() {
+        txtEmptyCrateScan.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                UIFuncs.hideKeyboard(getActivity());
+                String scanned = UIFuncs.toUpperTrim(txtEmptyCrateScan);
+                if (!TextUtils.isEmpty(scanned)) {
+                    requestRevCrateValidate(scanned);
+                }
+                return true;
+            }
+            return false;
+        });
+
+        txtEmptyCrateScan.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().toUpperCase(Locale.ROOT).trim();
+                if (!value.isEmpty() && scannerReading) {
+                    requestRevCrateValidate(value);
+                }
+            }
+        });
+    }
+
+    private void requestRevCrateValidate(String scannedCrate) {
+        if (TextUtils.isEmpty(scannedCrate)) {
+            return;
+        }
+        if (revCrateValidateInProgress) {
+            Log.d(TAG, "requestRevCrateValidate skipped — validation already in progress");
+            return;
+        }
+        if (TextUtils.isEmpty(validatedCrate)) {
+            UIFuncs.errorSound(con);
+            box.getBox("Validation", "Please scan and validate MSA Crate first.");
+            txtEmptyCrateScan.setText("");
+            txtScanCrate.requestFocus();
+            return;
+        }
+        JSONObject args = new JSONObject();
+        try {
+            revCrateValidateInProgress = true;
+            args.put("bapiname", Vars.GRT_PUTAWAY_VALIDATE_CRATE);
+            args.put("IM_USER", USER);
+            args.put("IM_CRATE", scannedCrate);
+            showProcessingAndSubmit(Vars.GRT_PUTAWAY_VALIDATE_CRATE, REQUEST_VALIDATE_REV_CRATE, args);
+        } catch (JSONException e) {
+            revCrateValidateInProgress = false;
+            Log.e(TAG, "requestRevCrateValidate", e);
+            box.getErrBox(e);
+            UIFuncs.errorSound(con);
+        }
+    }
+
     private void addArticleScanEvents() {
         txtScanArticle.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -250,20 +413,17 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         });
     }
 
-    private void addHubScanEvents() {
-        txtScanHub.setOnEditorActionListener((v, actionId, event) -> {
+    private void addHubMapCrateEvents() {
+        txtHubMapCrate.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 UIFuncs.hideKeyboard(getActivity());
-                String scanned = UIFuncs.toUpperTrim(txtScanHub);
-                if (!TextUtils.isEmpty(scanned)) {
-                    requestHubTag(scanned);
-                }
+                captureHubMapCrate(UIFuncs.toUpperTrim(txtHubMapCrate));
                 return true;
             }
             return false;
         });
 
-        txtScanHub.addTextChangedListener(new TextWatcher() {
+        txtHubMapCrate.addTextChangedListener(new TextWatcher() {
             boolean scannerReading = false;
 
             @Override
@@ -279,15 +439,27 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             public void afterTextChanged(Editable s) {
                 String value = s.toString().toUpperCase().trim();
                 if (!value.isEmpty() && scannerReading) {
-                    requestHubTag(value);
+                    captureHubMapCrate(value);
                 }
             }
         });
     }
 
+    private void captureHubMapCrate(String scannedCrate) {
+        if (TextUtils.isEmpty(emptyCrate) || TextUtils.isEmpty(scannedCrate)) {
+            return;
+        }
+        if (TextUtils.isEmpty(currentArticle) || currentEtRow == null || autoTagInProgress) {
+            return;
+        }
+        hubMapCrate = scannedCrate;
+        txtHubMapCrate.setText(hubMapCrate);
+        requestMatchedArticleTag(scannedCrate);
+    }
+
     private String getSelectedFloor() {
-        Object selected = ddFloor.getSelectedItem();
-        return selected == null ? "" : selected.toString();
+        CharSequence selected = ddFloor.getText();
+        return selected == null ? "" : selected.toString().trim();
     }
 
     private static String normalizeArticle(String article) {
@@ -316,18 +488,45 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         if (etRow == null) {
             return 0;
         }
-        double qty = parseQty(etRow, "SCAN_QTY", "QTY", 0);
+        // Prefer required/open qty. SCAN_QTY is usually already-scanned amount, not the limit.
+        double qty = parseQty(etRow, "QUANTITY", "QTY", 0);
         if (qty <= 0) {
-            qty = parseQty(etRow, "QUANTITY", "OPEN_QTY", 0);
+            qty = parseQty(etRow, "OPEN_QTY", "PO_QTY", 0);
         }
         if (qty <= 0) {
-            qty = parseQty(etRow, "PO_QTY", "MENGE", 0);
+            qty = parseQty(etRow, "MENGE", "SCAN_QTY", 0);
         }
         return qty;
     }
 
+    /**
+     * Sums the quantity from every ET_DATA row for the article. SAP can return
+     * the same article on multiple rows, so using only etDataMap would lose rows.
+     */
+    private double resolveArticleTotalQty(String article) {
+        String target = normalizeArticle(article);
+        String targetNoZeros = normalizeArticle(UIFuncs.removeLeadingZeros(article));
+        double total = 0;
+        for (int i = 0; i < referenceEtData.length(); i++) {
+            JSONObject row = referenceEtData.optJSONObject(i);
+            if (row == null || SapJsonRows.isMetadataRow(row, "CRATE", "ARTICLE")) {
+                continue;
+            }
+            String rowArticle = normalizeArticle(row.optString("ARTICLE", ""));
+            String rowMatnr = normalizeArticle(row.optString("MATNR", ""));
+            if (target.equals(rowArticle)
+                    || target.equals(rowMatnr)
+                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowArticle)))
+                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowMatnr)))) {
+                total += resolveMaxQty(row);
+            }
+        }
+        return total;
+    }
+
     private static double resolvePackQty(JSONObject eanRow) {
-        double packQty = parseQty(eanRow, "UMREZ", "QUNANTITY", 1);
+        // ZZEAN_DATA uses QUNANTITY (SAP spelling).
+        double packQty = parseQty(eanRow, "QUNANTITY", "UMREZ", 1);
         if (packQty <= 0) {
             packQty = parseQty(eanRow, "QUANTITY", "", 1);
         }
@@ -391,6 +590,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         if (TextUtils.isEmpty(scannedCrate)) {
             return;
         }
+        if (crateValidateInProgress) {
+            Log.d(TAG, "requestCrateValidate skipped — validation already in progress");
+            return;
+        }
         if (!floorSelected || TextUtils.isEmpty(getSelectedFloor())) {
             UIFuncs.errorSound(con);
             box.getBox("Validation", "Please select Floor Number first.");
@@ -400,12 +603,14 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         }
         JSONObject args = new JSONObject();
         try {
+            crateValidateInProgress = true;
             args.put("bapiname", Vars.ZWM_PTL_GRT_MSA_CRATE_VALIDATE);
             args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
             args.put("IM_CRATE", scannedCrate);
             showProcessingAndSubmit(Vars.ZWM_PTL_GRT_MSA_CRATE_VALIDATE, REQUEST_VALIDATE_CRATE, args);
         } catch (JSONException e) {
+            crateValidateInProgress = false;
             Log.e(TAG, "requestCrateValidate", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
@@ -413,133 +618,110 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void validateArticleScan(String barcode) {
-        if (TextUtils.isEmpty(validatedCrate)) {
+        if (TextUtils.isEmpty(barcode)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (barcode.equalsIgnoreCase(lastArticleScanValue) && (now - lastArticleScanAtMs) < 1200) {
+            return;
+        }
+        lastArticleScanValue = barcode;
+        lastArticleScanAtMs = now;
+
+        if (TextUtils.isEmpty(validatedCrate) || TextUtils.isEmpty(emptyCrate)) {
             UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please scan and validate Crate first.");
+            box.getBox("Validation", "Please scan MSA Crate and MSA REV Crate first.");
             txtScanArticle.setText("");
-            txtScanCrate.requestFocus();
+            if (TextUtils.isEmpty(validatedCrate)) {
+                txtScanCrate.requestFocus();
+            } else {
+                txtEmptyCrateScan.requestFocus();
+            }
             return;
         }
 
         JSONObject eanRow = findEanRow(barcode);
-        if (eanRow == null) {
-            UIFuncs.errorSound(con);
-            box.getBox("Invalid", "Scanned EAN is not available in EAN records.");
-            txtScanArticle.setText("");
-            txtScanArticle.requestFocus();
-            return;
-        }
-
-        String article = eanRow.optString("ARTICLE", "").trim();
-        if (article.isEmpty()) {
-            article = eanRow.optString("MATNR", "").trim();
+        String article = barcode;
+        if (eanRow != null) {
+            article = eanRow.optString("ARTICLE", "").trim();
+            if (article.isEmpty()) {
+                article = eanRow.optString("MATNR", "").trim();
+            }
         }
         if (article.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Invalid", "EAN record does not contain article/material.");
-            txtScanArticle.setText("");
-            txtScanArticle.requestFocus();
-            return;
+            article = barcode;
         }
 
         JSONObject etRow = findEtDataForArticle(article);
         if (etRow == null) {
-            UIFuncs.errorSound(con);
-            box.getBox("Invalid", "Article " + UIFuncs.removeLeadingZeros(article) + " not found in ET records.");
-            txtScanArticle.setText("");
-            txtScanArticle.requestFocus();
-            return;
+            etRow = findEtDataForArticle(barcode);
         }
 
-        String etArticle = etRow.optString("ARTICLE", article).trim();
-        if (etArticle.isEmpty()) {
-            etArticle = etRow.optString("MATNR", article).trim();
+        double packQty = eanRow == null ? 1 : resolvePackQty(eanRow);
+        String etArticle = article;
+        if (etRow != null) {
+            etArticle = etRow.optString("ARTICLE", article).trim();
+            if (etArticle.isEmpty()) {
+                etArticle = etRow.optString("MATNR", article).trim();
+            }
         }
         String articleKey = normalizeArticle(etArticle);
-
-        if (!TextUtils.isEmpty(currentArticle)
-                && !articleKey.equals(normalizeArticle(currentArticle))
-                && currentScannedQty > 0
-                && currentMaxQty > 0
-                && currentScannedQty < currentMaxQty) {
-            UIFuncs.errorSound(con);
-            box.getBox("Validation", "Complete scanning for current article before scanning another.");
-            txtScanArticle.setText("");
-            txtScanArticle.requestFocus();
-            return;
-        }
-
-        double packQty = resolvePackQty(eanRow);
-        double maxQty = resolveMaxQty(etRow);
+        double maxQty = etRow == null ? 0 : resolveArticleTotalQty(etArticle);
         double alreadyScanned = scannedQtyByArticle.containsKey(articleKey)
                 ? scannedQtyByArticle.get(articleKey) : 0;
+        boolean hasOpenQuantity = etRow != null && maxQty > 0 && alreadyScanned < maxQty;
 
-        if (maxQty > 0 && alreadyScanned + packQty > maxQty) {
-            UIFuncs.errorSound(con);
-            box.getBox("Qty Exceeded", "Scan quantity cannot exceed "
-                    + Util.convertToDoubleString(String.valueOf(maxQty)));
-            txtScanArticle.setText("");
-            txtScanArticle.requestFocus();
+        // No open quantity (missing ET_DATA / qty finished) → DH24 + local cache.
+        if (!hasOpenQuantity) {
+            storeArticleInCache(etArticle, barcode, packQty);
             return;
         }
 
-        alreadyScanned += packQty;
-        scannedQtyByArticle.put(articleKey, alreadyScanned);
-
+        // Has open quantity → HUB Crate Scan, then auto RFC (not cached).
         currentArticle = etArticle;
         currentEtRow = etRow;
         currentMaxQty = maxQty;
-        currentScannedQty = alreadyScanned;
+        currentScannedQty = alreadyScanned + packQty;
+        currentScanQty = packQty;
 
         txtArticle.setText(UIFuncs.removeLeadingZeros(etArticle));
-        if (maxQty > 0) {
-            txtScanQty.setText(Util.convertToDoubleString(String.valueOf(alreadyScanned))
-                    + " / " + Util.convertToDoubleString(String.valueOf(maxQty)));
-        } else {
-            txtScanQty.setText(Util.convertToDoubleString(String.valueOf(alreadyScanned)));
-        }
-        txtProposedHub.setText(resolveHubFromEtRow(etRow));
+        String proposedHub = resolveHubFromEtRow(etRow);
+        txtProposedHub.setText(proposedHub);
+        hubMapCrate = "";
+        txtHubMapCrate.setText("");
+        UIFuncs.enableInput(con, txtHubMapCrate);
         txtScanArticle.setText("");
-
-        if (maxQty > 0 && alreadyScanned >= maxQty) {
-            UIFuncs.disableInput(con, txtScanArticle);
-            UIFuncs.enableInput(con, txtScanHub);
-            txtScanHub.requestFocus();
-        } else if (maxQty <= 0) {
-            UIFuncs.disableInput(con, txtScanArticle);
-            UIFuncs.enableInput(con, txtScanHub);
-            txtScanHub.requestFocus();
-        } else {
-            txtScanArticle.requestFocus();
-        }
+        txtHubMapCrate.requestFocus();
     }
 
-    private void requestHubTag(String scannedHub) {
-        if (TextUtils.isEmpty(validatedCrate) || TextUtils.isEmpty(currentArticle)) {
-            UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please complete article scanning first.");
-            txtScanHub.setText("");
-            txtScanArticle.requestFocus();
-            return;
-        }
-        if (currentScannedQty < currentMaxQty) {
-            UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please scan full quantity before tagging HUB.");
-            txtScanHub.setText("");
-            txtScanArticle.requestFocus();
-            return;
-        }
+    private void storeArticleInCache(String article, String ean, double quantity) {
+        UIFuncs.errorSound(con);
+        String displayArticle = TextUtils.isEmpty(article) ? ean : article;
+        txtArticle.setText(UIFuncs.removeLeadingZeros(displayArticle));
+        txtProposedHub.setText(UNMATCHED_PROPOSED_HUB);
+        appendPendingScan(displayArticle, ean, quantity > 0 ? quantity : 1, UNMATCHED_PROPOSED_HUB, false);
+        UIFuncs.disableInput(con, txtHubMapCrate);
+        txtHubMapCrate.setText("");
+        hubMapCrate = "";
+        showBottomToast("No open quantity. Stored with Proposed HUB " + UNMATCHED_PROPOSED_HUB);
+        txtScanArticle.setText("");
+        txtScanArticle.requestFocus();
+    }
 
-        String proposedHub = UIFuncs.toUpperTrim(txtProposedHub);
-        if (!TextUtils.isEmpty(proposedHub)
-                && !proposedHub.equalsIgnoreCase(scannedHub)) {
-            UIFuncs.errorSound(con);
-            box.getBox("Validation", "Scanned HUB does not match Purposed HUB (" + proposedHub + ").");
-            txtScanHub.setText("");
-            txtScanHub.requestFocus();
+    private void confirmUnmatchedArticle(final String barcode) {
+        storeArticleInCache(barcode, barcode, 1);
+    }
+
+    private void showBottomToast(String message) {
+        if (con == null || TextUtils.isEmpty(message)) {
             return;
         }
+        Toast toast = Toast.makeText(con, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
+    }
 
+    private void requestMatchedArticleTag(String scannedHubCrate) {
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_HUB_ARTICLE_TAG_CRATE);
@@ -547,24 +729,175 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             args.put("IM_WERKS", WERKS);
             args.put("IM_SOURCE_CRATE", validatedCrate);
 
-            JSONObject itRow = new JSONObject();
-            itRow.put("MSA_CRATE", validatedCrate);
-            itRow.put("ARTICLE", currentArticle);
-            itRow.put("SCAN_QTY", Util.convertToDoubleString(String.valueOf(currentScannedQty)));
-            itRow.put("FLOOR", getSelectedFloor());
-            itRow.put("HUB", scannedHub);
-
+            JSONObject row = buildMatchedArticleTagRow(scannedHubCrate);
             JSONArray itData = new JSONArray();
-            itData.put(itRow);
+            itData.put(row);
             args.put("IT_DATA", itData);
 
-            Log.d(TAG, "hub tag IT_DATA -> " + itRow);
-            showProcessingAndSubmit(Vars.ZWM_PTL_HUB_ARTICLE_TAG_CRATE, REQUEST_TAG_HUB, args);
+            autoTagInProgress = true;
+            UIFuncs.disableInput(con, txtHubMapCrate);
+            Log.d(TAG, "matched article tag payload -> " + args);
+            showProcessingAndSubmit(
+                    Vars.ZWM_PTL_HUB_ARTICLE_TAG_CRATE,
+                    REQUEST_TAG_HUB,
+                    args);
         } catch (JSONException e) {
-            Log.e(TAG, "requestHubTag", e);
+            autoTagInProgress = false;
+            Log.e(TAG, "requestMatchedArticleTag", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
         }
+    }
+
+    private JSONObject buildMatchedArticleTagRow(String scannedHubCrate) throws JSONException {
+        JSONObject row = new JSONObject();
+        copyIfPresent(currentEtRow, row, "PICKLIST");
+        copyIfPresent(currentEtRow, row, "BIN");
+        copyIfPresent(currentEtRow, row, "ETYPE");
+        copyIfPresent(currentEtRow, row, "WAVE");
+        copyIfPresent(currentEtRow, row, "TANUM");
+        copyIfPresent(currentEtRow, row, "PALATE");
+        copyIfPresent(currentEtRow, row, "STORE");
+        copyIfPresent(currentEtRow, row, "ITEMNO");
+        copyIfPresent(currentEtRow, row, "EBELN");
+        copyIfPresent(currentEtRow, row, "EBELP");
+        copyIfPresent(currentEtRow, row, "TAG");
+        copyIfPresent(currentEtRow, row, "HU");
+        copyIfPresent(currentEtRow, row, "ZONE");
+        copyIfPresent(currentEtRow, row, "MATKL");
+        copyIfPresent(currentEtRow, row, "DIVISION");
+
+        String quantity = currentEtRow.optString("QUANTITY", "").trim();
+        if (quantity.isEmpty()) {
+            quantity = currentEtRow.optString("QTY", "").trim();
+        }
+        if (quantity.isEmpty()) {
+            quantity = Util.convertToDoubleString(String.valueOf(currentMaxQty));
+        }
+
+        row.put("MSA_CRATE", emptyCrate);
+        row.put("ARTICLE", currentArticle);
+        row.put("QUANTITY", quantity);
+        row.put("CRATE", scannedHubCrate);
+        row.put("PLANT", WERKS);
+        row.put("SCAN_QTY", Util.convertToDoubleString(String.valueOf(currentScanQty)));
+        row.put("ZONE_STATION", UIFuncs.toUpperTrim(txtProposedHub));
+        row.put("FLOOR", getSelectedFloor());
+        row.put("HUB", UIFuncs.toUpperTrim(txtProposedHub));
+        return row;
+    }
+
+    private static void copyIfPresent(JSONObject source, JSONObject target, String key)
+            throws JSONException {
+        if (source != null && source.has(key) && !source.isNull(key)) {
+            target.put(key, source.get(key));
+        }
+    }
+
+    private void appendPendingScan(String article, String ean, double quantity,
+                                   String proposedHub, boolean matched) {
+        JSONObject row = new JSONObject();
+        try {
+            row.put("MSA_CRATE", validatedCrate);
+            row.put("EMPTY_CRATE", emptyCrate);
+            row.put("ARTICLE", article);
+            row.put("EAN11", ean);
+            row.put("SCAN_QTY", Util.convertToDoubleString(String.valueOf(quantity)));
+            row.put("FLOOR", getSelectedFloor());
+            row.put("HUB", proposedHub);
+            row.put("HUB_MAP_CRATE", hubMapCrate);
+            row.put("_MATCHED", matched);
+            pendingScans.put(row);
+            persistLocalSession();
+            updateActionButtons();
+        } catch (JSONException e) {
+            Log.e(TAG, "appendPendingScan", e);
+            box.getErrBox(e);
+        }
+    }
+
+    private void applyHubMapCrateToPendingRows() {
+        for (int i = 0; i < pendingScans.length(); i++) {
+            JSONObject row = pendingScans.optJSONObject(i);
+            if (row != null) {
+                try {
+                    row.put("HUB_MAP_CRATE", hubMapCrate);
+                    row.put("EMPTY_CRATE", emptyCrate);
+                    row.put("MSA_CRATE", validatedCrate);
+                } catch (JSONException e) {
+                    Log.e(TAG, "applyHubMapCrateToPendingRows", e);
+                }
+            }
+        }
+    }
+
+    private void savePendingScans() {
+        if (pendingScans.length() == 0) {
+            box.getBox("Validation", "Please scan at least one Article/EAN.");
+            txtScanArticle.requestFocus();
+            return;
+        }
+        if (TextUtils.isEmpty(validatedCrate)) {
+            box.getBox("Validation", "Please scan MSA Crate first.");
+            txtScanCrate.requestFocus();
+            return;
+        }
+        if (TextUtils.isEmpty(emptyCrate)) {
+            box.getBox("Validation", "Please scan MSA REV Crate first.");
+            txtEmptyCrateScan.requestFocus();
+            return;
+        }
+        applyHubMapCrateToPendingRows();
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZGRTRET_SAVE_CRATE_DETAILS);
+            args.put("IM_USER", USER);
+            args.put("IM_WERKS", WERKS);
+            args.put("IM_CRATE", emptyCrate);
+            args.put("IM_MSA_CRATE", validatedCrate);
+            args.put("IM_NATURE", "GRT");
+            args.put("IT_DATA", buildSaveItData());
+
+            Log.d(TAG, "save crate details payload -> " + args);
+            showProcessingAndSubmit(Vars.ZGRTRET_SAVE_CRATE_DETAILS, REQUEST_SAVE_CACHE, args);
+        } catch (JSONException e) {
+            Log.e(TAG, "savePendingScans", e);
+            box.getErrBox(e);
+            UIFuncs.errorSound(con);
+        }
+    }
+
+    /**
+     * Builds {@code IT_DATA} rows for {@code ZECOM_CANCEL_QC_PUTAWAY_ST}.
+     * One row per cached scan — duplicate scans of the same article are
+     * kept as separate records (no aggregation).
+     */
+    private JSONArray buildSaveItData() throws JSONException {
+        JSONArray itData = new JSONArray();
+        for (int i = 0; i < pendingScans.length(); i++) {
+            JSONObject storedRow = pendingScans.getJSONObject(i);
+            String ean = storedRow.optString("EAN11", "").trim();
+            if (ean.isEmpty()) {
+                ean = storedRow.optString("ARTICLE", "").trim();
+            }
+            double scanQty = Util.convertStringToDouble(storedRow.optString("SCAN_QTY", "0"));
+            String hub = storedRow.optString("HUB", "").trim();
+            String lgpla = !TextUtils.isEmpty(hubMapCrate) ? hubMapCrate : hub;
+
+            JSONObject requestRow = new JSONObject();
+            requestRow.put("LGNUM", "");
+            requestRow.put("LGPLA", lgpla);
+            requestRow.put("MATNR", "");
+            requestRow.put("WERKS", WERKS);
+            requestRow.put("MENGE", "");
+            requestRow.put("LGTYP", "");
+            requestRow.put("MAKTX", "");
+            requestRow.put("MATERIAL", "");
+            requestRow.put("SCANQTY", Util.convertToDoubleString(String.valueOf(scanQty)));
+            requestRow.put("EAN11", ean);
+            itData.put(requestRow);
+        }
+        return itData;
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -596,9 +929,11 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
                     Log.d(TAG, "response -> " + responsebody);
 
                     if (responsebody == null) {
+                        releaseRequestGuard(request);
                         UIFuncs.errorSound(con);
                         box.getBox("Err", "No response from Server");
                     } else if (responsebody.length() == 0) {
+                        releaseRequestGuard(request);
                         UIFuncs.errorSound(con);
                         box.getBox("Err", "Unable to Connect Server/ Empty Response");
                     } else {
@@ -642,7 +977,16 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         queue.add(jsonRequest);
     }
 
+    private void releaseRequestGuard(int request) {
+        if (request == REQUEST_VALIDATE_CRATE) {
+            crateValidateInProgress = false;
+        } else if (request == REQUEST_VALIDATE_REV_CRATE) {
+            revCrateValidateInProgress = false;
+        }
+    }
+
     private void handleRfcResponse(JSONObject responsebody, int request) {
+        releaseRequestGuard(request);
         try {
             if (!responsebody.has("EX_RETURN") || !(responsebody.get("EX_RETURN") instanceof JSONObject)) {
                 UIFuncs.errorSound(con);
@@ -659,21 +1003,28 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
                 box.getBox("Err", message);
                 if (request == REQUEST_VALIDATE_CRATE) {
                     clearAfterCrateValidateFailure();
+                } else if (request == REQUEST_VALIDATE_REV_CRATE) {
+                    clearAfterRevCrateValidateFailure();
                 } else if (request == REQUEST_TAG_HUB) {
-                    txtScanHub.setText("");
-                    txtScanHub.requestFocus();
+                    autoTagInProgress = false;
+                    UIFuncs.enableInput(con, txtHubMapCrate);
+                    txtHubMapCrate.requestFocus();
                 }
                 return;
             }
 
-            if (!TextUtils.isEmpty(message)) {
+            if (!TextUtils.isEmpty(message) && request != REQUEST_VALIDATE_REV_CRATE) {
                 box.getBox("Success", message);
             }
 
             if (request == REQUEST_VALIDATE_CRATE) {
                 handleCrateValidateSuccess(responsebody);
+            } else if (request == REQUEST_VALIDATE_REV_CRATE) {
+                handleRevCrateValidateSuccess();
             } else if (request == REQUEST_TAG_HUB) {
                 handleHubTagSuccess();
+            } else if (request == REQUEST_SAVE_CACHE) {
+                handleCacheSaveSuccess();
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);
@@ -692,12 +1043,19 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         etDataMap = new HashMap<>();
         eanDataMap = new HashMap<>();
         scannedQtyByArticle = new HashMap<>();
+        referenceEtData = responsebody.optJSONArray("ET_DATA");
+        referenceEanData = responsebody.optJSONArray("ET_EAN_DATA");
+        if (referenceEtData == null) {
+            referenceEtData = new JSONArray();
+        }
+        if (referenceEanData == null) {
+            referenceEanData = new JSONArray();
+        }
 
-        if (responsebody.has("ET_DATA")) {
-            JSONArray etDataArray = responsebody.getJSONArray("ET_DATA");
-            int etStart = SapJsonRows.startIndex(etDataArray, "CRATE", "ARTICLE");
-            for (int i = etStart; i < etDataArray.length(); i++) {
-                JSONObject row = etDataArray.getJSONObject(i);
+        if (referenceEtData.length() > 0) {
+            int etStart = SapJsonRows.startIndex(referenceEtData, "CRATE", "ARTICLE");
+            for (int i = etStart; i < referenceEtData.length(); i++) {
+                JSONObject row = referenceEtData.getJSONObject(i);
                 if (SapJsonRows.isMetadataRow(row, "CRATE", "ARTICLE")) {
                     continue;
                 }
@@ -712,11 +1070,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             }
         }
 
-        if (responsebody.has("ET_EAN_DATA")) {
-            JSONArray eanDataArray = responsebody.getJSONArray("ET_EAN_DATA");
-            int eanStart = SapJsonRows.startIndex(eanDataArray, "EAN11", "ARTICLE");
-            for (int i = eanStart; i < eanDataArray.length(); i++) {
-                JSONObject row = eanDataArray.getJSONObject(i);
+        if (referenceEanData.length() > 0) {
+            int eanStart = SapJsonRows.startIndex(referenceEanData, "EAN11", "ARTICLE");
+            for (int i = eanStart; i < referenceEanData.length(); i++) {
+                JSONObject row = referenceEanData.getJSONObject(i);
                 if (SapJsonRows.isMetadataRow(row, "EAN11", "ARTICLE")) {
                     continue;
                 }
@@ -727,21 +1084,43 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             }
         }
 
-        if (etDataMap.isEmpty() || eanDataMap.isEmpty()) {
-            box.getBox("No Records", "No article/EAN data returned for this crate.");
-        } else {
-            UIFuncs.enableInput(con, txtScanArticle);
-            txtScanArticle.requestFocus();
+        // Keep floor selectable so user can change it before article scanning.
+        ddFloor.setEnabled(true);
+        UIFuncs.enableInput(con, txtEmptyCrateScan);
+        txtEmptyCrateScan.requestFocus();
+        persistLocalSession();
+        if (etDataMap.isEmpty() && eanDataMap.isEmpty()) {
+            box.getBox("No Records",
+                    "No article/EAN data returned. Unmatched scans can still be stored after confirmation.");
         }
     }
 
+    private void handleRevCrateValidateSuccess() {
+        emptyCrate = UIFuncs.toUpperTrim(txtEmptyCrateScan);
+        txtEmptyCrate.setText(emptyCrate);
+        txtEmptyCrateScan.setText("");
+        UIFuncs.disableInput(con, txtEmptyCrateScan);
+        UIFuncs.enableInput(con, txtScanArticle);
+        UIFuncs.enableInput(con, txtHubMapCrate);
+        persistLocalSession();
+        txtScanArticle.requestFocus();
+    }
+
     private void handleHubTagSuccess() {
-        if (!TextUtils.isEmpty(currentArticle)) {
-            scannedQtyByArticle.put(normalizeArticle(currentArticle), currentMaxQty);
-        }
+        scannedQtyByArticle.put(normalizeArticle(currentArticle), currentScannedQty);
+        persistLocalSession();
+        autoTagInProgress = false;
+        hubMapCrate = "";
+        txtHubMapCrate.setText("");
+        UIFuncs.disableInput(con, txtHubMapCrate);
         resetArticleFields();
         UIFuncs.enableInput(con, txtScanArticle);
-        txtScanArticle.requestFocus();
+        txtScanArticle.post(() -> txtScanArticle.requestFocus());
+    }
+
+    private void handleCacheSaveSuccess() {
+        clearLocalSession();
+        resetScreen();
     }
 
     private void resetArticleFields() {
@@ -749,12 +1128,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         currentEtRow = null;
         currentMaxQty = 0;
         currentScannedQty = 0;
+        currentScanQty = 0;
         txtArticle.setText("");
-        txtScanQty.setText("");
         txtProposedHub.setText("");
         txtScanArticle.setText("");
-        txtScanHub.setText("");
-        UIFuncs.disableInput(con, txtScanHub);
     }
 
     private void clearAfterCrateValidateFailure() {
@@ -765,13 +1142,31 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         txtScanCrate.requestFocus();
     }
 
+    private void clearAfterRevCrateValidateFailure() {
+        emptyCrate = "";
+        txtEmptyCrate.setText("");
+        txtEmptyCrateScan.setText("");
+        UIFuncs.enableInput(con, txtEmptyCrateScan);
+        txtEmptyCrateScan.requestFocus();
+    }
+
     private void resetAfterFloorChange() {
         validatedCrate = "";
+        emptyCrate = "";
+        hubMapCrate = "";
+        pendingScans = new JSONArray();
+        referenceEtData = new JSONArray();
+        referenceEanData = new JSONArray();
         etDataMap = new HashMap<>();
         eanDataMap = new HashMap<>();
         scannedQtyByArticle = new HashMap<>();
         txtCrate.setText("");
         txtScanCrate.setText("");
+        txtEmptyCrateScan.setText("");
+        txtEmptyCrate.setText("");
+        txtHubMapCrate.setText("");
+        UIFuncs.disableInput(con, txtEmptyCrateScan);
+        UIFuncs.disableInput(con, txtHubMapCrate);
         resetArticleFields();
         UIFuncs.disableInput(con, txtScanArticle);
         UIFuncs.enableInput(con, txtScanCrate);
@@ -779,15 +1174,186 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private void resetScreen() {
         resetAfterFloorChange();
-        if (ddFloor.getAdapter() != null && ddFloor.getAdapter().getCount() > 0) {
-            ddFloor.setSelection(0);
-            floorSelected = true;
-            UIFuncs.enableInput(con, txtScanCrate);
-        } else {
-            floorSelected = false;
-            UIFuncs.disableInput(con, txtScanCrate);
-        }
+        clearLocalSession();
+        ddFloor.setEnabled(true);
+        ddFloor.setText(FLOOR_OPTIONS.get(0));
+        floorSelected = true;
+        UIFuncs.enableInput(con, txtScanCrate);
+        updateActionButtons();
         txtScanCrate.post(() -> txtScanCrate.requestFocus());
+    }
+
+    private boolean hasSessionProgress() {
+        return (pendingScans != null && pendingScans.length() > 0)
+                || !TextUtils.isEmpty(validatedCrate)
+                || !TextUtils.isEmpty(emptyCrate)
+                || !TextUtils.isEmpty(hubMapCrate)
+                || (referenceEtData != null && referenceEtData.length() > 0);
+    }
+
+    private void persistLocalSession() {
+        if (localPreferences == null) {
+            return;
+        }
+        if (!hasSessionProgress()) {
+            localPreferences.edit().remove(LOCAL_SESSION).apply();
+            return;
+        }
+        JSONObject session = new JSONObject();
+        try {
+            session.put("FLOOR", getSelectedFloor());
+            session.put("MSA_CRATE", validatedCrate == null ? "" : validatedCrate);
+            session.put("EMPTY_CRATE", emptyCrate == null ? "" : emptyCrate);
+            session.put("HUB_MAP_CRATE", hubMapCrate == null ? "" : hubMapCrate);
+            session.put("ET_DATA", referenceEtData == null ? new JSONArray() : referenceEtData);
+            session.put("ET_EAN_DATA", referenceEanData == null ? new JSONArray() : referenceEanData);
+            session.put("SCANS", pendingScans == null ? new JSONArray() : pendingScans);
+            JSONObject scannedQuantities = new JSONObject();
+            for (Map.Entry<String, Double> entry : scannedQtyByArticle.entrySet()) {
+                scannedQuantities.put(entry.getKey(), entry.getValue());
+            }
+            session.put("SCANNED_QTY", scannedQuantities);
+            localPreferences.edit().putString(LOCAL_SESSION, session.toString()).apply();
+        } catch (JSONException e) {
+            Log.e(TAG, "persistLocalSession", e);
+        }
+    }
+
+    private void restoreLocalSession() {
+        if (localPreferences == null) {
+            return;
+        }
+        String stored = localPreferences.getString(LOCAL_SESSION, "");
+        if (TextUtils.isEmpty(stored)) {
+            updateActionButtons();
+            return;
+        }
+        try {
+            JSONObject session = new JSONObject(stored);
+            String floor = session.optString("FLOOR", "0");
+            int floorPosition = FLOOR_OPTIONS.indexOf(floor);
+            if (floorPosition >= 0) {
+                ddFloor.setText(FLOOR_OPTIONS.get(floorPosition));
+                floorSelected = true;
+            } else {
+                ddFloor.setText(FLOOR_OPTIONS.get(0));
+                floorSelected = true;
+            }
+
+            validatedCrate = session.optString("MSA_CRATE", "");
+            emptyCrate = session.optString("EMPTY_CRATE", "");
+            hubMapCrate = session.optString("HUB_MAP_CRATE", "");
+            referenceEtData = session.optJSONArray("ET_DATA");
+            referenceEanData = session.optJSONArray("ET_EAN_DATA");
+            pendingScans = session.optJSONArray("SCANS");
+            if (referenceEtData == null) {
+                referenceEtData = new JSONArray();
+            }
+            if (referenceEanData == null) {
+                referenceEanData = new JSONArray();
+            }
+            if (pendingScans == null) {
+                pendingScans = new JSONArray();
+            }
+            rebuildReferenceMaps();
+            rebuildScannedQuantities();
+            JSONObject restoredQuantities = session.optJSONObject("SCANNED_QTY");
+            if (restoredQuantities != null) {
+                Iterator<String> keys = restoredQuantities.keys();
+                while (keys.hasNext()) {
+                    String article = keys.next();
+                    scannedQtyByArticle.put(
+                            normalizeArticle(article),
+                            restoredQuantities.optDouble(article, 0));
+                }
+            }
+
+            txtCrate.setText(validatedCrate);
+            txtEmptyCrate.setText(emptyCrate);
+            txtHubMapCrate.setText(hubMapCrate);
+            ddFloor.setEnabled(true);
+            if (!TextUtils.isEmpty(validatedCrate)) {
+                UIFuncs.disableInput(con, txtScanCrate);
+                if (TextUtils.isEmpty(emptyCrate)) {
+                    UIFuncs.enableInput(con, txtEmptyCrateScan);
+                    txtEmptyCrateScan.requestFocus();
+                } else {
+                    UIFuncs.disableInput(con, txtEmptyCrateScan);
+                    UIFuncs.enableInput(con, txtScanArticle);
+                    UIFuncs.enableInput(con, txtHubMapCrate);
+                    txtScanArticle.requestFocus();
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "restoreLocalSession", e);
+            clearLocalSession();
+            resetScreen();
+        }
+        updateActionButtons();
+    }
+
+    private void rebuildReferenceMaps() throws JSONException {
+        etDataMap = new HashMap<>();
+        eanDataMap = new HashMap<>();
+        int etStart = SapJsonRows.startIndex(referenceEtData, "CRATE", "ARTICLE");
+        for (int i = etStart; i < referenceEtData.length(); i++) {
+            JSONObject row = referenceEtData.getJSONObject(i);
+            if (SapJsonRows.isMetadataRow(row, "CRATE", "ARTICLE")) {
+                continue;
+            }
+            String article = row.optString("ARTICLE", "").trim();
+            String matnr = row.optString("MATNR", "").trim();
+            if (!article.isEmpty()) {
+                etDataMap.put(normalizeArticle(article), row);
+            }
+            if (!matnr.isEmpty()) {
+                etDataMap.put(normalizeArticle(matnr), row);
+            }
+        }
+        int eanStart = SapJsonRows.startIndex(referenceEanData, "EAN11", "ARTICLE");
+        for (int i = eanStart; i < referenceEanData.length(); i++) {
+            JSONObject row = referenceEanData.getJSONObject(i);
+            if (!SapJsonRows.isMetadataRow(row, "EAN11", "ARTICLE")) {
+                String ean = row.optString("EAN11", "").trim().toUpperCase(Locale.ROOT);
+                if (!ean.isEmpty()) {
+                    eanDataMap.put(ean, row);
+                }
+            }
+        }
+    }
+
+    private void rebuildScannedQuantities() {
+        scannedQtyByArticle = new HashMap<>();
+        for (int i = 0; i < pendingScans.length(); i++) {
+            JSONObject row = pendingScans.optJSONObject(i);
+            if (row == null) {
+                continue;
+            }
+            String article = normalizeArticle(row.optString("ARTICLE", ""));
+            double quantity = Util.convertStringToDouble(row.optString("SCAN_QTY", "0"));
+            Double existing = scannedQtyByArticle.get(article);
+            scannedQtyByArticle.put(article, (existing == null ? 0 : existing) + quantity);
+        }
+    }
+
+    private void clearLocalSession() {
+        pendingScans = new JSONArray();
+        if (localPreferences != null) {
+            localPreferences.edit().remove(LOCAL_SESSION).apply();
+        }
+        updateActionButtons();
+    }
+
+    private void updateActionButtons() {
+        boolean hasUnsavedScans = pendingScans != null && pendingScans.length() > 0;
+        if (btnBack != null) {
+            btnBack.setEnabled(!hasUnsavedScans);
+            btnBack.setAlpha(hasUnsavedScans ? 0.45f : 1f);
+        }
+        if (btnSave != null) {
+            btnSave.setEnabled(hasUnsavedScans);
+            btnSave.setAlpha(hasUnsavedScans ? 1f : 0.45f);
+        }
     }
 
     private void dismissDialog() {
@@ -798,6 +1364,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private Response.ErrorListener volleyErrorListener(int request) {
         return error -> {
+            releaseRequestGuard(request);
             Log.i(TAG, "Error :" + error);
             String err;
             if (error instanceof TimeoutError || error instanceof NoConnectionError) {
@@ -818,9 +1385,12 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             box.getBox("Err", err);
             if (request == REQUEST_VALIDATE_CRATE) {
                 clearAfterCrateValidateFailure();
+            } else if (request == REQUEST_VALIDATE_REV_CRATE) {
+                clearAfterRevCrateValidateFailure();
             } else if (request == REQUEST_TAG_HUB) {
-                txtScanHub.setText("");
-                txtScanHub.requestFocus();
+                autoTagInProgress = false;
+                UIFuncs.enableInput(con, txtHubMapCrate);
+                txtHubMapCrate.requestFocus();
             }
         };
     }
@@ -836,7 +1406,11 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_ptl_grt_hub_sorting_scan_crate_back) {
-            BackPressHandler.confirmCloseProcess(fm, requireContext());
+            if (pendingScans.length() == 0) {
+                BackPressHandler.confirmCloseProcess(fm, requireContext());
+            }
+        } else if (view.getId() == R.id.btn_ptl_grt_hub_sorting_scan_crate_save) {
+            savePendingScans();
         }
     }
 }

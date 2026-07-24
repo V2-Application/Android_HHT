@@ -372,13 +372,15 @@ public class FragmentPTLGrtPaletteTagWithCrate extends Fragment implements View.
             }
 
             JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
-            String type = returnobj.optString("TYPE", "");
+            String type = returnobj.optString("TYPE", "").trim();
             String message = returnobj.optString("MESSAGE", "");
             displayMessage(message);
 
-            if ("E".equals(type)) {
+            if (!"S".equalsIgnoreCase(type)) {
                 UIFuncs.errorSound(con);
-                box.getBox("Err", message);
+                box.getBox("Err", TextUtils.isEmpty(message)
+                        ? "Request failed. Return type: " + type
+                        : message);
                 if (request == REQUEST_VALIDATE_PALETTE) {
                     clearAfterPaletteValidateFailure();
                 } else if (request == REQUEST_TAG_CRATE) {
@@ -388,17 +390,15 @@ public class FragmentPTLGrtPaletteTagWithCrate extends Fragment implements View.
                 return;
             }
 
-            if (!TextUtils.isEmpty(message)) {
-                box.getBox("Success", message);
-            }
-
+            // No success dialog — the message is already shown on screen via
+            // displayMessage(), and a modal would steal focus from the scanner field.
             if (request == REQUEST_VALIDATE_PALETTE) {
                 validatedPalette = UIFuncs.toUpperTrim(txtScanPalette);
                 txtPalette.setText(validatedPalette);
                 txtScanPalette.setText("");
                 UIFuncs.disableInput(con, txtScanPalette);
-                UIFuncs.enableInput(con, txtScanCrate);
                 resetCrateFields();
+                UIFuncs.enableInput(con, txtScanCrate);
                 txtScanCrate.requestFocus();
             } else if (request == REQUEST_TAG_CRATE) {
                 txtCrate.setText(UIFuncs.toUpperTrim(txtScanCrate));

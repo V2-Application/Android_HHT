@@ -3,296 +3,366 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    android:paddingStart="5dp"
-    android:paddingEnd="5dp">
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_above="@+id/ptl_grt_hub_sorting_scan_crate_footer"
         android:layout_alignParentTop="true"
-        android:layout_margin="5dp"
-        android:orientation="vertical">
+        android:layout_marginStart="3dp"
+        android:layout_marginEnd="3dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp"
+        android:orientation="vertical"
+        android:weightSum="9">
 
         <!-- FLOOR -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
                 android:text="FLOOR"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <RelativeLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="8">
+                android:layout_weight="7">
 
-                <Spinner
+                <TextView
                     android:id="@+id/dd_ptl_grt_hub_sorting_scan_crate_floor"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/ptl_flr_sta_spinner"
+                    android:clickable="true"
+                    android:drawableEnd="@drawable/ic_spinner_dropdown_arrow"
+                    android:drawablePadding="4dp"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
                     android:paddingStart="8dp"
-                    android:paddingEnd="32dp"
-                    android:spinnerMode="dropdown" />
+                    android:paddingEnd="4dp"
+                    android:text="0"
+                    android:textColor="@color/black"
+                    android:textSize="13sp" />
             </RelativeLayout>
         </LinearLayout>
 
-        <!-- Scan Crate -->
+        <!-- MSA Crate Scan -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Scan Crate"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="MSA Crate Scan"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_scan"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_field_editable"
                 android:enabled="false"
                 android:imeOptions="actionDone"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Crate -->
+        <!-- MSA Crate -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Crate"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="MSA Crate"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_crate"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_crate_readonly"
                 android:enabled="false"
                 android:focusable="false"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Scan Article -->
+        <!-- MSA REV Crate Scan -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Scan Article"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="MSA REV Crate Scan"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/txt_ptl_grt_hub_sorting_empty_crate_scan"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="7"
+                android:background="@drawable/ptl_flr_sta_field_editable"
+                android:enabled="false"
+                android:imeOptions="actionDone"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- MSA REV Crate -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="MSA REV Crate"
+                android:textColor="@color/black"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/txt_ptl_grt_hub_sorting_empty_crate"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="7"
+                android:background="@drawable/ptl_flr_sta_crate_readonly"
+                android:enabled="false"
+                android:focusable="false"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:singleLine="true"
+                android:textColor="@color/black"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Article Scan -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="Article Scan"
+                android:textColor="@color/black"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_scan_article"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_field_editable"
                 android:enabled="false"
                 android:imeOptions="actionDone"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
         <!-- Article -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
                 android:text="Article"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_article"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_hub_readonly"
                 android:enabled="false"
                 android:focusable="false"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <!-- Scan Qty -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="2dp"
-            android:weightSum="12">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Scan Qty"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_scan_qty"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
-                android:background="@drawable/ptl_flr_sta_crate_readonly"
-                android:enabled="false"
-                android:focusable="false"
-                android:maxLines="1"
-                android:padding="7dp"
-                android:singleLine="true"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
         <!-- Purposed HUB -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
                 android:text="Purposed HUB"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_proposed_hub"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_hub_readonly"
                 android:enabled="false"
                 android:focusable="false"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Scan HUB Code -->
+        <!-- HUB Crate Scan -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="2dp"
             android:weightSum="12">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:padding="7dp"
-                android:text="Scan HUB Code"
+                android:layout_weight="5"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="HUB Crate Scan"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/txt_ptl_grt_hub_sorting_scan_crate_scan_hub"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="8"
+                android:layout_height="36dp"
+                android:layout_weight="7"
                 android:background="@drawable/ptl_flr_sta_field_editable"
                 android:enabled="false"
                 android:imeOptions="actionDone"
                 android:maxLines="1"
-                android:padding="7dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
                 android:singleLine="true"
                 android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
     </LinearLayout>
@@ -303,21 +373,38 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:padding="5dp">
+        android:padding="2dp">
 
         <Button
             android:id="@+id/btn_ptl_grt_hub_sorting_scan_crate_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
             android:layout_margin="2dp"
             android:background="@drawable/border"
-            android:minWidth="120dp"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
+            android:minHeight="40dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="BACK"
             android:textAllCaps="true"
             android:textColor="@color/black"
-            android:textSize="15sp"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_ptl_grt_hub_sorting_scan_crate_save"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_margin="2dp"
+            android:background="@drawable/border"
+            android:minHeight="40dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="SAVE"
+            android:textAllCaps="true"
+            android:textColor="@color/black"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
     </LinearLayout>
