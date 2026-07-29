@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -379,11 +381,39 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void addArticleScanEvents() {
+        txtScanArticle.setInputType(InputType.TYPE_CLASS_NUMBER);
+        txtScanArticle.setFilters(new InputFilter[]{
+                (source, start, end, dest, dstart, dend) -> {
+                    if (source == null || start >= end) {
+                        return null;
+                    }
+                    for (int i = start; i < end; i++) {
+                        if (!Character.isDigit(source.charAt(i))) {
+                            showBottomToast("scan EAN / Article only");
+                            if (dest != null && dest.length() > 0) {
+                                txtScanArticle.post(() -> {
+                                    if (txtScanArticle != null) {
+                                        txtScanArticle.setText("");
+                                    }
+                                });
+                            }
+                            return "";
+                        }
+                    }
+                    return null;
+                }
+        });
+
         txtScanArticle.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 UIFuncs.hideKeyboard(getActivity());
                 String scanned = UIFuncs.toUpperTrim(txtScanArticle);
                 if (!TextUtils.isEmpty(scanned)) {
+                    if (!isNumericOnly(scanned)) {
+                        showBottomToast("scan EAN / Article only");
+                        txtScanArticle.setText("");
+                        return true;
+                    }
                     validateArticleScan(scanned);
                 }
                 return true;
@@ -405,12 +435,29 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
             @Override
             public void afterTextChanged(Editable s) {
-                String value = s.toString().toUpperCase().trim();
+                String value = s.toString().trim();
                 if (!value.isEmpty() && scannerReading) {
+                    if (!isNumericOnly(value)) {
+                        showBottomToast("scan EAN / Article only");
+                        txtScanArticle.setText("");
+                        return;
+                    }
                     validateArticleScan(value);
                 }
             }
         });
+    }
+
+    private boolean isNumericOnly(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (!Character.isDigit(value.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void addHubMapCrateEvents() {

@@ -56,6 +56,8 @@ public class FragmentHuScanPutway extends Fragment {
     private String URL = "", USER = "", WERKS = "";
     private boolean huValidated = false;
     private String validatedHu = "", poNo = "", billNo = "";
+    /** Session total of successful weight submissions; increments by +1 per save. */
+    private int sessionTsq = 0;
 
     public FragmentHuScanPutway() {}
     public static FragmentHuScanPutway newInstance() { return new FragmentHuScanPutway(); }
@@ -206,7 +208,11 @@ public class FragmentHuScanPutway extends Fragment {
         etPo.setText("");
         etInv.setText("");
         etVendor.setText("");
-        etSqTsq.setText("0 / 0");
+        updateSqTsq(0);
+    }
+
+    private void updateSqTsq(int sq) {
+        etSqTsq.setText(sq + " / " + sessionTsq);
     }
 
     private void validateHu(final String hu) {
@@ -236,12 +242,15 @@ public class FragmentHuScanPutway extends Fragment {
                             poNo = row.optString("PO_NO", "");
                             billNo = row.optString("BILL_NO", "");
                             String vendor = row.optString("VENDOR_NAME", "");
-                            String sq = row.optString("SQ", "0");
-                            String tsq = row.optString("TSQ", "0");
+                            int sq = 0;
+                            try {
+                                sq = Integer.parseInt(row.optString("SQ", "0").trim());
+                            } catch (Exception ignored) { }
                             etPo.setText(poNo);
                             etInv.setText(billNo);
                             etVendor.setText(vendor);
-                            etSqTsq.setText(sq + " / " + tsq);
+                            // Keep session TSQ (successful weight count); do not overwrite from API
+                            updateSqTsq(sq);
                         }
 
                         etHu.setEnabled(false);
@@ -416,14 +425,15 @@ public class FragmentHuScanPutway extends Fragment {
     private void resetFields() {
         huValidated = false;
         validatedHu = poNo = billNo = "";
-        etVehicle.setText("");
+        // Keep Vehicle No for continuous putaway on the same vehicle
         etHu.setText("");
         etPalette.setText("");
         etHu.setEnabled(true);
         etPalette.setEnabled(false);
-        clearDisplayFields();
-        etVehicle.requestFocus();
-        showStatus("Enter Vehicle No. and scan HU.", true);
+        sessionTsq++; // +1 for each successful weight submission
+        clearDisplayFields(); // SQ / TSQ → 0 / sessionTsq
+        etHu.requestFocus();
+        showStatus("Scan next HU.", true);
     }
 
     private interface Cb { void ok(JSONObject r); void err(String e); }

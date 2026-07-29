@@ -241,6 +241,7 @@
                 android:background="@drawable/ptl_flr_sta_field_editable"
                 android:enabled="false"
                 android:imeOptions="actionDone"
+                android:inputType="number"
                 android:maxLines="1"
                 android:paddingStart="6dp"
                 android:paddingEnd="6dp"
