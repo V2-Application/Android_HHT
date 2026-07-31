@@ -315,11 +315,17 @@ public class FragmentCrateTagWithPallet extends Fragment implements View.OnClick
         try{
             JSONArray arrItSave = response.getJSONArray("IT_CRATE");
             int length = arrItSave.length();
-            for(int i=1; i < length; i++){
-                PalletCrate palletCrate = new Gson().fromJson(arrItSave.get(i).toString(), PalletCrate.class);
+            int dataRowCount = 0;
+            for(int i = 0; i < length; i++){
+                JSONObject row = arrItSave.optJSONObject(i);
+                if(row == null || isHeaderRow(row)){
+                    continue;
+                }
+                PalletCrate palletCrate = new Gson().fromJson(row.toString(), PalletCrate.class);
                 palletCrates.add(palletCrate);
+                dataRowCount++;
             }
-            if(length > 1){
+            if(dataRowCount > 0){
                 double sqty = 1;
                 totalQty = totalQty + sqty;
                 txt_sqty.setText(Util.formatDouble(sqty));
@@ -333,6 +339,12 @@ public class FragmentCrateTagWithPallet extends Fragment implements View.OnClick
         }
         txt_scan_crate.setText("");
         UIFuncs.enableInput(con, txt_scan_crate);
+    }
+
+    private boolean isHeaderRow(JSONObject row){
+        return "PALATE".equalsIgnoreCase(row.optString("PALATE", "").trim())
+                || "CRATE".equalsIgnoreCase(row.optString("CRATE", "").trim())
+                || "QTY".equalsIgnoreCase(row.optString("QTY", "").trim());
     }
 
     private void saveData(){

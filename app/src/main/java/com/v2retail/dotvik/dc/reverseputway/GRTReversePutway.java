@@ -30,6 +30,7 @@ import com.v2retail.util.AlertBox;
 public class GRTReversePutway extends Fragment implements View.OnClickListener {
 
     private static final String TAG = GRTReversePutway.class.getName();
+    public static final String ARG_HIDE_CRATE_TO_MSA = "hide_crate_to_msa";
     private OnFragmentInteractionListener mListener;
 
     Button btn_crate_tagging,btn_pallate_receive,btn_crate_to_msa;
@@ -48,6 +49,14 @@ public class GRTReversePutway extends Fragment implements View.OnClickListener {
     }
     public static GRTReversePutway newInstance(String param1, String param2) {
         GRTReversePutway fragment = new GRTReversePutway();
+        return fragment;
+    }
+
+    public static GRTReversePutway newInstance(boolean hideCrateToMsa) {
+        GRTReversePutway fragment = new GRTReversePutway();
+        Bundle args = new Bundle();
+        args.putBoolean(ARG_HIDE_CRATE_TO_MSA, hideCrateToMsa);
+        fragment.setArguments(args);
         return fragment;
     }
 
@@ -71,8 +80,10 @@ public class GRTReversePutway extends Fragment implements View.OnClickListener {
         btn_pallate_receive.setOnClickListener(this);
         btn_crate_to_msa.setOnClickListener(this);
 
-        //Not Implemented
-        btn_crate_to_msa.setVisibility(View.GONE);
+        Bundle args = getArguments();
+        if (args != null && args.getBoolean(ARG_HIDE_CRATE_TO_MSA, false)) {
+            btn_crate_to_msa.setVisibility(View.GONE);
+        }
 
         return rootView;
     }
@@ -87,7 +98,7 @@ public class GRTReversePutway extends Fragment implements View.OnClickListener {
                 fragment = FragmentPalletReceiveAtFloor.newInstance();
                 break;
             case R.id.grt_reverse_putway_crate_to_msa:
-                //Not Implemented
+                fragment = new GRTCrateToMSABin();
                 break;
         }
 

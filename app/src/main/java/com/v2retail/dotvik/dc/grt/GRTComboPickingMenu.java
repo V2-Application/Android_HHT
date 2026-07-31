@@ -105,7 +105,7 @@ public class GRTComboPickingMenu extends Fragment implements View.OnClickListene
                 fragment=new GRTCrateToMSABin();
                 break;
             case R.id.grt_combo_grt_reverse_putway:
-                fragment=new GRTReversePutway();
+                fragment = GRTReversePutway.newInstance(true);
                 break;
             case R.id.grt_combo_hu_pick:
                 fragment=new GRTSingleComboHUPick();

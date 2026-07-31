@@ -528,22 +528,34 @@ public class EmptyBinFragment extends Fragment implements View.OnClickListener {
                                         scanned_bin.setText(binNumber);
                                         binNum = binNumber;
                                         JSONArray jsonArray = responsebody.getJSONArray("IT_DATA");
-                                        JSONObject jsonObject = new JSONObject();
-                                        for (int i=1;i<jsonArray.length();i++){
-                                            String SCAN_QTY = jsonArray.getJSONObject(i).getString("SCAN_QTY");
-                                            String BIN_TYPE = jsonArray.getJSONObject(i).getString("BIN_TYPE");
-                                            String WAREHOUSE = jsonArray.getJSONObject(i).getString("WAREHOUSE");
-                                            String BIN = jsonArray.getJSONObject(i).getString("BIN");
-                                            String CRATE = jsonArray.getJSONObject(i).getString("CRATE");
+                                        // Header row has labels like "SCAN_QTY"; real row has numeric qty like "6.000"
+                                        int startIndex = 0;
+                                        if (jsonArray.length() > 0) {
+                                            String firstQty = jsonArray.getJSONObject(0).optString("SCAN_QTY", "");
+                                            try {
+                                                Double.parseDouble(firstQty);
+                                            } catch (NumberFormatException e) {
+                                                startIndex = 1;
+                                            }
+                                        }
+
+                                        for (int i = startIndex; i < jsonArray.length(); i++) {
+                                            JSONObject row = jsonArray.getJSONObject(i);
+                                            JSONObject jsonObject = new JSONObject();
+                                            String SCAN_QTY = row.optString("SCAN_QTY", "");
+                                            String BIN_TYPE = row.optString("BIN_TYPE", "");
+                                            String WAREHOUSE = row.optString("WAREHOUSE", "");
+                                            String BIN = row.optString("BIN", "");
+                                            String CRATE = row.optString("CRATE", "");
 
                                             quantity.setText(SCAN_QTY);
 
-                                            jsonObject.put("SCAN_QTY",SCAN_QTY);
-                                            jsonObject.put("WAREHOUSE",WAREHOUSE);
-                                            jsonObject.put("BIN",BIN);
-                                            jsonObject.put("CRATE",CRATE);
+                                            jsonObject.put("SCAN_QTY", SCAN_QTY);
+                                            jsonObject.put("BIN_TYPE", BIN_TYPE);
+                                            jsonObject.put("WAREHOUSE", WAREHOUSE);
+                                            jsonObject.put("BIN", BIN);
+                                            jsonObject.put("CRATE", CRATE);
                                             jsonArraySaveData.put(jsonObject);
-
                                         }
 
                                         Log.v(TAG,jsonArraySaveData.toString());
@@ -701,7 +713,7 @@ public class EmptyBinFragment extends Fragment implements View.OnClickListener {
                                     } else {
 
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"),new DialogInterface.OnClickListener() {
+                                        box.getBox("Success", returnobj.getString("MESSAGE"),new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
                                                 crate.setText("");

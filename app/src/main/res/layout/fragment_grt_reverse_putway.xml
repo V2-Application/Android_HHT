@@ -30,7 +30,7 @@
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Crate To MSA Bin"
+            android:text="GRT Crate to MSA Bin"
             android:id="@+id/grt_reverse_putway_crate_to_msa"
             android:layout_margin="5dp"
             android:textColor="#fff"

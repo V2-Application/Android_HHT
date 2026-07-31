@@ -19,6 +19,7 @@ import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.dc.grt.GRTCratePickingProcess;
 import com.v2retail.dotvik.dc.grt.GRTComboPalettePutway;
 import com.v2retail.dotvik.dc.grt.GRTComboPaletteReceive;
+import com.v2retail.dotvik.dc.reverseputway.GRTReversePutway;
 
 public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListener {
 
@@ -28,7 +29,7 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
 
     Button btnCratePicking, btnPalettePutaway, btnPaletteReceive, btnFloorHubWiseCrateTag,
             btnReceivePalletAtHubSorting, btnHubSortingScanCrate, btnHubHuCrateClosed,
-            btnPaletteTagWithCrate;
+            btnPaletteTagWithCrate, btnReversePutaway;
 
     public MenuPTLNewGrtProcess() {
     }
@@ -58,6 +59,7 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
         btnHubSortingScanCrate = view.findViewById(R.id.ptl_grt_hub_sorting_scan_crate);
         btnHubHuCrateClosed = view.findViewById(R.id.ptl_grt_hub_hu_crate_closed);
         btnPaletteTagWithCrate = view.findViewById(R.id.ptl_grt_palette_tag_with_crate);
+        btnReversePutaway = view.findViewById(R.id.ptl_grt_reverse_putaway);
 
         btnCratePicking.setOnClickListener(this);
         btnPalettePutaway.setOnClickListener(this);
@@ -67,6 +69,7 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
         btnHubSortingScanCrate.setOnClickListener(this);
         btnHubHuCrateClosed.setOnClickListener(this);
         btnPaletteTagWithCrate.setOnClickListener(this);
+        btnReversePutaway.setOnClickListener(this);
 
         return view;
     }
@@ -105,6 +108,9 @@ public class MenuPTLNewGrtProcess extends Fragment implements View.OnClickListen
                 break;
             case R.id.ptl_grt_palette_tag_with_crate:
                 fragment = FragmentPTLGrtPaletteTagWithCrate.newInstance();
+                break;
+            case R.id.ptl_grt_reverse_putaway:
+                fragment = new GRTReversePutway();
                 break;
         }
 
