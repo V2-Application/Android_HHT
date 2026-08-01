@@ -311,10 +311,15 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
                 JSONArray arr = responseBody.getJSONArray("ET_STORES");
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject row = arr.getJSONObject(i);
-                    String storeCode = row.optString("PLAN", "").trim();
+                    // Hub RFC may return PLAN/PLANT; ZSTORELIST_TS uses STORE (WERKS_D).
+                    String storeCode = row.optString("STORE", "").trim();
+                    if (storeCode.isEmpty()) {
+                        storeCode = row.optString("PLAN", "").trim();
+                    }
                     if (storeCode.isEmpty()) {
                         storeCode = row.optString("PLANT", "").trim();
                     }
+                    storeCode = normalizeWerks(storeCode);
                     if (!storeCode.isEmpty()) {
                         stores.add(storeCode);
                     }
@@ -487,10 +492,13 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
             args.put("IM_SEAL_NO", UIFuncs.toUpperTrim(txtSealNo));
             args.put("IM_DRIVER_NAME", UIFuncs.toUpperTrim(txtDriverName));
             args.put("IM_DRIVER_MOB", UIFuncs.toUpperTrim(txtDriverMob));
+            // FLAG: 'X' = set, space/empty = not set. Do not send "0" (ABAP NOT INITIAL).
             args.put("IM_HUB_FLAG", hubDest ? "X" : "");
-            args.put("IM_STORE_FLAG", hubDest ? "0" : "X");
+            args.put("IM_STORE_FLAG", hubDest ? "" : "X");
             args.put("IM_HUB", hubDest ? UIFuncs.toUpperTrim(txtHub) : "");
-            args.put("IM_GRP", "");
+            // IM_GRP is ZTAB_ZGRP (select-options table type) — must be JSON array, not "".
+            args.put("IM_GRP", new JSONArray());
+            // STORE_LIST is ZSTORELIST_TT / ZSTORELIST_TS (STORE TYPE WERKS_D CHAR 4).
             args.put("STORE_LIST", buildStoreListArray());
             showProcessingAndSubmit(Vars.ZWM_HU_SELECTION_RFC, REQUEST_HU_SELECTION, args);
         } catch (JSONException e) {
@@ -506,7 +514,7 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         }
         String[] stores = storeText.split(",");
         for (String store : stores) {
-            String code = store.trim();
+            String code = normalizeWerks(store);
             if (!code.isEmpty()) {
                 JSONObject row = new JSONObject();
                 row.put("STORE", code);
@@ -514,6 +522,35 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
             }
         }
         return storeList;
+    }
+
+    /** WERKS_D / ZSTORELIST_TS-STORE is CHAR 4. */
+    private static String normalizeWerks(String value) {
+        if (value == null) {
+            return "";
+        }
+        String code = value.trim().toUpperCase();
+        if (code.isEmpty()) {
+            return "";
+        }
+        return code.length() > 4 ? code.substring(0, 4) : code;
+    }
+
+    /** SAP JSON adapters may return a single table row as object instead of array. */
+    private static JSONArray asJsonArray(JSONObject body, String key) throws JSONException {
+        if (body == null || !body.has(key) || body.isNull(key)) {
+            return new JSONArray();
+        }
+        Object val = body.get(key);
+        if (val instanceof JSONArray) {
+            return (JSONArray) val;
+        }
+        if (val instanceof JSONObject) {
+            JSONArray arr = new JSONArray();
+            arr.put(val);
+            return arr;
+        }
+        return new JSONArray();
     }
 
     private void openScanScreen(JSONArray huList) {
@@ -611,8 +648,8 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
                 } else if (request == REQUEST_HUB_STORE_LIST) {
                     setHubStoreData(responseBody, args.optString("IM_HUB", ""));
                 } else if (request == REQUEST_HU_SELECTION) {
-                    JSONArray huList = responseBody.optJSONArray("ET_HULIST");
-                    if (huList == null || huList.length() == 0) {
+                    JSONArray huList = asJsonArray(responseBody, "ET_HULIST");
+                    if (huList.length() == 0) {
                         UIFuncs.errorSound(con);
                         box.getBox("No Data", "No HU found for the given selection.");
                         return;
