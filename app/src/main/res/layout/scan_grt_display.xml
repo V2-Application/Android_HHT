@@ -33,7 +33,6 @@
                     android:textSize="15sp"
                     android:id="@+id/pack_mat_spinner"
                     android:layout_width="0dp"
-                    android:entries="@array/choose_store"
                     android:layout_height="wrap_content" />
             </LinearLayout>
 

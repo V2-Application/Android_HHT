@@ -3,21 +3,28 @@ package com.v2retail.dotvik.dc;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
@@ -26,9 +33,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * PUT01 HU Wise Scanning (Inbound Process New)
@@ -36,6 +41,7 @@ import java.util.Map;
  */
 public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClickListener {
 
+    private static final String TAG = "Put01HuWiseScanning";
     private static final String DEFAULT_USER = "250";
 
     private View view;
@@ -49,6 +55,7 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
 
     private String URL = "", USER = "", WERKS = "";
     private int totScannedHu = 0;
+    private boolean requestInProgress = false;
 
     public FragmentPut01HuWiseScanning() {}
     public static FragmentPut01HuWiseScanning newInstance() { return new FragmentPut01HuWiseScanning(); }
@@ -72,14 +79,7 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
         btnReset.setOnClickListener(this);
         btnBack.setOnClickListener(this);
 
-        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int a, android.view.KeyEvent e) {
-                String hu = etHu.getText().toString().trim();
-                if (!hu.isEmpty()) onHuScanned(hu);
-                return true;
-            }
-        });
-
+        addScanHuEvents();
         init();
         return view;
     }
@@ -91,6 +91,53 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
             ((Process_Selection_Activity) getActivity())
                     .setActionBarTitle("PUT01- HU-WISE SCANNING");
         }
+        if (etHu != null && etHu.isEnabled()) {
+            etHu.requestFocus();
+        }
+    }
+
+    private void addScanHuEvents() {
+        etHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean enterDown = event != null
+                        && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_DOWN;
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
+                        || enterDown) {
+                    String hu = etHu.getText().toString().trim().toUpperCase(Locale.ROOT);
+                    Log.d(TAG, "Scan HU editor action -> hu=" + hu + " actionId=" + actionId);
+                    if (!hu.isEmpty()) {
+                        onHuScanned(hu);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        // HHT scanners often wedge the full barcode as one paste (no Enter).
+        etHu.addTextChangedListener(new TextWatcher() {
+            private boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String hu = s.toString().trim().toUpperCase(Locale.ROOT);
+                if (!hu.isEmpty() && scannerReading) {
+                    Log.d(TAG, "Scan HU wedge detect -> hu=" + hu);
+                    onHuScanned(hu);
+                }
+            }
+        });
     }
 
     private void init() {
@@ -103,7 +150,10 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
         if (USER == null || USER.trim().isEmpty()) USER = DEFAULT_USER;
         etDcSite.setText(WERKS != null ? WERKS : "");
         clearDisplayFields();
-        showStatus("Scan HU Barcode.", true);
+        etTotScannedHu.setText(String.valueOf(totScannedHu));
+        clearScanInput();
+        showHint("Scan HU Barcode.");
+        Log.d(TAG, "init -> WERKS=" + WERKS + " USER=" + USER + " URL=" + URL);
     }
 
     private void clearDisplayFields() {
@@ -115,83 +165,78 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
     }
 
     private void onHuScanned(final String scannedHu) {
-        if (WERKS == null || WERKS.trim().isEmpty()) {
-            showStatus("Plant (DC Site) not found. Please log in again.", false);
+        if (requestInProgress) {
+            Log.d(TAG, "onHuScanned skipped — request already in progress");
             return;
         }
-        String validateUrl = GatewayUrls.apiUrl(URL, "/api/" + Vars.ZVND_PUT01_HU_VAL_RFC);
-        if (validateUrl.isEmpty()) {
-            showStatus("Server URL missing. Please log in again.", false);
+        if (WERKS == null || WERKS.trim().isEmpty()) {
+            showError("Plant (DC Site) not found. Please log in again.");
+            return;
+        }
+        if (URL == null || URL.trim().isEmpty()) {
+            showError("Server URL missing. Please log in again.");
             return;
         }
 
+        JSONObject params;
+        try {
+            params = new JSONObject();
+            params.put("bapiname", Vars.ZVND_PUT01_HU_VAL_RFC);
+            params.put("IM_HU", scannedHu);
+            params.put("IM_USER", USER);
+            params.put("IM_PLANT", WERKS);
+        } catch (JSONException e) {
+            Log.e(TAG, "Could not build validate request", e);
+            showError("Could not build validate request.");
+            return;
+        }
+
+        requestInProgress = true;
         showProgress("Validating HU...");
         etHu.setEnabled(false);
 
-        StringRequest req = new StringRequest(Request.Method.POST, validateUrl,
-            new Response.Listener<String>() {
-                @Override public void onResponse(String body) {
-                    dismissProgress();
-                    try {
-                        JSONObject r = new JSONObject(body != null ? body : "{}");
-                        if (!isSapSuccess(r)) {
-                            showStatus(r.optString("Message", "HU validation failed"), false);
-                            clearScanInput();
-                            return;
-                        }
-                        JSONObject row = firstEtDataRow(r);
-                        final String exidv = nonEmpty(row != null ? row.optString("EXIDV", "") : "", scannedHu);
-                        final String palette = row != null ? row.optString("PALETTE", "") : "";
-                        final String poNo = row != null ? row.optString("VPONO", "") : "";
-                        final String invNo = row != null ? row.optString("INVNO", "") : "";
-                        final String qty = row != null ? row.optString("QTY", "0") : "0";
-                        savePut01(exidv, palette, poNo, invNo, qty, r.optString("Message", ""));
-                    } catch (JSONException e) {
-                        showStatus("Parse error while validating HU.", false);
-                        clearScanInput();
-                    }
+        callRfc(Vars.ZVND_PUT01_HU_VAL_RFC, params, new RfcCb() {
+            @Override
+            public void ok(JSONObject r) {
+                if (!isSapSuccess(r)) {
+                    requestInProgress = false;
+                    showError(sapMessage(r, "HU validation failed"));
+                    clearScanInput();
+                    return;
                 }
-            },
-            new Response.ErrorListener() {
-                @Override public void onErrorResponse(VolleyError e) {
-                    dismissProgress();
-                    showStatus("Network error while validating HU. Please retry.", false);
+                try {
+                    JSONObject row = firstEtDataRow(r);
+                    final String exidv = nonEmpty(row != null ? row.optString("EXIDV", "") : "", scannedHu);
+                    final String palette = row != null ? row.optString("PALETTE", "") : "";
+                    final String poNo = row != null ? row.optString("VPONO", "") : "";
+                    final String invNo = row != null ? row.optString("INVNO", "") : "";
+                    final String qty = row != null ? row.optString("QTY", "0") : "0";
+                    savePut01(exidv, palette, poNo, invNo, qty, sapMessage(r, ""));
+                } catch (JSONException e) {
+                    requestInProgress = false;
+                    Log.e(TAG, "Parse error validating HU", e);
+                    showError("Parse error while validating HU.");
                     clearScanInput();
                 }
-            }) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("IM_HU", scannedHu);
-                p.put("IM_USER", USER);
-                p.put("IM_PLANT", WERKS);
-                return p;
             }
 
             @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
+            public void err(String message) {
+                requestInProgress = false;
+                showError(message != null ? message : "Network error while validating HU. Please retry.");
+                clearScanInput();
             }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        });
     }
 
     private void savePut01(final String exidv, final String palette,
                            final String poNo, final String invNo, final String qty,
                            final String validateMessage) {
-        String saveUrl = GatewayUrls.apiUrl(URL, "/api/" + Vars.ZVND_PUT01_SAVE_DATA_RFC);
-        if (saveUrl.isEmpty()) {
-            showStatus("Server URL missing. Please log in again.", false);
-            clearScanInput();
-            return;
-        }
-
-        showProgress("Saving...");
-        JSONObject body;
+        JSONObject params;
         try {
-            body = new JSONObject();
-            body.put("IM_USER", USER);
+            params = new JSONObject();
+            params.put("bapiname", Vars.ZVND_PUT01_SAVE_DATA_RFC);
+            params.put("IM_USER", USER);
             JSONObject row = new JSONObject();
             row.put("WERKS", WERKS);
             row.put("EXIDV", exidv);
@@ -199,56 +244,84 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
             row.put("ZPUT01_SCAN", "X");
             JSONArray it = new JSONArray();
             it.put(row);
-            body.put("IT_DATA", it);
+            params.put("IT_DATA", it);
         } catch (JSONException e) {
-            dismissProgress();
-            showStatus("Could not build save request.", false);
+            requestInProgress = false;
+            Log.e(TAG, "Could not build save request", e);
+            showError("Could not build save request.");
             clearScanInput();
             return;
         }
 
-        final JSONObject payload = body;
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, saveUrl, payload,
+        showProgress("Saving...");
+        callRfc(Vars.ZVND_PUT01_SAVE_DATA_RFC, params, new RfcCb() {
+            @Override
+            public void ok(JSONObject r) {
+                requestInProgress = false;
+                if (!isSapSuccess(r)) {
+                    showError(sapMessage(r, "Could not save HU data."));
+                    clearScanInput();
+                    return;
+                }
+                updateDisplayFields(exidv, palette, poNo, invNo, qty);
+                totScannedHu++;
+                etTotScannedHu.setText(String.valueOf(totScannedHu));
+                String msg = sapMessage(r, validateMessage);
+                if (msg == null || msg.trim().isEmpty()) msg = "Data saved successfully.";
+                showSuccess(msg);
+                clearScanInput();
+            }
+
+            @Override
+            public void err(String message) {
+                requestInProgress = false;
+                showError(message != null ? message : "Could not save HU data.");
+                clearScanInput();
+            }
+        });
+    }
+
+    private interface RfcCb {
+        void ok(JSONObject r);
+        void err(String message);
+    }
+
+    /** Hits RFC via noacljsonrfcadaptor (same pattern as other screens). */
+    private void callRfc(final String rfcName, JSONObject params, final RfcCb cb) {
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfcName);
+        if (url.isEmpty()) {
+            cb.err("Server URL missing. Please log in again.");
+            return;
+        }
+        Log.d(TAG, "RFC request -> " + rfcName);
+        Log.d(TAG, "RFC url -> " + url);
+        Log.d(TAG, "RFC payload -> " + params);
+
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, url, params,
             new Response.Listener<JSONObject>() {
                 @Override public void onResponse(JSONObject r) {
                     dismissProgress();
-                    if (!isSapSuccess(r)) {
-                        showStatus(r.optString("Message", "Could not save HU data."), false);
-                        clearScanInput();
-                        return;
-                    }
-                    updateDisplayFields(exidv, palette, poNo, invNo, qty);
-                    totScannedHu++;
-                    etTotScannedHu.setText(String.valueOf(totScannedHu));
-                    String msg = r.optString("Message", validateMessage);
-                    if (msg == null || msg.trim().isEmpty()) msg = "Data saved successfully.";
-                    showStatus(msg, true);
-                    clearScanInput();
+                    Log.d(TAG, "RFC response -> " + rfcName + ": " + r);
+                    cb.ok(r != null ? r : new JSONObject());
                 }
             },
             new Response.ErrorListener() {
                 @Override public void onErrorResponse(VolleyError e) {
                     dismissProgress();
-                    showStatus("Could not save HU data.", false);
-                    clearScanInput();
+                    Log.e(TAG, "RFC error -> " + rfcName, e);
+                    cb.err(e.getMessage() != null ? e.getMessage() : "Network error");
                 }
-            }) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> h = new HashMap<>();
-                h.put("Accept", "application/json");
-                h.put("Content-Type", "application/json");
-                return h;
-            }
-        };
+            });
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
         ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
     private JSONObject firstEtDataRow(JSONObject response) throws JSONException {
-        JSONObject data = response.optJSONObject("Data");
-        if (data == null) data = response;
-        JSONArray et = data.optJSONArray("ET_DATA");
+        JSONArray et = response.optJSONArray("ET_DATA");
+        if (et == null) {
+            JSONObject data = response.optJSONObject("Data");
+            if (data != null) et = data.optJSONArray("ET_DATA");
+        }
         if (et != null && et.length() > 0) {
             return et.getJSONObject(0);
         }
@@ -270,16 +343,37 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
     }
 
     private void resetAll() {
+        requestInProgress = false;
         totScannedHu = 0;
         etTotScannedHu.setText("0");
         clearDisplayFields();
         clearScanInput();
-        showStatus("Scan HU Barcode.", true);
+        showHint("Scan HU Barcode.");
     }
 
+    /** Accepts gateway {@code Status=S} or SAP {@code EX_RETURN.TYPE=S}. */
     private static boolean isSapSuccess(JSONObject r) {
         Object status = r.opt("Status");
-        return status != null && "S".equals(status.toString().toUpperCase(Locale.ROOT));
+        if (status != null) {
+            return "S".equals(status.toString().toUpperCase(Locale.ROOT));
+        }
+        JSONObject ret = r.optJSONObject("EX_RETURN");
+        if (ret != null) {
+            String type = ret.optString("TYPE", "");
+            return "S".equalsIgnoreCase(type) || type.isEmpty();
+        }
+        return false;
+    }
+
+    private static String sapMessage(JSONObject r, String fallback) {
+        String msg = r.optString("Message", "").trim();
+        if (!msg.isEmpty()) return msg;
+        JSONObject ret = r.optJSONObject("EX_RETURN");
+        if (ret != null) {
+            msg = ret.optString("MESSAGE", "").trim();
+            if (!msg.isEmpty()) return msg;
+        }
+        return fallback;
     }
 
     private static String nonEmpty(String value, String fallback) {
@@ -294,12 +388,36 @@ public class FragmentPut01HuWiseScanning extends Fragment implements View.OnClic
         }
     }
 
-    private void showStatus(String msg, boolean ok) {
+    /** Idle / instruction text in the status bar. */
+    private void showHint(String msg) {
         if (tvStatus == null) return;
         tvStatus.setVisibility(View.VISIBLE);
         tvStatus.setText(msg);
-        tvStatus.setBackgroundColor(ok ? 0xFFE8F5E9 : 0xFFFFEBEE);
-        tvStatus.setTextColor(ok ? 0xFF065F46 : 0xFFB71C1C);
+        tvStatus.setBackgroundColor(0xFFE8F5E9);
+        tvStatus.setTextColor(0xFF065F46);
+    }
+
+    /** Success → bottom Toast; status bar returns to scan hint. */
+    private void showSuccess(String msg) {
+        showBottomToast(msg);
+        showHint("Scan HU Barcode.");
+    }
+
+    /** Error → alert box; status bar returns to scan hint. */
+    private void showError(String msg) {
+        if (box != null && msg != null && !msg.trim().isEmpty()) {
+            box.getBox("Error", msg);
+        }
+        showHint("Scan HU Barcode.");
+    }
+
+    private void showBottomToast(String message) {
+        if (activity == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+        Toast toast = Toast.makeText(activity, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
     }
 
     private void showProgress(String msg) {

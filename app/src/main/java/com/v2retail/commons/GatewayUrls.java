@@ -39,6 +39,36 @@ public final class GatewayUrls {
         return base + "/noacljsonrfcadaptor?bapiname=" + rfcName + "&aclclientid=android";
     }
 
+    /**
+     * Production gateways from the connect-screen list ({@code R.array.ipAddress}).
+     * Whitelisted rather than derived so an unrecognised URL falls back to the dev
+     * behaviour instead of silently writing to production.
+     */
+    private static final String[] PRODUCTION_GATEWAYS = {
+            "v2-hht-api.azurewebsites.net",
+            "192.168.144.200",
+            "v2axasync-prd",
+    };
+
+    /** True when the URL stored at login points at a production gateway. */
+    public static boolean isProductionGateway(String storedGatewayUrl) {
+        if (storedGatewayUrl == null) {
+            return false;
+        }
+        String low = storedGatewayUrl.toLowerCase(Locale.ROOT);
+        for (String marker : PRODUCTION_GATEWAYS) {
+            if (low.contains(marker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Production RFC REST API, e.g. {@code https://routemaster.../api/ZWM_HU_SELECTION_RFC}. */
+    public static String routemasterApiUrl(String rfcName) {
+        return Vars.ROUTEMASTER_API_BASE + "/api/" + rfcName;
+    }
+
     /** REST API path under the login gateway base, e.g. {@code /api/ZVND_PUT01_HU_VAL_RFC}. */
     public static String apiUrl(String storedGatewayUrl, String apiPath) {
         String base = baseForNoAclJsonRfc(storedGatewayUrl);

@@ -29,6 +29,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
@@ -40,9 +41,11 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -72,6 +75,8 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
     private String WERKS = "";
     private String USER = "";
     private String hub = "";
+    /** Mirrors FragmentVehicleLoading: production saves go to the routemaster REST API. */
+    private boolean useRoutemaster = false;
 
     private EditText txtVehicleNo;
     private EditText txtTotalHu;
@@ -128,6 +133,7 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
+        useRoutemaster = GatewayUrls.isProductionGateway(URL);
 
         txtVehicleNo = rootView.findViewById(R.id.txt_vehicle_loading_scan_vehicle_no);
         txtTotalHu = rootView.findViewById(R.id.txt_vehicle_loading_scan_total_hu);
@@ -324,7 +330,11 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         Handler handler = new Handler();
         handler.postDelayed(() -> {
             try {
-                submitRequest(rfc, request, args, hu, scanMode);
+                if (useRoutemaster) {
+                    submitApiRequest(rfc, request, args, hu, scanMode);
+                } else {
+                    submitRequest(rfc, request, args, hu, scanMode);
+                }
             } catch (Exception e) {
                 dismissDialog();
                 txtScanHu.setEnabled(true);
@@ -394,7 +404,64 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
             }
         };
 
+        // 0 retries: ZWM_SAVE_SCANNEDHULIST_RFC posts a scan, so a silent Volley retry
+        // could double-post. Default 2.5 s is too tight for the SAP round trip.
+        mJsonRequest.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
+
         mRequestQueue.add(mJsonRequest);
+    }
+
+    /**
+     * Production path: form-encoded POST to the routemaster RFC API, mirroring
+     * {@link FragmentVehicleLoading#submitApiRequest}. HU_LIST rows are sent as
+     * {@code HU_LIST[0].FIELD}. Still 0 retries — this posts a scan.
+     */
+    private void submitApiRequest(String rfc, int request, JSONObject args,
+                                  String hu, boolean scanMode) throws JSONException {
+        String url = GatewayUrls.routemasterApiUrl(rfc);
+        final Map<String, String> formParams = FragmentVehicleLoading.toFormParams(args);
+
+        Log.d(TAG, "api payload -> " + url + " " + formParams);
+
+        StringRequest apiRequest = new StringRequest(Request.Method.POST, url, body -> {
+            dismissDialog();
+            txtScanHu.setEnabled(true);
+            Log.d(TAG, "api response -> " + body);
+
+            if (body == null || body.trim().isEmpty()) {
+                showError("Err", "No response from Server");
+                clearScanInput();
+                return;
+            }
+
+            try {
+                JSONObject parsed = new JSONObject(body);
+                if (parsed.has("Status") && !parsed.optBoolean("Status", false)) {
+                    showError("Err", parsed.optString("Message", "Save failed."));
+                    clearScanInput();
+                    return;
+                }
+                if (request == REQUEST_SAVE_SCANNED_HU) {
+                    applyLocalScanState(hu, scanMode);
+                }
+            } catch (JSONException e) {
+                box.getErrBox(e);
+                clearScanInput();
+            }
+        }, volleyErrorListener()) {
+            @Override
+            protected Map<String, String> getParams() {
+                return formParams;
+            }
+
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
+            }
+        };
+
+        apiRequest.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
+        ApplicationController.getInstance().getRequestQueue().add(apiRequest);
     }
 
     private void applyLocalScanState(String hu, boolean scanMode) {

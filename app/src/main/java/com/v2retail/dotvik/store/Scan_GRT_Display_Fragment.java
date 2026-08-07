@@ -99,6 +99,7 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
     private String category;
     private String scanner;
     private String TAG = Scan_GRT_Display_Fragment.class.getName();
+    private static final String PACK_MAT_HINT = "Select Pack Mat";
 
     Tables tables = new Tables();
     Context con;
@@ -215,18 +216,27 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         //version 11.81
         //mResponseView = (TextView) view.findViewById(R.id.response); commented as view not present in layout xml
 
+        ArrayList<String> packMatHintOnly = new ArrayList<>();
+        packMatHintOnly.add(PACK_MAT_HINT);
+        ArrayAdapter<String> packMatHintAdapter = new ArrayAdapter<>(con, android.R.layout.simple_spinner_item, packMatHintOnly);
+        packMatHintAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        pack_mat_spinner.setAdapter(packMatHintAdapter);
+
         pack_mat_spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-
+                if (i > 0) {
+                    barcode_art_et.requestFocus();
+                } else {
+                    barcode_art_et.setText("");
+                }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-
+                barcode_art_et.setText("");
             }
         });
-        ;
         back.setOnClickListener(this);
         //version 11.81
         //barcode_scan.setOnClickListener(this);
@@ -234,9 +244,11 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         barcode_art_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_GO) {
                     String value = UIFuncs.toUpperTrim(barcode_art_et);
-                    if(!value.isEmpty()){
+                    if (!value.isEmpty()) {
                         validateEan(value);
                     }
                 }
@@ -267,6 +279,22 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
             }
         });
 
+        // Also catch Enter/keypad done from hardware scanner when Pack Mat is not selected.
+        barcode_art_et.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN
+                        && (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_DPAD_CENTER)) {
+                    String value = UIFuncs.toUpperTrim(barcode_art_et);
+                    if (!value.isEmpty()) {
+                        validateEan(value);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+
         try {
             clearData();
             getPACMaterial();
@@ -288,6 +316,21 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         etMardRecords = new HashMap<>();
         scannedEanData = new HashMap<>();
         barcode_art_et.requestFocus();
+    }
+
+    private boolean isPackMatSelected() {
+        return pack_mat_spinner != null
+                && pack_mat_spinner.getSelectedItemPosition() > 0
+                && pack_mat_spinner.getSelectedItem() != null
+                && !PACK_MAT_HINT.equals(pack_mat_spinner.getSelectedItem().toString());
+    }
+
+    private void showSelectPackMatMessage() {
+        box.getBox("Pack Mat", "Please select Pack Material first.");
+        if (barcode_art_et != null) {
+            barcode_art_et.setText("");
+            barcode_art_et.requestFocus();
+        }
     }
 
     // Clears the Article/Barcode field and returns focus to it so the user can rescan.
@@ -409,13 +452,14 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
             }
             if(!packMaterialRecords.isEmpty()){
                 ArrayList<String> materials = new ArrayList<>();
-                materials.add("0");
+                materials.add(PACK_MAT_HINT);
                 for (ETPACKMAT packMat: packMaterialRecords) {
                     materials.add(UIFuncs.removeLeadingZeros(packMat.getMATNR()));
                 }
                 ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(con, android.R.layout.simple_spinner_item, materials);
                 dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 pack_mat_spinner.setAdapter(dataAdapter);
+                pack_mat_spinner.setSelection(0);
             }
         }catch (Exception exce){
             box.getErrBox(exce);
@@ -426,6 +470,10 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
     private void validateEan(String ean){
         ean = ean != null ? ean.trim().toUpperCase() : "";
         if (ean.isEmpty()) {
+            return;
+        }
+        if (!isPackMatSelected()) {
+            showSelectPackMatMessage();
             return;
         }
         EtEanDataModel eanModel = null;
@@ -541,6 +589,10 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
     }
 
     private void saveDataToServer() {
+        if (!isPackMatSelected()) {
+            showSelectPackMatMessage();
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_STORE_GRT_FROM_DISP_AREA);

@@ -27,6 +27,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
@@ -39,8 +40,10 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -52,7 +55,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FragmentVehicleLoading extends Fragment implements View.OnClickListener {
 
@@ -81,6 +87,8 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
     private String WERKS = "";
     private String USER = "";
     private String lastValidatedHub = "";
+    /** Production gateways use the routemaster REST API; dev/QA keep the RFC adaptor. */
+    private boolean useRoutemaster = false;
 
     private EditText txtPlant;
     private EditText txtVehicleNo;
@@ -135,6 +143,7 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
+        useRoutemaster = GatewayUrls.isProductionGateway(URL);
 
         txtPlant = rootView.findViewById(R.id.txt_vehicle_loading_plant);
         txtVehicleNo = rootView.findViewById(R.id.txt_vehicle_loading_vehicle_no);
@@ -466,8 +475,14 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
             txtDriverName.requestFocus();
             return false;
         }
-        if (UIFuncs.toUpperTrim(txtDriverMob).isEmpty()) {
+        String driverMob = UIFuncs.toUpperTrim(txtDriverMob);
+        if (driverMob.isEmpty()) {
             showError("Required", "Please enter Driver Mobile No.");
+            txtDriverMob.requestFocus();
+            return false;
+        }
+        if (driverMob.length() != 10 || !driverMob.matches("\\d{10}")) {
+            showError("Invalid", "Driver Mobile No. must be exactly 10 digits.");
             txtDriverMob.requestFocus();
             return false;
         }
@@ -585,7 +600,11 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         Handler handler = new Handler();
         handler.postDelayed(() -> {
             try {
-                submitRequest(rfc, request, args);
+                if (useRoutemaster) {
+                    submitApiRequest(rfc, request, args);
+                } else {
+                    submitRequest(rfc, request, args);
+                }
             } catch (Exception e) {
                 if (dialog != null) {
                     dialog.dismiss();
@@ -643,19 +662,7 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
                     }
                 }
 
-                if (request == REQUEST_TRANSPORTER_LIST) {
-                    setTransporterData(responseBody);
-                } else if (request == REQUEST_HUB_STORE_LIST) {
-                    setHubStoreData(responseBody, args.optString("IM_HUB", ""));
-                } else if (request == REQUEST_HU_SELECTION) {
-                    JSONArray huList = asJsonArray(responseBody, "ET_HULIST");
-                    if (huList.length() == 0) {
-                        UIFuncs.errorSound(con);
-                        box.getBox("No Data", "No HU found for the given selection.");
-                        return;
-                    }
-                    openScanScreen(huList);
-                }
+                dispatchResponse(request, responseBody, args);
             } catch (JSONException e) {
                 box.getErrBox(e);
             }
@@ -676,7 +683,144 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
             }
         };
 
+        // ZWM_HU_SELECTION_RFC returns every unscanned HU for the plant/hub — measured
+        // 3,828 rows / 666 KB in 69 s on dev, longer on production. Volley's default
+        // policy (2.5 s, 1 retry) times out long before the RFC answers.
+        mJsonRequest.setRetryPolicy(new DefaultRetryPolicy(180000, 0, 1f));
+
         mRequestQueue.add(mJsonRequest);
+    }
+
+    /** Shared by both transports — the response is already normalized to RFC table names here. */
+    private void dispatchResponse(int request, JSONObject responseBody, JSONObject args)
+            throws JSONException {
+        if (request == REQUEST_TRANSPORTER_LIST) {
+            setTransporterData(responseBody);
+        } else if (request == REQUEST_HUB_STORE_LIST) {
+            setHubStoreData(responseBody, args.optString("IM_HUB", ""));
+        } else if (request == REQUEST_HU_SELECTION) {
+            JSONArray huList = asJsonArray(responseBody, "ET_HULIST");
+            if (huList.length() == 0) {
+                UIFuncs.errorSound(con);
+                box.getBox("No Data", "No HU found for the given selection.");
+                return;
+            }
+            openScanScreen(huList);
+        }
+    }
+
+    /** RFC table name each screen expects, so both transports feed the same handlers. */
+    private static String tableKeyFor(int request) {
+        if (request == REQUEST_TRANSPORTER_LIST) {
+            return "ET_TRANSPORT_DET";
+        }
+        if (request == REQUEST_HUB_STORE_LIST) {
+            return "ET_STORES";
+        }
+        return "ET_HULIST";
+    }
+
+    /**
+     * Flattens RFC args to form fields. Scalars go as-is; table parameters become
+     * {@code NAME[i].FIELD} (URL-encoded by Volley to {@code NAME%5Bi%5D.FIELD}), and an
+     * empty table is sent as a single blank field — the shape the API expects.
+     */
+    static Map<String, String> toFormParams(JSONObject args) throws JSONException {
+        Map<String, String> params = new LinkedHashMap<>();
+        Iterator<String> keys = args.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            if ("bapiname".equals(key)) {
+                continue;
+            }
+            Object value = args.get(key);
+            if (value instanceof JSONArray) {
+                JSONArray rows = (JSONArray) value;
+                if (rows.length() == 0) {
+                    params.put(key, "");
+                    continue;
+                }
+                for (int i = 0; i < rows.length(); i++) {
+                    JSONObject row = rows.optJSONObject(i);
+                    if (row == null) {
+                        continue;
+                    }
+                    Iterator<String> fields = row.keys();
+                    while (fields.hasNext()) {
+                        String field = fields.next();
+                        params.put(key + "[" + i + "]." + field, row.optString(field, ""));
+                    }
+                }
+            } else {
+                params.put(key, String.valueOf(value));
+            }
+        }
+        return params;
+    }
+
+    /** {"Status":..,"Message":..,"Data":{"ET_Data":[..]}} → {"<RFC table>":[..]}. */
+    private static JSONObject normalizeApiResponse(JSONObject body, String tableKey)
+            throws JSONException {
+        JSONObject normalized = new JSONObject();
+        JSONObject data = body.optJSONObject("Data");
+        JSONArray rows = data != null ? data.optJSONArray("ET_Data") : null;
+        normalized.put(tableKey, rows != null ? rows : new JSONArray());
+        return normalized;
+    }
+
+    /**
+     * Production path: form-encoded POST to the routemaster RFC API. The RFC adaptor route
+     * never returns for the hub branch of ZWM_HU_SELECTION_RFC; this answers in a few seconds.
+     */
+    private void submitApiRequest(String rfc, int request, JSONObject args) throws JSONException {
+        String url = GatewayUrls.routemasterApiUrl(rfc);
+        final Map<String, String> formParams = toFormParams(args);
+
+        Log.d(TAG, "api payload -> " + url + " " + formParams);
+
+        StringRequest apiRequest = new StringRequest(Request.Method.POST, url, body -> {
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            Log.d(TAG, "api response -> " + body);
+
+            if (body == null || body.trim().isEmpty()) {
+                UIFuncs.errorSound(con);
+                box.getBox("Err", "No response from Server");
+                return;
+            }
+
+            try {
+                JSONObject parsed = new JSONObject(body);
+                if (parsed.has("Status") && !parsed.optBoolean("Status", false)) {
+                    UIFuncs.errorSound(con);
+                    if (request == REQUEST_HUB_STORE_LIST) {
+                        lastValidatedHub = "";
+                        txtStore.setText("");
+                        txtHub.requestFocus();
+                    }
+                    box.getBox("Err", parsed.optString("Message", "Request failed."));
+                    return;
+                }
+                dispatchResponse(request, normalizeApiResponse(parsed, tableKeyFor(request)), args);
+            } catch (JSONException e) {
+                box.getErrBox(e);
+            }
+        }, volleyErrorListener()) {
+            @Override
+            protected Map<String, String> getParams() {
+                return formParams;
+            }
+
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
+            }
+        };
+
+        apiRequest.setRetryPolicy(new DefaultRetryPolicy(180000, 0, 1f));
+        ApplicationController.getInstance().getRequestQueue().add(apiRequest);
     }
 
     private Response.ErrorListener volleyErrorListener() {

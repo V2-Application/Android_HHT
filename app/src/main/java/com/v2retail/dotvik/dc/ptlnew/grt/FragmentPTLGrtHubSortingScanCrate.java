@@ -83,7 +83,6 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private static final int REQUEST_TAG_HUB = 5912;
     private static final int REQUEST_VALIDATE_REV_CRATE = 5913;
     private static final int REQUEST_SAVE_CACHE = 5914;
-    private static final String UNMATCHED_PROPOSED_HUB = "DH24";
     private static final String LOCAL_PREFS = "ptl_grt_hub_sorting";
     private static final String LOCAL_SESSION = "pending_session";
 
@@ -718,7 +717,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
                 ? scannedQtyByArticle.get(articleKey) : 0;
         boolean hasOpenQuantity = etRow != null && maxQty > 0 && alreadyScanned < maxQty;
 
-        // No open quantity (missing ET_DATA / qty finished) → DH24 + local cache.
+        // No open quantity (missing ET_DATA / qty finished) → logged-in HUB + local cache.
         if (!hasOpenQuantity) {
             storeArticleInCache(etArticle, barcode, packQty);
             return;
@@ -741,16 +740,22 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         txtHubMapCrate.requestFocus();
     }
 
+    /** Fallback Proposed HUB when article is not in ET_DATA / has no open qty: logged-in plant (WERKS). */
+    private String getUnmatchedProposedHub() {
+        return TextUtils.isEmpty(WERKS) ? "" : WERKS.trim();
+    }
+
     private void storeArticleInCache(String article, String ean, double quantity) {
         UIFuncs.errorSound(con);
         String displayArticle = TextUtils.isEmpty(article) ? ean : article;
+        String proposedHub = getUnmatchedProposedHub();
         txtArticle.setText(UIFuncs.removeLeadingZeros(displayArticle));
-        txtProposedHub.setText(UNMATCHED_PROPOSED_HUB);
-        appendPendingScan(displayArticle, ean, quantity > 0 ? quantity : 1, UNMATCHED_PROPOSED_HUB, false);
+        txtProposedHub.setText(proposedHub);
+        appendPendingScan(displayArticle, ean, quantity > 0 ? quantity : 1, proposedHub, false);
         UIFuncs.disableInput(con, txtHubMapCrate);
         txtHubMapCrate.setText("");
         hubMapCrate = "";
-        showBottomToast("No open quantity. Stored with Proposed HUB " + UNMATCHED_PROPOSED_HUB);
+        showBottomToast("No open quantity. Stored with Proposed HUB " + proposedHub);
         txtScanArticle.setText("");
         txtScanArticle.requestFocus();
     }

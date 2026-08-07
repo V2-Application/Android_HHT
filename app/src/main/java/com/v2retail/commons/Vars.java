@@ -357,6 +357,13 @@ public class Vars {
     public static String ZWM_HU_SELECTION_RFC = "ZWM_HU_SELECTION_RFC";
     /** CLA Vehicle Loading — save scanned / removed HU (→ HU_LIST). */
     public static String ZWM_SAVE_SCANNEDHULIST_RFC = "ZWM_SAVE_SCANNEDHULIST_RFC";
+    /**
+     * CLA Vehicle Loading — production RFC REST API base ({@code /api/<RFC_NAME>}, form-encoded,
+     * responds {@code {"Status":..,"Message":..,"Data":{"ET_Data":[..]}}}).
+     * Used instead of {@code noacljsonrfcadaptor} on production gateways only: the adaptor route
+     * never returns for the hub branch of ZWM_HU_SELECTION_RFC, while this API answers in ~4 s.
+     */
+    public static String ROUTEMASTER_API_BASE = "https://routemaster.v2retail.com:9010";
 
     // ── Gate Entry Lot Putaway — Box Putaway to Pallet ─────────────────────────────
     /** Gate Entry Lot Putaway — load open gate entries (IM_USER, IM_WERKS, IM_DOCNO → ET_Data.DOCNO). */
@@ -420,6 +427,8 @@ public class Vars {
     public static String ZVND_PUT01_SAVE_DATA_RFC = "ZVND_PUT01_SAVE_DATA_RFC";
 
     // ── Store Inbound: HU Wise Gate Entry ────────────────────────────────────────
+    /** HU Wise Gate Entry — validate invoice before HU scan (IM_WERKS, IM_VBELN → EX_RETURN). */
+    public static String ZWM_HU_WISE_INVOICE_VAL = "ZWM_HU_WISE_INVOICE_VAL";
     /** HU Wise Gate Entry — update gate entry per HU scan (IT_GATE_ENTRY → EV_SUBRC, EV_MESSAGE). */
     public static String Z_HU_GATE_ENTRY_UPDATE = "Z_HU_GATE_ENTRY_UPDATE";
 

@@ -67,6 +67,9 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
     private int huQty = 0;
     private boolean vehicleLocked = false;
     private boolean huScanInProgress = false;
+    private boolean invValidationInProgress = false;
+    private boolean invoiceValidated = false;
+    private String validatedInvNo = "";
     private final List<String> scannedHuList = new ArrayList<>();
 
     public HuWiseGateEntryFragment() {
@@ -139,6 +142,18 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
             }
         });
 
+        etInvNo.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_NEXT || actionId == EditorInfo.IME_ACTION_DONE) {
+                    validateInvoiceAndMoveToHu();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        addInvValidationWatcher();
         etHuNo.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -153,6 +168,35 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
         addHuScanTextWatcher();
         clearAllFields();
         etVehicleNo.requestFocus();
+    }
+
+    /** Inv No must start with 9, or have at least 8 digits. */
+    private static boolean isValidInvNo(String invNo) {
+        if (invNo == null || invNo.isEmpty()) {
+            return false;
+        }
+        return invNo.startsWith("9") || invNo.length() >= 8;
+    }
+
+    private boolean validateInvoiceAndMoveToHu() {
+        String invNo = etInvNo.getText().toString().trim();
+        if (invNo.isEmpty()) {
+            box.getBox("Alert", "Enter Inv No.");
+            etInvNo.requestFocus();
+            return false;
+        }
+        if (!isValidInvNo(invNo)) {
+            box.getBox("Alert", "Inv No must start with 9 or be at least 8 digits.");
+            etInvNo.requestFocus();
+            return false;
+        }
+        if (invoiceValidated && invNo.equals(validatedInvNo)) {
+            setHuInputEnabled(true);
+            etHuNo.requestFocus();
+            return true;
+        }
+        validateInvoiceByRfc(invNo, true);
+        return false;
     }
 
     private void enableVehicleEntry() {
@@ -200,6 +244,156 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
         });
     }
 
+    private void addInvValidationWatcher() {
+        etInvNo.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String currentInv = s != null ? s.toString().trim() : "";
+                if (!currentInv.equals(validatedInvNo)) {
+                    invoiceValidated = false;
+                    validatedInvNo = "";
+                    setHuInputEnabled(false);
+                }
+                scannerReading = before == 0 && start == 0 && count > 2;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (scannerReading) {
+                    validateInvoiceAndMoveToHu();
+                }
+            }
+        });
+    }
+
+    private void setHuInputEnabled(boolean enabled) {
+        etHuNo.setEnabled(enabled);
+        etHuNo.setFocusable(enabled);
+        etHuNo.setFocusableInTouchMode(enabled);
+        etHuNo.setBackgroundResource(enabled ? R.drawable.border : R.drawable.border_disabled_input);
+        if (!enabled) {
+            etHuNo.setText("");
+        }
+    }
+
+    private void validateInvoiceByRfc(final String invNo, final boolean moveFocusOnSuccess) {
+        if (invValidationInProgress) {
+            return;
+        }
+
+        String vehicleNo = etVehicleNo.getText().toString().trim();
+        String sealNo = etSealNo.getText().toString().trim();
+        if (vehicleNo.isEmpty()) {
+            box.getBox("Alert", "Enter Vehicle No.");
+            etVehicleNo.requestFocus();
+            return;
+        }
+        lockVehicleField();
+        if (sealNo.isEmpty()) {
+            box.getBox("Alert", "Enter Seal No.");
+            etSealNo.requestFocus();
+            return;
+        }
+
+        String rfc = Vars.ZWM_HU_WISE_INVOICE_VAL;
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
+        if (url.isEmpty()) {
+            box.getBox("Err", "Server URL missing. Please log in again.");
+            return;
+        }
+
+        final JSONObject params = new JSONObject();
+        try {
+            params.put("bapiname", rfc);
+            params.put("IM_WERKS", WERKS);
+            params.put("IM_VBELN", invNo);
+        } catch (JSONException e) {
+            box.getErrBox(e);
+            return;
+        }
+
+        showProgress("Validating invoice...");
+        invValidationInProgress = true;
+        setHuInputEnabled(false);
+
+        RequestQueue queue = ApplicationController.getInstance().getRequestQueue();
+        JsonObjectRequest request = new SapJsonObjectRequest(Request.Method.POST, url, params,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        dismissProgress();
+                        invValidationInProgress = false;
+                        Log.d(TAG, "invoice validation response -> " + response);
+
+                        if (response == null || response.length() == 0) {
+                            invoiceValidated = false;
+                            validatedInvNo = "";
+                            setHuInputEnabled(false);
+                            showStatus("No response from invoice validation.", false);
+                            box.getBox("Err", "No response from server.");
+                            etInvNo.requestFocus();
+                            return;
+                        }
+
+                        try {
+                            if (response.has("EX_RETURN") && response.get("EX_RETURN") instanceof JSONObject) {
+                                JSONObject exReturn = response.getJSONObject("EX_RETURN");
+                                String type = exReturn.optString("TYPE", "");
+                                if ("E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type)) {
+                                    invoiceValidated = false;
+                                    validatedInvNo = "";
+                                    setHuInputEnabled(false);
+                                    String message = exReturn.optString("MESSAGE", "Invalid Invoice");
+                                    showStatus(message, false);
+                                    box.getBox("Err", message);
+                                    etInvNo.requestFocus();
+                                    return;
+                                }
+                            }
+
+                            invoiceValidated = true;
+                            validatedInvNo = invNo;
+                            setHuInputEnabled(true);
+                            showStatus("Invoice validated. Scan HU No.", true);
+                            if (moveFocusOnSuccess) {
+                                etHuNo.requestFocus();
+                            }
+                        } catch (JSONException e) {
+                            invoiceValidated = false;
+                            validatedInvNo = "";
+                            setHuInputEnabled(false);
+                            box.getErrBox(e);
+                            etInvNo.requestFocus();
+                        }
+                    }
+                }, invoiceValidationErrorListener()) {
+            @Override
+            public String getBodyContentType() {
+                return "application/json";
+            }
+
+            @Override
+            public byte[] getBody() {
+                return params.toString().getBytes();
+            }
+
+            @Override
+            protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+                return super.parseNetworkResponse(response);
+            }
+        };
+
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        queue.add(request);
+        Log.d(TAG, "invoice validation payload -> " + params);
+    }
+
     private void processHuScan() {
         if (huScanInProgress) {
             return;
@@ -234,6 +428,15 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
         if (invNo.isEmpty()) {
             box.getBox("Alert", "Enter Inv No.");
             etInvNo.requestFocus();
+            return;
+        }
+        if (!isValidInvNo(invNo)) {
+            box.getBox("Alert", "Inv No must start with 9 or be at least 8 digits.");
+            etInvNo.requestFocus();
+            return;
+        }
+        if (!invoiceValidated || !invNo.equals(validatedInvNo)) {
+            validateInvoiceByRfc(invNo, false);
             return;
         }
 
@@ -282,7 +485,9 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
                     public void onResponse(JSONObject response) {
                         dismissProgress();
                         huScanInProgress = false;
-                        etHuNo.setEnabled(true);
+                        if (invoiceValidated) {
+                            setHuInputEnabled(true);
+                        }
                         Log.d(TAG, "response -> " + response);
 
                         if (response == null || response.length() == 0) {
@@ -388,7 +593,9 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
         etVehicleNo.setText("");
         etSealNo.setText("");
         etInvNo.setText("");
-        etHuNo.setText("");
+        validatedInvNo = "";
+        invoiceValidated = false;
+        setHuInputEnabled(false);
         etHuQty.setText("0");
         huQty = 0;
         scannedHuList.clear();
@@ -399,7 +606,9 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
 
     private void clearHuInput() {
         etHuNo.setText("");
-        etHuNo.requestFocus();
+        if (invoiceValidated) {
+            etHuNo.requestFocus();
+        }
     }
 
     private void hideKeyboard() {
@@ -434,10 +643,28 @@ public class HuWiseGateEntryFragment extends Fragment implements View.OnClickLis
             public void onErrorResponse(VolleyError error) {
                 dismissProgress();
                 huScanInProgress = false;
-                etHuNo.setEnabled(true);
+                if (invoiceValidated) {
+                    setHuInputEnabled(true);
+                }
                 Log.i(TAG, "Error: " + error);
                 box.getBox("Err", "Network error while updating gate entry.");
                 clearHuInput();
+            }
+        };
+    }
+
+    private Response.ErrorListener invoiceValidationErrorListener() {
+        return new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                dismissProgress();
+                invValidationInProgress = false;
+                invoiceValidated = false;
+                validatedInvNo = "";
+                setHuInputEnabled(false);
+                Log.i(TAG, "Invoice validation error: " + error);
+                box.getBox("Err", "Network error while validating invoice.");
+                etInvNo.requestFocus();
             }
         };
     }
