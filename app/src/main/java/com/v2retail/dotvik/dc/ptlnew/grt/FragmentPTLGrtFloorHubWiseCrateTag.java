@@ -87,6 +87,12 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
 
     private String validatedHub = "";
     private String validatedCrate = "";
+    /** Hub value submitted for validation — used on success so we never re-read a cleared scan field. */
+    private String pendingHubScan = "";
+    /** Crate value submitted for validation — same reason as {@link #pendingHubScan}. */
+    private String pendingCrateScan = "";
+    private boolean hubValidateInProgress = false;
+    private boolean crateValidateInProgress = false;
 
     public FragmentPTLGrtFloorHubWiseCrateTag() {
     }
@@ -236,10 +242,18 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
         return selected == null ? "" : selected.toString();
     }
 
+    private boolean isRequestInProgress() {
+        return hubValidateInProgress
+                || crateValidateInProgress
+                || (dialog != null && dialog.isShowing());
+    }
+
     private void requestHubValidate(String scannedHub) {
-        if (TextUtils.isEmpty(scannedHub)) {
+        if (TextUtils.isEmpty(scannedHub) || isRequestInProgress()) {
             return;
         }
+        hubValidateInProgress = true;
+        pendingHubScan = scannedHub;
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_GRT_HUB_VALIDATE);
@@ -248,6 +262,8 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
             args.put("IM_HUB", scannedHub);
             showProcessingAndSubmit(Vars.ZWM_PTL_GRT_HUB_VALIDATE, REQUEST_VALIDATE_HUB, args);
         } catch (JSONException e) {
+            hubValidateInProgress = false;
+            pendingHubScan = "";
             Log.e(TAG, "requestHubValidate", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
@@ -255,7 +271,7 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
     }
 
     private void requestCrateValidate(String scannedCrate) {
-        if (TextUtils.isEmpty(scannedCrate)) {
+        if (TextUtils.isEmpty(scannedCrate) || isRequestInProgress()) {
             return;
         }
         if (TextUtils.isEmpty(validatedHub)) {
@@ -265,6 +281,8 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
             txtScanCrate.setText("");
             return;
         }
+        crateValidateInProgress = true;
+        pendingCrateScan = scannedCrate;
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_GRT_HUB_CRATE_VALIDATE);
@@ -275,6 +293,8 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
             args.put("IM_CRATE", scannedCrate);
             showProcessingAndSubmit(Vars.ZWM_PTL_GRT_HUB_CRATE_VALIDATE, REQUEST_VALIDATE_CRATE, args);
         } catch (JSONException e) {
+            crateValidateInProgress = false;
+            pendingCrateScan = "";
             Log.e(TAG, "requestCrateValidate", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
@@ -291,6 +311,7 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
                 submitRequest(rfc, request, args);
             } catch (Exception e) {
                 dismissDialog();
+                releaseRequestGuard(request);
                 box.getErrBox(e);
             }
         }, 1000);
@@ -310,16 +331,18 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
                     Log.d(TAG, "response -> " + responsebody);
 
                     if (responsebody == null) {
+                        releaseRequestGuard(request);
                         UIFuncs.errorSound(con);
                         box.getBox("Err", "No response from Server");
                     } else if (responsebody.length() == 0) {
+                        releaseRequestGuard(request);
                         UIFuncs.errorSound(con);
                         box.getBox("Err", "Unable to Connect Server/ Empty Response");
                     } else {
                         handleRfcResponse(responsebody, request);
                     }
                 },
-                volleyErrorListener()) {
+                volleyErrorListener(request)) {
             @Override
             public String getBodyContentType() {
                 return "application/json";
@@ -356,7 +379,16 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
         queue.add(jsonRequest);
     }
 
+    private void releaseRequestGuard(int request) {
+        if (request == REQUEST_VALIDATE_HUB) {
+            hubValidateInProgress = false;
+        } else if (request == REQUEST_VALIDATE_CRATE) {
+            crateValidateInProgress = false;
+        }
+    }
+
     private void handleRfcResponse(JSONObject responsebody, int request) {
+        releaseRequestGuard(request);
         try {
             if (!responsebody.has("EX_RETURN") || !(responsebody.get("EX_RETURN") instanceof JSONObject)) {
                 UIFuncs.errorSound(con);
@@ -380,15 +412,19 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
             }
 
             if (request == REQUEST_VALIDATE_HUB) {
-                validatedHub = UIFuncs.toUpperTrim(txtHubCodeScan);
+                // Use the value that was actually submitted — not the scan EditText,
+                // which may already be empty if a second Enter/TextWatcher race cleared it.
+                validatedHub = pendingHubScan;
                 txtHubCode.setText(validatedHub);
                 txtHubCodeScan.setText("");
+                pendingHubScan = "";
                 resetCrateFields();
                 txtScanCrate.requestFocus();
             } else if (request == REQUEST_VALIDATE_CRATE) {
-                validatedCrate = UIFuncs.toUpperTrim(txtScanCrate);
+                validatedCrate = pendingCrateScan;
                 txtCrateNo.setText(validatedCrate);
                 txtScanCrate.setText("");
+                pendingCrateScan = "";
                 txtScanCrate.requestFocus();
             }
         } catch (JSONException e) {
@@ -400,6 +436,7 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
 
     private void clearAfterHubValidateFailure() {
         validatedHub = "";
+        pendingHubScan = "";
         txtHubCode.setText("");
         resetCrateFields();
         txtHubCodeScan.requestFocus();
@@ -407,18 +444,24 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
 
     private void clearAfterCrateValidateFailure() {
         validatedCrate = "";
+        pendingCrateScan = "";
         txtCrateNo.setText("");
+        txtScanCrate.setText("");
         txtScanCrate.requestFocus();
     }
 
     private void resetCrateFields() {
         validatedCrate = "";
+        pendingCrateScan = "";
+        crateValidateInProgress = false;
         txtScanCrate.setText("");
         txtCrateNo.setText("");
     }
 
     private void resetHubFields() {
         validatedHub = "";
+        pendingHubScan = "";
+        hubValidateInProgress = false;
         txtHubCodeScan.setText("");
         txtHubCode.setText("");
     }
@@ -437,8 +480,9 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
         }
     }
 
-    private Response.ErrorListener volleyErrorListener() {
+    private Response.ErrorListener volleyErrorListener(int request) {
         return error -> {
+            releaseRequestGuard(request);
             Log.i(TAG, "Error :" + error);
             String err;
             if (error instanceof TimeoutError || error instanceof NoConnectionError) {

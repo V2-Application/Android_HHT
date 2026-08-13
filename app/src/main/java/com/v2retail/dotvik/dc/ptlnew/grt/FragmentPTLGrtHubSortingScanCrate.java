@@ -83,6 +83,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private static final int REQUEST_TAG_HUB = 5912;
     private static final int REQUEST_VALIDATE_REV_CRATE = 5913;
     private static final int REQUEST_SAVE_CACHE = 5914;
+    private static final int REQUEST_EMPTY_SHORT_CLOSE = 5915;
     private static final String LOCAL_PREFS = "ptl_grt_hub_sorting";
     private static final String LOCAL_SESSION = "pending_session";
 
@@ -104,6 +105,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private EditText txtProposedHub;
     private EditText txtHubMapCrate;
     private Button btnBack;
+    private Button btnEmpty;
     private Button btnSave;
 
     private boolean floorSelected = false;
@@ -127,6 +129,9 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     /** Guards against the scanner double-firing (text watcher + trailing Enter). */
     private boolean crateValidateInProgress = false;
     private boolean revCrateValidateInProgress = false;
+    /** Value submitted for validation — do not re-read EditText on success (fast re-scan appends). */
+    private String pendingCrateScan = "";
+    private String pendingRevCrateScan = "";
     private String lastArticleScanValue = "";
     private long lastArticleScanAtMs = 0;
 
@@ -182,6 +187,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         txtProposedHub = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_proposed_hub);
         txtHubMapCrate = root.findViewById(R.id.txt_ptl_grt_hub_sorting_scan_crate_scan_hub);
         btnBack = root.findViewById(R.id.btn_ptl_grt_hub_sorting_scan_crate_back);
+        btnEmpty = root.findViewById(R.id.btn_ptl_grt_hub_sorting_scan_crate_empty);
         btnSave = root.findViewById(R.id.btn_ptl_grt_hub_sorting_scan_crate_save);
 
         setupFloorDropdown();
@@ -190,6 +196,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         addArticleScanEvents();
         addHubMapCrateEvents();
         btnBack.setOnClickListener(this);
+        btnEmpty.setOnClickListener(this);
         btnSave.setOnClickListener(this);
         // Always open HUB SORTING as a fresh page.
         clearLocalSession();
@@ -355,6 +362,11 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         }
         if (revCrateValidateInProgress) {
             Log.d(TAG, "requestRevCrateValidate skipped — validation already in progress");
+            txtEmptyCrateScan.post(() -> {
+                if (txtEmptyCrateScan != null) {
+                    txtEmptyCrateScan.setText("");
+                }
+            });
             return;
         }
         if (TextUtils.isEmpty(validatedCrate)) {
@@ -367,12 +379,19 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         JSONObject args = new JSONObject();
         try {
             revCrateValidateInProgress = true;
+            pendingRevCrateScan = scannedCrate;
+            txtEmptyCrateScan.post(() -> {
+                if (txtEmptyCrateScan != null) {
+                    txtEmptyCrateScan.setText("");
+                }
+            });
             args.put("bapiname", Vars.GRT_PUTAWAY_VALIDATE_CRATE);
             args.put("IM_USER", USER);
             args.put("IM_CRATE", scannedCrate);
             showProcessingAndSubmit(Vars.GRT_PUTAWAY_VALIDATE_CRATE, REQUEST_VALIDATE_REV_CRATE, args);
         } catch (JSONException e) {
             revCrateValidateInProgress = false;
+            pendingRevCrateScan = "";
             Log.e(TAG, "requestRevCrateValidate", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
@@ -638,6 +657,12 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         }
         if (crateValidateInProgress) {
             Log.d(TAG, "requestCrateValidate skipped — validation already in progress");
+            // Discard extra scan chars that wedge-append while the first validate is running.
+            txtScanCrate.post(() -> {
+                if (txtScanCrate != null) {
+                    txtScanCrate.setText("");
+                }
+            });
             return;
         }
         if (!floorSelected || TextUtils.isEmpty(getSelectedFloor())) {
@@ -650,6 +675,13 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         JSONObject args = new JSONObject();
         try {
             crateValidateInProgress = true;
+            pendingCrateScan = scannedCrate;
+            // Clear after this TextWatcher cycle so a fast second scan cannot append.
+            txtScanCrate.post(() -> {
+                if (txtScanCrate != null) {
+                    txtScanCrate.setText("");
+                }
+            });
             args.put("bapiname", Vars.ZWM_PTL_GRT_MSA_CRATE_VALIDATE);
             args.put("IM_USER", USER);
             args.put("IM_WERKS", WERKS);
@@ -657,6 +689,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             showProcessingAndSubmit(Vars.ZWM_PTL_GRT_MSA_CRATE_VALIDATE, REQUEST_VALIDATE_CRATE, args);
         } catch (JSONException e) {
             crateValidateInProgress = false;
+            pendingCrateScan = "";
             Log.e(TAG, "requestCrateValidate", e);
             box.getErrBox(e);
             UIFuncs.errorSound(con);
@@ -952,6 +985,32 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         return itData;
     }
 
+    private void requestEmptyShortClose() {
+        String msaCrate = emptyCrate;
+        if (TextUtils.isEmpty(msaCrate)) {
+            msaCrate = UIFuncs.toUpperTrim(txtEmptyCrate);
+        }
+        if (TextUtils.isEmpty(msaCrate)) {
+            UIFuncs.errorSound(con);
+            box.getBox("Validation", "Please scan and validate MSA REV Crate first.");
+            txtEmptyCrateScan.requestFocus();
+            return;
+        }
+
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZMM_V24_SHORT_CL_RFC);
+            args.put("IM_USER", USER);
+            args.put("IM_PLANT", WERKS);
+            args.put("IM_MSA_CRATE", msaCrate);
+            showProcessingAndSubmit(Vars.ZMM_V24_SHORT_CL_RFC, REQUEST_EMPTY_SHORT_CLOSE, args);
+        } catch (JSONException e) {
+            Log.e(TAG, "requestEmptyShortClose", e);
+            box.getErrBox(e);
+            UIFuncs.errorSound(con);
+        }
+    }
+
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
@@ -1086,9 +1145,15 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void handleCrateValidateSuccess(JSONObject responsebody) throws JSONException {
-        validatedCrate = UIFuncs.toUpperTrim(txtScanCrate);
+        // Use the crate that was submitted — EditText may have been cleared or
+        // received extra chars from a fast second scan while the API was in flight.
+        validatedCrate = pendingCrateScan;
+        if (TextUtils.isEmpty(validatedCrate)) {
+            validatedCrate = UIFuncs.toUpperTrim(txtScanCrate);
+        }
         txtCrate.setText(validatedCrate);
         txtScanCrate.setText("");
+        pendingCrateScan = "";
         UIFuncs.disableInput(con, txtScanCrate);
 
         resetArticleFields();
@@ -1148,13 +1213,18 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void handleRevCrateValidateSuccess() {
-        emptyCrate = UIFuncs.toUpperTrim(txtEmptyCrateScan);
+        emptyCrate = pendingRevCrateScan;
+        if (TextUtils.isEmpty(emptyCrate)) {
+            emptyCrate = UIFuncs.toUpperTrim(txtEmptyCrateScan);
+        }
         txtEmptyCrate.setText(emptyCrate);
         txtEmptyCrateScan.setText("");
+        pendingRevCrateScan = "";
         UIFuncs.disableInput(con, txtEmptyCrateScan);
         UIFuncs.enableInput(con, txtScanArticle);
         UIFuncs.enableInput(con, txtHubMapCrate);
         persistLocalSession();
+        updateActionButtons();
         txtScanArticle.requestFocus();
     }
 
@@ -1188,6 +1258,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private void clearAfterCrateValidateFailure() {
         validatedCrate = "";
+        pendingCrateScan = "";
         txtCrate.setText("");
         txtScanCrate.setText("");
         UIFuncs.enableInput(con, txtScanCrate);
@@ -1196,9 +1267,11 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private void clearAfterRevCrateValidateFailure() {
         emptyCrate = "";
+        pendingRevCrateScan = "";
         txtEmptyCrate.setText("");
         txtEmptyCrateScan.setText("");
         UIFuncs.enableInput(con, txtEmptyCrateScan);
+        updateActionButtons();
         txtEmptyCrateScan.requestFocus();
     }
 
@@ -1206,6 +1279,8 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         validatedCrate = "";
         emptyCrate = "";
         hubMapCrate = "";
+        pendingCrateScan = "";
+        pendingRevCrateScan = "";
         pendingScans = new JSONArray();
         referenceEtData = new JSONArray();
         referenceEanData = new JSONArray();
@@ -1398,9 +1473,15 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private void updateActionButtons() {
         boolean hasUnsavedScans = pendingScans != null && pendingScans.length() > 0;
+        boolean hasEmptyCrate = !TextUtils.isEmpty(emptyCrate)
+                || !TextUtils.isEmpty(UIFuncs.toUpperTrim(txtEmptyCrate));
         if (btnBack != null) {
             btnBack.setEnabled(!hasUnsavedScans);
             btnBack.setAlpha(hasUnsavedScans ? 0.45f : 1f);
+        }
+        if (btnEmpty != null) {
+            btnEmpty.setEnabled(hasEmptyCrate);
+            btnEmpty.setAlpha(hasEmptyCrate ? 1f : 0.45f);
         }
         if (btnSave != null) {
             btnSave.setEnabled(hasUnsavedScans);
@@ -1461,6 +1542,8 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             if (pendingScans.length() == 0) {
                 BackPressHandler.confirmCloseProcess(fm, requireContext());
             }
+        } else if (view.getId() == R.id.btn_ptl_grt_hub_sorting_scan_crate_empty) {
+            requestEmptyShortClose();
         } else if (view.getId() == R.id.btn_ptl_grt_hub_sorting_scan_crate_save) {
             savePendingScans();
         }

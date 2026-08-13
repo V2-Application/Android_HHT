@@ -66,9 +66,9 @@ import java.util.Map;
  * PTL — Article Putway Store Wise (redesign 2026-05-09).
  *
  * Flow per spec doc "PTL_Article Putway Store Wise":
- *  1. Scan FLR STATION → {@link Vars#ZWM_PTL_STATION_VALIDATE} → SAP returns {@code EX_HUB}.
- *     The scanned station is shown in the (gray) Station field; HUB is shown in the
- *     (gray) HUB field.
+ *  1. Scan FLR STATION → {@link Vars#ZWM_PTL_STATION_VALIDATE} → SAP returns {@code EX_HUB}
+ *     and {@code EX_ZONE}. The scanned station is shown in the (gray) Station field;
+ *     {@code EX_ZONE} is shown in the (gray) HUB/ZONE field ({@code EX_HUB} is kept for IM_HUB).
  *  2. Scan Crate → {@link Vars#ZWM_PTL_STATION_CRATE_VALIDATE} (IM_USER, IM_WERKS,
  *     IM_ZONE_STATION, IM_CRATE, IM_HUB) → SAP returns ET_DATA (article/store/floor)
  *     and ET_EAN_DATA (barcodes). Cursor moves to Scan Article.
@@ -105,8 +105,12 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     /** FLR Station confirmed by validate RFC; required for crate/HU calls. */
     private String validatedStation = "";
-    /** HUB returned by validate RFC for the FLR Station; passed back as IM_HUB. */
+    /** HUB ({@code EX_HUB}) returned by station validate; passed back as IM_HUB. */
     private String validatedHub = "";
+    /** ZONE ({@code EX_ZONE}) returned by station validate; shown in HUB/ZONE field. */
+    private String validatedZone = "";
+    /** Station value submitted with the in-flight validate call (EditText may be cleared). */
+    private String pendingStationScan = "";
 
     Map<String, PicklistData> etDataMap = new LinkedHashMap<>();
     Map<String, HUEANData> eanDataMap = new HashMap<>();
@@ -115,6 +119,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private String lastHuSubmitted = "";
     /** Prevents double RFC when the scanner sends keystrokes + ENTER. */
     private boolean huValidateInFlight = false;
+    /** Prevents overlapping RFC calls / orphaned "Please wait..." dialogs. */
+    private boolean rfcInFlight = false;
     /** EAN11 from the last successful article scan — used for MARM {@code UMREZ} on HU put-away. */
     private String lastScannedEan11 = "";
 
@@ -261,7 +267,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
      * After a valid HU scan (or IME Done), posts {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} immediately.
      */
     private void onHuScanned(String hu) {
-        if (huValidateInFlight) {
+        if (huValidateInFlight || rfcInFlight) {
             return;
         }
         if (validatedStation.isEmpty()) {
@@ -302,6 +308,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         lastScannedEan11 = "";
         validatedStation = "";
         validatedHub = "";
+        validatedZone = "";
+        pendingStationScan = "";
         etDataMap = new LinkedHashMap<>();
         eanDataMap = new HashMap<>();
 
@@ -326,7 +334,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     /**
      * Clears crate through pending-qty fields and in-memory ET data.
-     * Station, HUB, and {@link #validatedStation} / {@link #validatedHub} are left unchanged.
+     * Station, HUB/ZONE, and {@link #validatedStation} / {@link #validatedHub} /
+     * {@link #validatedZone} are left unchanged.
      */
     private void resetCrateAndBelow() {
         endHuValidateInFlight();
@@ -364,7 +373,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     UIFuncs.hideKeyboard(getActivity());
                     String value = UIFuncs.toUpperTrim(txt_scan_station);
-                    if (!value.isEmpty()) {
+                    if (!value.isEmpty() && !rfcInFlight) {
                         validateStation(value);
                         return true;
                     }
@@ -517,15 +526,19 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     // ─── Step 1: validate FLR Station ──────────────────────────────────────────
 
     private void validateStation(String station) {
+        if (rfcInFlight) {
+            return;
+        }
         if (!ensureSapUserId()) {
             return;
         }
         JSONObject args = new JSONObject();
         try {
+            pendingStationScan = station == null ? "" : station.trim().toUpperCase();
             args.put("bapiname", Vars.ZWM_PTL_STATION_VALIDATE);
             args.put("IM_USER", USER);
             args.put("IM_PLANT", WERKS);
-            args.put("IM_ZONE_STATION", station);
+            args.put("IM_ZONE_STATION", pendingStationScan);
             showProcessingAndSubmit(Vars.ZWM_PTL_STATION_VALIDATE, REQUEST_VALIDATE_STATION, args);
         } catch (JSONException e) {
             handleException(e);
@@ -535,20 +548,26 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private void onStationValidated(String scannedStation, JSONObject responsebody) {
         validatedStation = scannedStation;
         validatedHub = responsebody.optString("EX_HUB", "").trim();
+        validatedZone = responsebody.optString("EX_ZONE", "").trim();
 
         txt_station.setText(validatedStation);
-        txt_hub.setText(validatedHub);
+        // HUB/ZONE field binds EX_ZONE (EX_HUB is retained for IM_HUB on later RFCs).
+        txt_hub.setText(validatedZone);
 
         UIFuncs.disableInput(con, txt_scan_station);
         UIFuncs.enableInput(con, txt_scan_crate);
 
         txt_scan_station.setText("");
+        pendingStationScan = "";
         txt_scan_crate.requestFocus();
     }
 
     // ─── Step 2: validate Crate against Station + HUB ──────────────────────────
 
     private void validateStationCrate(String crate) {
+        if (rfcInFlight) {
+            return;
+        }
         if (!ensureSapUserId()) {
             return;
         }
@@ -957,10 +976,30 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
     // ─── Networking ────────────────────────────────────────────────────────────
 
+    private void dismissProgressDialog() {
+        if (dialog == null) {
+            return;
+        }
+        try {
+            if (dialog.isShowing()) {
+                dialog.dismiss();
+            }
+        } catch (Exception ignored) {
+            // Window may already be gone (rotation / fragment detach).
+        }
+        dialog = null;
+    }
+
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
+        if (rfcInFlight) {
+            return;
+        }
+        rfcInFlight = true;
 
+        // Always drop any previous dialog first — scanner+ENTER can fire twice and
+        // orphan a "Please wait..." ProgressDialog that never gets dismissed.
+        dismissProgressDialog();
         dialog = new ProgressDialog(getContext());
-
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
@@ -972,10 +1011,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                 try {
                     submitRequest(rfc, request, args);
                 } catch (Exception e) {
-                    if (dialog != null) {
-                        dialog.dismiss();
-                        dialog = null;
-                    }
+                    rfcInFlight = false;
+                    dismissProgressDialog();
                     AlertBox box = new AlertBox(getContext());
                     box.getErrBox(e);
                 }
@@ -999,10 +1036,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
 
             @Override
             public void onResponse(JSONObject responsebody) {
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
+                rfcInFlight = false;
+                dismissProgressDialog();
                 Log.d(TAG, "response ->" + responsebody);
 
                 if (responsebody == null) {
@@ -1031,16 +1066,19 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                             }
                             return;
                         }
-                        String type = returnobj.optString("TYPE", "");
-                        if ("E".equals(type)) {
+                        String type = returnobj.optString("TYPE", "").trim();
+                        if ("E".equalsIgnoreCase(type)) {
                             UIFuncs.errorSound(getContext());
                             new AlertBox(getContext()).getBox("Err", returnobj.optString("MESSAGE", "Server error"));
                             handleErrorReset(request);
                             return;
                         }
-                        // Success path
+                        // TYPE "S" (or blank / warning) — success: bind data and continue (no loader left up).
                         if (request == REQUEST_VALIDATE_STATION) {
-                            String scanned = UIFuncs.toUpperTrim(txt_scan_station);
+                            String scanned = pendingStationScan;
+                            if (scanned == null || scanned.isEmpty()) {
+                                scanned = UIFuncs.toUpperTrim(txt_scan_station);
+                            }
                             onStationValidated(scanned, responsebody);
                         } else if (request == REQUEST_VALIDATE_STATION_CRATE) {
                             setEtEanData(responsebody);
@@ -1101,16 +1139,15 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
         } catch (AuthFailureError authFailureError) {
             authFailureError.printStackTrace();
-            if (dialog != null) {
-                dialog.dismiss();
-                dialog = null;
-            }
+            rfcInFlight = false;
+            dismissProgressDialog();
             new AlertBox(getContext()).getErrBox(authFailureError);
         }
     }
 
     private void handleErrorReset(int request) {
         if (request == REQUEST_VALIDATE_STATION) {
+            pendingStationScan = "";
             txt_scan_station.setText("");
             txt_scan_station.requestFocus();
         } else if (request == REQUEST_VALIDATE_STATION_CRATE) {
@@ -1126,10 +1163,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private void handleException(Exception e) {
         e.printStackTrace();
         UIFuncs.errorSound(con);
-        if (dialog != null) {
-            dialog.dismiss();
-            dialog = null;
-        }
+        rfcInFlight = false;
+        dismissProgressDialog();
         new AlertBox(getContext()).getErrBox(e);
     }
 
@@ -1155,10 +1190,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
                     err = error.toString();
                 }
 
-                if (dialog != null) {
-                    dialog.dismiss();
-                    dialog = null;
-                }
+                rfcInFlight = false;
+                dismissProgressDialog();
                 if (huValidateInFlight) {
                     handleErrorReset(REQUEST_VALIDATE_ZONE_HU);
                 }
