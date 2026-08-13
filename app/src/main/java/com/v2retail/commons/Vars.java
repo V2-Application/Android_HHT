@@ -304,7 +304,7 @@ public class Vars {
     public static String ZWM_PTL_HU_V64_V65 = "ZWM_PTL_HU_V64_V65";
     /** PTL-GRT Floor HUB Wise Crate Tag — scan HUB validate (IM_USER, IM_PLANT, IM_HUB) → EX_RETURN. */
     public static String ZWM_PTL_GRT_HUB_VALIDATE = "ZWM_PTL_GRT_HUB_VLDT";
-    /** PTL-GRT Floor HUB Wise Crate Tag — scan crate validate (IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE) → EX_RETURN. */
+    /** PTL-GRT Floor HUB Wise Crate Tag — scan crate validate (IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE, IM_ZONE) → EX_RETURN. */
     public static String ZWM_PTL_GRT_HUB_CRATE_VALIDATE = "ZWM_PTL_GRT_HUB_CRATE_VLDT";
     /** PTL-GRT Hub Sorting — MSA crate validate (IM_USER, IM_WERKS, IM_CRATE) → EX_RETURN, ET_DATA, ET_EAN_DATA. */
     public static String ZWM_PTL_GRT_MSA_CRATE_VALIDATE = "ZWM_PTL_GRT_MSA_CRATE_VALIDATE";

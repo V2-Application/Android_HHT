@@ -59,7 +59,7 @@ import java.util.List;
  * PTL-GRT — Floor, HUB Wise Crate tag.
  * <ul>
  *   <li>HUB Code Scan validate: {@link Vars#ZWM_PTL_GRT_HUB_VALIDATE} — IM_USER, IM_PLANT, IM_HUB → EX_RETURN</li>
- *   <li>Scan Crate validate: {@link Vars#ZWM_PTL_GRT_HUB_CRATE_VALIDATE} — IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE → EX_RETURN</li>
+ *   <li>Scan Crate validate: {@link Vars#ZWM_PTL_GRT_HUB_CRATE_VALIDATE} — IM_USER, IM_PLANT, IM_FLOOR, IM_HUB, IM_CRATE, IM_ZONE → EX_RETURN</li>
  * </ul>
  */
 public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View.OnClickListener {
@@ -291,6 +291,7 @@ public class FragmentPTLGrtFloorHubWiseCrateTag extends Fragment implements View
             args.put("IM_FLOOR", getSelectedFloor());
             args.put("IM_HUB", validatedHub);
             args.put("IM_CRATE", scannedCrate);
+            args.put("IM_ZONE", validatedHub);
             showProcessingAndSubmit(Vars.ZWM_PTL_GRT_HUB_CRATE_VALIDATE, REQUEST_VALIDATE_CRATE, args);
         } catch (JSONException e) {
             crateValidateInProgress = false;
