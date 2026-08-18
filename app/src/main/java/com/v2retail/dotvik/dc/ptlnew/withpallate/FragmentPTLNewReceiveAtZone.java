@@ -56,7 +56,8 @@ import java.util.List;
 
 /**
  * PTL — Receive at FLR STA. User scans pallet → {@link Vars#ZWM_PTL_PLT_VAL_AT_ZONE_FL} returns
- * HUB, crate count, and hub station list / default station to bind on screen → {@link Vars#ZWM_PTL_PLT_REC_AT_ZONE_FL} saves.
+ * ZONE ({@code EX_ZONE}) for the HUB field, crate count, and hub station list / default station
+ * to bind on screen → {@link Vars#ZWM_PTL_PLT_REC_AT_ZONE_FL} saves.
  */
 public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClickListener {
 
@@ -257,13 +258,6 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
     }
 
     /**
-     * Hub on an ET_ST_ZONE / ET_DATA row, when SAP sends it (optional).
-     */
-    private static String hubFromTableRow(JSONObject row) {
-        return row.optString("HUB", "").trim();
-    }
-
-    /**
      * First index to read for SAP ET_* arrays: index 0 is often a template/header row
      * (see {@link com.v2retail.dotvik.dc.ptlnew.fullcrate30.FragmentPTLNewFullCrateReceiveAtHubStation#setStationsList}).
      */
@@ -276,16 +270,12 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
     }
 
     /**
-     * Fills HUB Station spinner from validate RFC.
-     *
-     * RFC table (per SAP): ET_ST_ZONE-ZONE_STATION
+     * Fills Zone Station spinner from validate RFC {@code ET_ST_ZONE-ZONE_STATION}.
      * Fallbacks: ET_DATA-HUB_STN, exports EX_HUBSTN / EX_HUB_STN / ZONE_STATION.
      */
     private void bindHubStationFromValidateResponse(JSONObject responsebody) throws JSONException {
         List<String> list = new ArrayList<>();
         list.add("Select");
-
-        String exHub = responsebody.optString("EX_HUB", "").trim();
 
         String preferred = responsebody.optString("EX_HUBSTN", "").trim();
         if (preferred.isEmpty()) {
@@ -305,12 +295,6 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                 if (row == null) {
                     continue;
                 }
-                if (!exHub.isEmpty()) {
-                    String rowHub = hubFromTableRow(row);
-                    if (!rowHub.isEmpty() && !exHub.equalsIgnoreCase(rowHub)) {
-                        continue;
-                    }
-                }
                 String stn = row.optString("ZONE_STATION", "").trim();
                 if (!isInvalidHubStationToken(stn) && !list.contains(stn)) {
                     list.add(stn);
@@ -324,12 +308,6 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                 JSONObject row = et.optJSONObject(i);
                 if (row == null) {
                     continue;
-                }
-                if (!exHub.isEmpty()) {
-                    String rowHub = hubFromTableRow(row);
-                    if (!rowHub.isEmpty() && !exHub.equalsIgnoreCase(rowHub)) {
-                        continue;
-                    }
                 }
                 String stn = row.optString("HUB_STN", "").trim();
                 if (stn.isEmpty()) {
@@ -489,7 +467,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
                                         if (request == REQUEST_VALIDATE_PALLET) {
                                             validatedPalette = UIFuncs.toUpperTrim(txt_scan_pallate);
                                             txt_pallate.setText(validatedPalette);
-                                            txt_hub.setText(responsebody.optString("EX_HUB", "").trim());
+                                            txt_hub.setText(responsebody.optString("EX_ZONE", "").trim());
                                             String countRaw = "";
                                             if (responsebody.has("EX_COUNT")) {
                                                 Object c = responsebody.get("EX_COUNT");

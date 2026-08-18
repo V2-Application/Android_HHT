@@ -305,7 +305,7 @@
                 android:layout_weight="5"
                 android:paddingStart="2dp"
                 android:paddingEnd="4dp"
-                android:text="Purposed HUB"
+                android:text="Pro HUB/ZONE"
                 android:textColor="@color/black"
                 android:textSize="13sp"
                 android:textStyle="bold" />

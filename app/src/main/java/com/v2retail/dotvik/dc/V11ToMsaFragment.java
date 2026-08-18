@@ -59,7 +59,7 @@ import org.json.JSONObject;
 public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
 
     private EditText site,location,crate,scan_bin,stock_qty,article;
-    private RadioButton with_crate,without_crate;
+    private RadioButton with_crate,without_crate,bin_type_f1,bin_type_g1;
     private Button save,back,reset;
     private View view;
     private AlertBox box;
@@ -128,6 +128,8 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
 
         with_crate = view.findViewById(R.id.with_crate);
         without_crate = view.findViewById(R.id.without_crate);
+        bin_type_f1 = view.findViewById(R.id.bin_type_f1);
+        bin_type_g1 = view.findViewById(R.id.bin_type_g1);
         scan_bin = view.findViewById(R.id.scan_bin);
         crate = view.findViewById(R.id.crate);
         stock_qty = view.findViewById(R.id.stock_qty);
@@ -160,6 +162,7 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
             Log.d(TAG, "URL->" + URL);
 
         with_crate.setChecked(true);
+        bin_type_f1.setChecked(true);
         WERKS=data.read("WERKS");
         USER=data.read("USER");
         URL = data.read("URL");
@@ -788,6 +791,8 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
                                         scan_bin.requestFocus();
                                         with_crate.setEnabled(false);
                                         without_crate.setEnabled(false);
+                                        bin_type_f1.setEnabled(false);
+                                        bin_type_g1.setEnabled(false);
                                     }
                             }
                         }
@@ -918,6 +923,8 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
                                         article.requestFocus();
                                         with_crate.setEnabled(false);
                                         without_crate.setEnabled(false);
+                                        bin_type_f1.setEnabled(false);
+                                        bin_type_g1.setEnabled(false);
                                         scan_bin.setEnabled(false);
                                     }
                             }
@@ -1207,6 +1214,13 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
 
     }
 
+    private String getSelectedBinType() {
+        if (bin_type_g1 != null && bin_type_g1.isChecked()) {
+            return "G1";
+        }
+        return "F1";
+    }
+
     void sendAndRequestResponse() {
 
         String rfc = "ZWM_RFC_STOCK_TAKE_SAVE_V11";
@@ -1220,6 +1234,7 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
         try {
             params.put("bapiname", rfc);
             params.put("IM_USER", USER);
+            params.put("IM_BIN_TYPE", getSelectedBinType());
             params.put("IT_DATA", saveData);
 
 
@@ -1285,6 +1300,9 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
                                                 with_crate.setChecked(true);
                                                 with_crate.setEnabled(true);
                                                 without_crate.setEnabled(true);
+                                                bin_type_f1.setChecked(true);
+                                                bin_type_f1.setEnabled(true);
+                                                bin_type_g1.setEnabled(true);
                                                 if (crate.isEnabled()){
                                                     crate.requestFocus();
                                                 }else {
@@ -1397,6 +1415,9 @@ public class V11ToMsaFragment extends Fragment implements View.OnClickListener {
                 with_crate.setEnabled(true);
                 with_crate.setChecked(true);
                 without_crate.setEnabled(true);
+                bin_type_f1.setEnabled(true);
+                bin_type_f1.setChecked(true);
+                bin_type_g1.setEnabled(true);
                 scan_bin.setText("");
                 crate.setText("");
                 article.setText("");

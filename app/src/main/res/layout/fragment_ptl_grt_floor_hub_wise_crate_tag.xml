@@ -65,7 +65,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
-                android:text="HUB Code Scan"
+                android:text="HUB/Zone Scan"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -99,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
-                android:text="HUB Code"
+                android:text="HUB/Zone"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />

@@ -24,6 +24,7 @@ import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkError;
@@ -70,7 +71,7 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
 
     private static final int REQUEST_PICK_DATA = 202;
     private static final int REQUEST_SAVE_DATA = 203;
-    private static final String TAG = GRT_Pick_Crate_Bin.class.getName();
+    private static final String TAG = "GRTPickCrateBin";
 
     private static final String ARG_PICKLISTNO = "picklistno";
     private static final String ARG_SECTION = "section";
@@ -229,14 +230,23 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
         CommonUtils.hideKeyboard(getActivity());
         switch (view.getId()){
             case R.id.button_save_grt_picked_bin_crate:
+                logSave("Save button clicked, scanned count=" + ET_SCANNED_PICK_DATA.size());
                 validateFormAndSave();
                 break;
         }
     }
 
     //CUSTOM FUNCTIONS
+    private void logSave(String msg) {
+        Log.e(TAG, msg);
+        Log.i(TAG, msg);
+        System.out.println(TAG + ": " + msg);
+    }
+
     private void validateFormAndSave(){
+        logSave("validateFormAndSave start");
         if(ET_SCANNED_PICK_DATA.isEmpty()){
+            logSave("Nothing to save. ET_SCANNED_PICK_DATA is empty");
             AlertBox box = new AlertBox(getContext());
             box.getBox("Invalid Input","Nothing to save. Please scan Bin and Crate");
             return;
@@ -248,24 +258,38 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
             args.put("IM_USER", USER);
 
             JSONArray etData = new JSONArray();
+            StringBuilder crateLog = new StringBuilder();
 
             for (ETPickData ETData: ET_SCANNED_PICK_DATA.values()) {
+                    String crateOriginal = ETData.getLgcrate();
+                    String crateToSend = displayWithoutLeadingZeros(crateOriginal);
+                    logSave("Save crate strip -> BIN=" + ETData.getLgbin()
+                            + " original=[" + crateOriginal + "] sent=[" + crateToSend + "]");
+                    if (crateLog.length() > 0) {
+                        crateLog.append("\n");
+                    }
+                    crateLog.append(ETData.getLgbin()).append(" : ").append(crateToSend);
                     ETPickSaveData SaveData = new ETPickSaveData();
                     SaveData.setLgbin(ETData.getLgbin());
                     SaveData.setLgplant(WERKS);
-                    SaveData.setLgcrate(ETData.getLgcrate());
-                    String ET_Data_JsonString = new Gson().toJson(SaveData);
-                    JSONObject ET_DATA = new JSONObject(ET_Data_JsonString);
+                    SaveData.setLgcrate(crateToSend);
+                    JSONObject ET_DATA = new JSONObject(new Gson().toJson(SaveData));
+                    ET_DATA.put("CRATE", crateToSend);
                     etData.put(ET_DATA);
                 }
 
             if(etData.length() == 0){
+                logSave("IT_DATA is empty after build");
                 AlertBox box = new AlertBox(getContext());
                 box.getBox("Invalid Request", "Nothing to save. Please scan some articles");
                 return;
             }
 
             args.put("IT_DATA", etData);
+            logSave("Save RFC payload -> " + args.toString());
+            if (con != null) {
+                Toast.makeText(con, "RFC CRATE:\n" + crateLog, Toast.LENGTH_LONG).show();
+            }
             showProcessingAndSubmit(Vars.GRT_SAVE_PICK_DATA,REQUEST_SAVE_DATA,args);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -328,6 +352,8 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
         JsonObjectRequest mJsonRequest = null;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+        Log.e(TAG, "RFC request url=" + url + " rfc=" + rfc + " request=" + request);
+        logSave("RFC request body -> " + args.toString());
 
         final JSONObject params = args;
 
@@ -401,14 +427,16 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
 
             @Override
             public byte[] getBody() {
-                return params.toString().getBytes();
+                String body = params.toString();
+                logSave("RFC getBody payload -> " + body);
+                return body.getBytes();
             }
 
             @Override
             protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
 
                 Response<JSONObject> res = super.parseNetworkResponse(response);
-                Log.d(TAG, "Network response -> " + res.toString());
+                Log.e(TAG, "Network response -> " + res.toString());
 
                 return res;
             }
@@ -483,7 +511,7 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
                 ET_DATA.setLgposnr(ET_RECORD.optString("POSNR", ""));
                 ET_DATA.setLggnature(ET_RECORD.optString("GNATURE", ""));
                 ET_DATA.setLgbin(bin);
-                ET_DATA.setLgcrate(ET_RECORD.optString("CRATE", ""));
+                ET_DATA.setLgcrate(displayWithoutLeadingZeros(ET_RECORD.optString("CRATE", "")));
                 ET_DATA.setLgmc_descr(ET_RECORD.optString("MC_DESCR", ""));
                 ET_DATA.setLgurl(ET_RECORD.optString("URL", ""));
                 ET_PICK_DATA.put(bin, ET_DATA);
@@ -604,7 +632,7 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
             tvBin.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
 
             TextView tvCrate = new TextView(getContext());
-            tvCrate.setText(data.getLgcrate());
+            tvCrate.setText(displayWithoutLeadingZeros(data.getLgcrate()));
             tvCrate.setTextSize(textSize);
             tvCrate.setPadding(5,2,0,2);
             tvCrate.setBackground(getResources().getDrawable(R.drawable.table_cell_border));
@@ -623,24 +651,75 @@ public class GRT_Pick_Crate_Bin extends Fragment implements View.OnClickListener
         text_scan_bin_no.requestFocus();
     }
 
+    /** Strip leading zeros (and BOM/whitespace) so RFC gets 1004938442, not 00000000001004938442. */
+    private static String displayWithoutLeadingZeros(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = sanitizeScan(value);
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        int i = 0;
+        while (i < trimmed.length() - 1 && trimmed.charAt(i) == '0') {
+            i++;
+        }
+        return trimmed.substring(i);
+    }
+
+    private static String sanitizeScan(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\r", "").replace("\n", "")
+                .replace("\uFEFF", "").replace("\u00A0", "").trim();
+    }
+
+    private static boolean codesMatch(String stored, String scanned) {
+        stored = sanitizeScan(stored);
+        scanned = sanitizeScan(scanned);
+        if (stored.isEmpty() || scanned.isEmpty()) {
+            return false;
+        }
+        if (stored.equalsIgnoreCase(scanned)) {
+            return true;
+        }
+        return displayWithoutLeadingZeros(stored).equalsIgnoreCase(displayWithoutLeadingZeros(scanned));
+    }
+
+    /** Scan Bin may receive either the bin location or the crate barcode shown in the list. */
+    private static boolean rowMatchesBinScan(ETPickData data, String scanned) {
+        return codesMatch(data.getLgbin(), scanned) || codesMatch(data.getLgcrate(), scanned);
+    }
+
     private void moveToSaveListAndRemoveRow(String bincrate, String mode){
+        String scanned = sanitizeScan(bincrate);
         int totalRows = table_picked_bin_crate.getChildCount();
         boolean matchFound = false;
+        boolean isBinMode = mode.equalsIgnoreCase("BIN");
         for(int rowIndex=1;rowIndex < totalRows; rowIndex++){
             TableRow row = (TableRow) table_picked_bin_crate.getChildAt(rowIndex);
             ETPickData data = (ETPickData) row.getTag();
-            if(data.getLgbin().equals(UIFuncs.toUpperTrim(text_scan_bin_no))){
-                if(!mode.equalsIgnoreCase("BIN")){
-                    if(data.getLgcrate().equalsIgnoreCase(UIFuncs.toUpperTrim(text_crate_no))){
-                        ET_SCANNED_PICK_DATA.put(data.getLgbin(),data);
-                        table_picked_bin_crate.removeView(row);
-                    }else{
-                        break;
-                    }
-                }
-                matchFound = true;
-                break;
+            if (data == null) {
+                continue;
             }
+            String binField = sanitizeScan(UIFuncs.toUpperTrim(text_scan_bin_no));
+            boolean rowIdentified = isBinMode
+                    ? rowMatchesBinScan(data, scanned)
+                    : rowMatchesBinScan(data, binField);
+            if(!rowIdentified){
+                continue;
+            }
+            if(!isBinMode){
+                if(codesMatch(data.getLgcrate(), scanned)){
+                    ET_SCANNED_PICK_DATA.put(data.getLgbin(),data);
+                    table_picked_bin_crate.removeView(row);
+                }else{
+                    break;
+                }
+            }
+            matchFound = true;
+            break;
         }
         if(!matchFound){
             if(!mode.equalsIgnoreCase("BIN")) {

@@ -641,7 +641,8 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         if (etRow == null) {
             return "";
         }
-        String[] hubKeys = {"HUB", "PLT_REC_HUBZONE", "HUB_STN", "HUBSTN", "HUB_ZONE", "HUBZONE"};
+        // Purposed HUB field binds ZONE_CRATE from ET_DATA (not HUB).
+        String[] hubKeys = {"ZONE_CRATE", "PLT_REC_HUBZONE", "HUB_STN", "HUBSTN", "HUB_ZONE", "HUBZONE"};
         for (String key : hubKeys) {
             String hub = etRow.optString(key, "").trim();
             if (!hub.isEmpty()) {
@@ -986,14 +987,14 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void requestEmptyShortClose() {
-        String msaCrate = emptyCrate;
+        String msaCrate = validatedCrate;
         if (TextUtils.isEmpty(msaCrate)) {
-            msaCrate = UIFuncs.toUpperTrim(txtEmptyCrate);
+            msaCrate = UIFuncs.toUpperTrim(txtCrate);
         }
         if (TextUtils.isEmpty(msaCrate)) {
             UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please scan and validate MSA REV Crate first.");
-            txtEmptyCrateScan.requestFocus();
+            box.getBox("Validation", "Please scan and validate MSA Crate first.");
+            txtScanCrate.requestFocus();
             return;
         }
 
@@ -1136,6 +1137,8 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
                 handleHubTagSuccess();
             } else if (request == REQUEST_SAVE_CACHE) {
                 handleCacheSaveSuccess();
+            } else if (request == REQUEST_EMPTY_SHORT_CLOSE) {
+                handleEmptyShortCloseSuccess();
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);
@@ -1206,6 +1209,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         UIFuncs.enableInput(con, txtEmptyCrateScan);
         txtEmptyCrateScan.requestFocus();
         persistLocalSession();
+        updateActionButtons();
         if (etDataMap.isEmpty() && eanDataMap.isEmpty()) {
             box.getBox("No Records",
                     "No article/EAN data returned. Unmatched scans can still be stored after confirmation.");
@@ -1245,6 +1249,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         resetScreen();
     }
 
+    private void handleEmptyShortCloseSuccess() {
+        resetScreen();
+    }
+
     private void resetArticleFields() {
         currentArticle = "";
         currentEtRow = null;
@@ -1262,6 +1270,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         txtCrate.setText("");
         txtScanCrate.setText("");
         UIFuncs.enableInput(con, txtScanCrate);
+        updateActionButtons();
         txtScanCrate.requestFocus();
     }
 
@@ -1473,15 +1482,15 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
 
     private void updateActionButtons() {
         boolean hasUnsavedScans = pendingScans != null && pendingScans.length() > 0;
-        boolean hasEmptyCrate = !TextUtils.isEmpty(emptyCrate)
-                || !TextUtils.isEmpty(UIFuncs.toUpperTrim(txtEmptyCrate));
+        boolean hasMsaCrate = !TextUtils.isEmpty(validatedCrate)
+                || !TextUtils.isEmpty(UIFuncs.toUpperTrim(txtCrate));
         if (btnBack != null) {
             btnBack.setEnabled(!hasUnsavedScans);
             btnBack.setAlpha(hasUnsavedScans ? 0.45f : 1f);
         }
         if (btnEmpty != null) {
-            btnEmpty.setEnabled(hasEmptyCrate);
-            btnEmpty.setAlpha(hasEmptyCrate ? 1f : 0.45f);
+            btnEmpty.setEnabled(hasMsaCrate);
+            btnEmpty.setAlpha(hasMsaCrate ? 1f : 0.45f);
         }
         if (btnSave != null) {
             btnSave.setEnabled(hasUnsavedScans);

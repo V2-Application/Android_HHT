@@ -196,6 +196,8 @@ public class Vars {
     public static String ZWM_PICK_SAVE_RFC = "ZWM_PICK_SAVE_RFC";
 
     public static String ZWM_USER_AUTHORITY_CHECK = "ZWM_USER_AUTHORITY_CHECK";
+    /** App update check — IV_APP_NAME=ANDROID_HHT → EV_APP_NAME / EV_APP_VERSION / EV_APP_URL */
+    public static String ZGET_VENDOR_HU_DATA_RFC = "ZGET_VENDOR_HU_DATA_RFC";
     public static String ZWM_INV_GRC_VALIDATION = "ZWM_INV_GRC_VALIDATION";
     public static String ZWM_INV_GRC_HUB_SAVE = "ZWM_INV_GRC_HUB_SAVE";
 
