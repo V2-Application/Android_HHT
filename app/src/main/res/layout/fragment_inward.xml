@@ -133,6 +133,16 @@
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="Crate Putway"
+            android:textAllCaps="false"
+            android:id="@+id/crate_putway"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:text="Bin Consolidation"
             android:id="@+id/bin_consolidation"
             android:layout_margin="5dp"
