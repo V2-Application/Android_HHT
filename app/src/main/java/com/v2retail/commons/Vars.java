@@ -183,6 +183,12 @@ public class Vars {
 
     public static String ZWM_PALATE_VALIDATION = "ZWM_PALATE_VALIDATION";
     public static String ZWM_CRATE_VALIDATION = "ZWM_CRATE_VALIDATION";
+    /** Crate Putway — scan crate validate (IM_USER, IM_PLANT, IM_CRATE) → EX_RETURN. */
+    public static String ZWM_CRATE_STK_VALIDATE = "ZWM_CRATE_STK_VALIDATE";
+    /** Crate Putway — scan bin validate (IM_USER, IM_PLANT, IM_BIN) → EX_RETURN. */
+    public static String ZWM_BIN_STK_VALIDATE = "ZWM_BIN_STK_VALIDATE";
+    /** Crate Putway — save crate to bin (IM_USER, IM_PLANT, IM_CRATE, IM_BIN) → EX_RETURN. */
+    public static String ZWM_CRATE_STK_PUT_BIN_RFC = "ZWM_CRATE_STK_PUT_BIN_RFC";
     public static String ZWM_SAVE_PAL_CRATE = "ZWM_SAVE_PAL_CRATE";
 
     public static String ZWM_PALATE_RECEIVE = "ZWM_PALATE_RECEIVE";

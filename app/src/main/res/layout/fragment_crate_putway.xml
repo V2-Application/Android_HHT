@@ -29,7 +29,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="Scan Crate No"
+                android:text="Crate No Scan"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -100,7 +100,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:padding="7dp"
-                android:text="Scan Bin No"
+                android:text="Bin No Scan"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
