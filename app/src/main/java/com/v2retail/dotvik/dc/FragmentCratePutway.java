@@ -521,3 +521,6 @@ public class FragmentCratePutway extends Fragment implements View.OnClickListene
         }
     }
 }
+
+
+

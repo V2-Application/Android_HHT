@@ -448,3 +448,6 @@ public class Vars {
     /** Article Consumption — post scan data (IV_WERKS, IV_LGORT, IV_REF_DOC, IT_SCAN_ITEMS → EV_MBLNR, EV_MJAHR, EV_SUBRC, EV_MSG). */
     public static String ZRFC_ART_CONS_POST = "ZRFC_ART_CONS_POST";
 }
+
+
+
