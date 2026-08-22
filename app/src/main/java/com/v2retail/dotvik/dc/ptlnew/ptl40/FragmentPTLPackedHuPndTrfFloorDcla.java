@@ -49,6 +49,9 @@ import com.v2retail.util.SharedPreferencesData;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * PTL 4.0 — Packed HU PND TRF Floor DCLA.
  * <ul>
@@ -86,6 +89,8 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     private String validatedPallet = "";
     private String validatedHu = "";
     private String validatedHub = "";
+    private final List<String> scannedHuList = new ArrayList<>();
+    private boolean pendingSaveAfterHuValidate = false;
 
     public FragmentPTLPackedHuPndTrfFloorDcla() {
     }
@@ -238,10 +243,12 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         if (TextUtils.isEmpty(scannedHu)) {
             return;
         }
-        if (!TextUtils.isEmpty(validatedHu) && validatedHu.equalsIgnoreCase(scannedHu.trim())) {
+        if (isHuAlreadyScanned(scannedHu)) {
             UIFuncs.errorSound(con);
+            validatedHu = scannedHu.trim().toUpperCase();
+            txtHu.setText(validatedHu);
             txtScanHu.setText("");
-            box.getBox("Validation", "This HU is already scanned. Please save before scanning it again.");
+            box.getBox("Validation", "HU already scanned.");
             txtScanHu.requestFocus();
             return;
         }
@@ -260,18 +267,29 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     }
 
     private void requestSave() {
+        validatedPallet = resolveValidatedPallet();
         if (TextUtils.isEmpty(validatedPallet)) {
             UIFuncs.errorSound(con);
             box.getBox("Validation", "Please scan and validate pallet first.");
             txtScanPallet.requestFocus();
             return;
         }
-        if (TextUtils.isEmpty(validatedHu)) {
+
+        String huToSave = resolveValidatedHu();
+        if (TextUtils.isEmpty(huToSave)) {
+            String pendingScan = UIFuncs.toUpperTrim(txtScanHu);
+            if (!TextUtils.isEmpty(pendingScan)) {
+                pendingSaveAfterHuValidate = true;
+                requestHuValidate(pendingScan);
+                return;
+            }
             UIFuncs.errorSound(con);
             box.getBox("Validation", "Please scan and validate HU first.");
             txtScanHu.requestFocus();
             return;
         }
+
+        validatedHu = huToSave;
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_HU_V60_V61);
@@ -381,6 +399,7 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
                     clearAfterPalletValidateFailure();
                 } else if (request == REQUEST_VALIDATE_HU) {
                     rejectInvalidHuScan();
+                    pendingSaveAfterHuValidate = false;
                 }
                 return;
             }
@@ -394,12 +413,18 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
             } else if (request == REQUEST_VALIDATE_HU) {
                 if (applyHuValidateSuccess(responsebody)) {
                     txtScanHu.setText("");
-                    txtScanHu.requestFocus();
+                    if (pendingSaveAfterHuValidate) {
+                        pendingSaveAfterHuValidate = false;
+                        requestSave();
+                    } else {
+                        txtScanHu.requestFocus();
+                    }
+                } else {
+                    pendingSaveAfterHuValidate = false;
                 }
             } else if (request == REQUEST_SAVE) {
-                applySaveSuccess(responsebody);
-                box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message,
-                        (d, w) -> resetScreen());
+                resetScreen();
+                box.getBox("Ok", TextUtils.isEmpty(message) ? "Saved" : message);
             }
         } catch (JSONException e) {
             Log.e(TAG, "handleRfcResponse", e);
@@ -444,6 +469,9 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
                 UIFuncs.toUpperTrim(txtHu));
         validatedHu = hu;
         txtHu.setText(hu);
+        if (!isHuAlreadyScanned(hu)) {
+            scannedHuList.add(hu.trim().toUpperCase());
+        }
 
         if (!TextUtils.isEmpty(scannedHuHub)) {
             validatedHub = scannedHuHub;
@@ -459,21 +487,32 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         return true;
     }
 
-    private void applySaveSuccess(JSONObject responsebody) {
-        String hub = extractHubFromResponse(responsebody);
-        if (!TextUtils.isEmpty(hub)) {
-            txtHub.setText(hub);
-        }
+    private String resolveValidatedPallet() {
+        return firstNonEmpty(validatedPallet, UIFuncs.toUpperTrim(txtPallet));
+    }
 
-        String store = extractStoreFromResponse(responsebody);
-        if (!TextUtils.isEmpty(store)) {
-            txtStore.setText(store);
-        }
+    private String resolveValidatedHu() {
+        return firstNonEmpty(validatedHu, UIFuncs.toUpperTrim(txtHu), getLastScannedHu());
+    }
 
-        String noOfHu = extractPaletteCount(responsebody);
-        if (!TextUtils.isEmpty(noOfHu)) {
-            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
+    private String getLastScannedHu() {
+        if (scannedHuList.isEmpty()) {
+            return "";
         }
+        return scannedHuList.get(scannedHuList.size() - 1);
+    }
+
+    private boolean isHuAlreadyScanned(String scannedHu) {
+        if (TextUtils.isEmpty(scannedHu)) {
+            return false;
+        }
+        String normalized = scannedHu.trim();
+        for (String hu : scannedHuList) {
+            if (hu.equalsIgnoreCase(normalized)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — {@code ES_HUB-WERKS} → HUB field. */
@@ -585,15 +624,22 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     }
 
     private void rejectInvalidHuScan() {
-        validatedHu = "";
         txtScanHu.setText("");
+        if (TextUtils.isEmpty(validatedHu)) {
+            validatedHu = firstNonEmpty(UIFuncs.toUpperTrim(txtHu), getLastScannedHu());
+            if (!TextUtils.isEmpty(validatedHu)) {
+                txtHu.setText(validatedHu);
+            }
+        }
         txtScanHu.requestFocus();
     }
 
     private void resetScreen() {
+        pendingSaveAfterHuValidate = false;
         validatedPallet = "";
         validatedHu = "";
         validatedHub = "";
+        scannedHuList.clear();
         txtScanPallet.setText("");
         txtPallet.setText("");
         txtScanHu.setText("");

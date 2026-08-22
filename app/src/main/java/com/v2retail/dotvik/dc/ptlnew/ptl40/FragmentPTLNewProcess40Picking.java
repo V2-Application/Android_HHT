@@ -742,7 +742,7 @@ public class FragmentPTLNewProcess40Picking extends Fragment  implements View.On
                         txt_floor.setText(binCrateData.getFloor() == null ? "" : binCrateData.getFloor());
                         txt_section.setText(binCrateData.getSection() == null ? "" : binCrateData.getSection());
                         txt_picklist.setText(binCrateData.getPicklist() == null ? "" : binCrateData.getPicklist());
-                        txt_hub.setText(binCrateData.getHub() == null ? "" : binCrateData.getHub());
+                        txt_hub.setText(binCrateData.getZoneCrate() == null ? "" : binCrateData.getZoneCrate());
                         firstRowSet = true;
                     }
                 }

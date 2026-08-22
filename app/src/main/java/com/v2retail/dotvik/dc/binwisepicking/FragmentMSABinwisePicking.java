@@ -22,7 +22,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -45,6 +44,7 @@ import com.v2retail.commons.SapJsonObjectRequest;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
+import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -621,14 +621,23 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
             if (totalEtRecords > 0) {
                 picklists.clear();
                 picklists.add("");
-                for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
-                    PicklistData picklistData = new Gson().fromJson(ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), PicklistData.class);
-                    picklists.add(UIFuncs.removeLeadingZeros(picklistData.getPicklist()));
-                    picklistDataMap.put(UIFuncs.removeLeadingZeros(picklistData.getPicklist()), picklistData);
+                int startIndex = SapJsonRows.startIndex(ET_DATA_ARRAY, "PICKLIST", "STORE");
+                for (int recordIndex = startIndex; recordIndex < totalEtRecords; recordIndex++) {
+                    JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+                    if (SapJsonRows.isMetadataRow(row, "PICKLIST", "STORE")) {
+                        continue;
+                    }
+                    PicklistData picklistData = new Gson().fromJson(row.toString(), PicklistData.class);
+                    if (picklistData.getPicklist() == null || picklistData.getPicklist().trim().isEmpty()) {
+                        continue;
+                    }
+                    String picklistNo = UIFuncs.removeLeadingZeros(picklistData.getPicklist());
+                    picklists.add(picklistNo);
+                    picklistDataMap.put(picklistNo, picklistData);
                 }
             }
             if (!picklistDataMap.isEmpty()) {
-                ((BaseAdapter) dd_picklist_list.getAdapter()).notifyDataSetChanged();
+                picklistAdapter.notifyDataSetChanged();
                 dd_picklist_list.setEnabled(true);
                 dd_picklist_list.invalidate();
                 dd_picklist_list.setSelection(0);

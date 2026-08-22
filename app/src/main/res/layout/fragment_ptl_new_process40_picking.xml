@@ -169,7 +169,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="5"
                     android:padding="7dp"
-                    android:text="HUB"
+                    android:text="HUB/ZONE"
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />

@@ -70,6 +70,8 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
     private static final String APP_NAME_ANDROID_HHT = "ANDROID_HHT";
     /** Matches Gradle output: {@code V2_HHT_Azure_12_133.apk} */
     private static final String UPDATE_APK_PREFIX = "V2_HHT_Azure_";
+    /** Set true to show the app update popup on Connect. */
+    private static final boolean ENABLE_APP_UPDATE_POPUP = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,9 +140,9 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                 }
                 Log.d(TAG,"URL -> "+URL);
                 // Try update RFC dynamically for every cloud env.
-                // Popup only if RFC returns valid EV_APP_* fields; otherwise connect normally.
+                // Popup only if enabled and RFC returns valid EV_APP_* fields; otherwise connect normally.
                 // Legacy xmwgw: skip and ping connectivity.
-                if (URL.contains("xmwgw")) {
+                if (URL.contains("xmwgw") || !ENABLE_APP_UPDATE_POPUP) {
                     try {
                         checkIP(URL + "/index.jsp");
                     } catch (Exception e) {

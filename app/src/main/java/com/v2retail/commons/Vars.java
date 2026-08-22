@@ -198,6 +198,11 @@ public class Vars {
     public static String ZWM_BIN_VALIDATION_PUT = "ZWM_BIN_VALIDATION_PUT";
     public static String ZWM_HU_VALIDATION_PUT = "ZWM_HU_VALIDATION_PUT";
 
+    /** Inventory → Scan Hu (Article) — HU scan (IM_HU, IM_USER, IM_PLANT) → ET_ERROR, ET_ATICLES, ET_EAN. */
+    public static String ZWM_SCAN_HU = "ZWM_SCAN_HU";
+    /** Inventory → Scan Hu (Article) — save (IM_USER, IM_PLANT, IM_HU, IM_ARTICLES) → ET_ERROR. */
+    public static String ZWM_SAVE_HU = "ZWM_SAVE_HU";
+
     public static String ZWM_PICKLIST_PPPN = "ZWM_PICKLIST_PPPN";
     public static String ZWM_PICK_SAVE_RFC = "ZWM_PICK_SAVE_RFC";
 

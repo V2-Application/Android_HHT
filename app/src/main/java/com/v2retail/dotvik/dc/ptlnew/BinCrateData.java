@@ -21,6 +21,9 @@ public class BinCrateData {
     @SerializedName("HUB")
     private String hub;
 
+    @SerializedName("ZONE_CRATE")
+    private String zoneCrate;
+
     private boolean isScanned;
 
     public String getPicklist() {
@@ -69,6 +72,14 @@ public class BinCrateData {
 
     public void setHub(String hub) {
         this.hub = hub;
+    }
+
+    public String getZoneCrate() {
+        return zoneCrate;
+    }
+
+    public void setZoneCrate(String zoneCrate) {
+        this.zoneCrate = zoneCrate;
     }
 
     public boolean isScanned() {

@@ -77,7 +77,8 @@ import java.util.Map;
  *     Proposed Store and Store Floor. IT_DATA row is prepared for the HU step.
  *  4. Scan HU → {@link Vars#ZWM_PTL_ZONE_HU_VALIDATE_V3} (IM_USER, IM_WERKS, IT_DATA) immediately
  *     after a valid HU scan (no Submit button). {@code SCAN_QTY} and pending-qty reduction use
- *     {@code UMREZ} from {@code ET_EAN_DATA} (MARM) for the article barcode scanned in step 3.
+ *     {@code MEINH}/{@code UMREZ} from {@code ET_EAN_DATA} (MARM) for the article barcode scanned
+ *     in step 3: EA or UMREZ=1 → qty 1; PAC or UMREZ>1 → full UMREZ pack qty.
  *     On success the row's pending qty is decremented and the cursor returns to Scan Article.
  */
 public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements View.OnClickListener {
@@ -121,7 +122,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     private boolean huValidateInFlight = false;
     /** Prevents overlapping RFC calls / orphaned "Please wait..." dialogs. */
     private boolean rfcInFlight = false;
-    /** EAN11 from the last successful article scan — used for MARM {@code UMREZ} on HU put-away. */
+    /** EAN11 from the last successful article scan — used for MARM MEINH/UMREZ scan qty on HU put-away. */
     private String lastScannedEan11 = "";
 
     /** Brand red used in the screen footer / spec mock-up. */
@@ -761,10 +762,14 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
     }
 
     /**
-     * {@code UMREZ} from {@code ET_EAN_DATA} (MARM) for {@link #lastScannedEan11}.
+     * Scan qty from {@code ET_EAN_DATA} (MARM) for {@link #lastScannedEan11}:
+     * <ul>
+     *   <li>{@code MEINH = EA} or {@code UMREZ = 1} → {@code 1}</li>
+     *   <li>{@code MEINH = PAC} or {@code UMREZ > 1} → full pack qty ({@code UMREZ})</li>
+     * </ul>
      * Falls back to {@code 1} when the barcode or conversion factor is missing.
      */
-    private double resolveUmrezForLastArticleScan() {
+    private double resolveScanQtyForLastArticleScan() {
         if (lastScannedEan11 == null || lastScannedEan11.isEmpty()) {
             return 1.0;
         }
@@ -772,8 +777,23 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         if (ean == null) {
             return 1.0;
         }
+        String meinh = ean.getLgmeinh() == null
+                ? ""
+                : ean.getLgmeinh().trim().toUpperCase(Locale.ROOT);
         double umrez = ean.getLgumrez();
-        return umrez > 0 ? umrez : 1.0;
+        if (umrez <= 0) {
+            umrez = 1.0;
+        }
+
+        // Each / base UoM → always scan quantity 1
+        if ("EA".equals(meinh) || umrez == 1.0) {
+            return 1.0;
+        }
+        // Pack UoM or conversion > 1 → send full UMREZ quantity
+        if ("PAC".equals(meinh) || umrez > 1.0) {
+            return umrez;
+        }
+        return umrez;
     }
 
     /**
@@ -832,7 +852,7 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         // Preserve ET row values before mutating for this RFC.
         String zoneFromRow = nz(p.getZone());
         double openQty = parseMenge(p.getQuantity());
-        double scanQtyForRfc = resolveUmrezForLastArticleScan();
+        double scanQtyForRfc = resolveScanQtyForLastArticleScan();
         if (scanQtyForRfc > openQty) {
             UIFuncs.errorSound(con);
             box.getBox("Err", String.format(Locale.US,
@@ -934,8 +954,8 @@ public class FragmentPTLNewArticlePutwayStorewise extends Fragment implements Vi
         }
         txt_hu.setText(scannedHu);
 
-        double umrez = resolveUmrezForLastArticleScan();
-        double remaining = Double.parseDouble(currentScan.getQuantity()) - umrez;
+        double scanQty = resolveScanQtyForLastArticleScan();
+        double remaining = Double.parseDouble(currentScan.getQuantity()) - scanQty;
         if (remaining <= 0) {
             currentScan.setSqty(1);
             remaining = 0;
