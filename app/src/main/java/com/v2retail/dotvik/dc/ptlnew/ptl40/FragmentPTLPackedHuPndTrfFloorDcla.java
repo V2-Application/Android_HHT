@@ -46,6 +46,7 @@ import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -89,7 +90,9 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     private String validatedPallet = "";
     private String validatedHu = "";
     private String validatedHub = "";
+    private String validatedStore = "";
     private final List<String> scannedHuList = new ArrayList<>();
+    private final List<String> palletEtHuList = new ArrayList<>();
     private boolean pendingSaveAfterHuValidate = false;
 
     public FragmentPTLPackedHuPndTrfFloorDcla() {
@@ -243,13 +246,8 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         if (TextUtils.isEmpty(scannedHu)) {
             return;
         }
-        if (isHuAlreadyScanned(scannedHu)) {
-            UIFuncs.errorSound(con);
-            validatedHu = scannedHu.trim().toUpperCase();
-            txtHu.setText(validatedHu);
-            txtScanHu.setText("");
-            box.getBox("Validation", "HU already scanned.");
-            txtScanHu.requestFocus();
+        if (isHuInPalletEtHu(scannedHu) || isHuAlreadyScanned(scannedHu)) {
+            showHuAlreadyScan();
             return;
         }
         JSONObject args = new JSONObject();
@@ -290,6 +288,10 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         }
 
         validatedHu = huToSave;
+        if (isHuInPalletEtHu(validatedHu)) {
+            showHuAlreadyScan();
+            return;
+        }
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_PTL_HU_V60_V61);
@@ -442,21 +444,40 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         validatedPallet = pallet;
         txtPallet.setText(pallet);
 
-        String hub = extractHubFromResponse(responsebody);
+        String hub = firstNonEmpty(extractEsHubWerks(responsebody), extractHubFromResponse(responsebody));
         if (!TextUtils.isEmpty(hub)) {
             validatedHub = hub;
-            txtHub.setText(hub);
         }
 
-        String noOfHu = extractPaletteCount(responsebody);
-        if (!TextUtils.isEmpty(noOfHu)) {
-            txtNoOfHu.setText(UIFuncs.removeLeadingZeros(noOfHu));
+        String store = firstNonEmpty(extractEsStoreWerks(responsebody), extractStoreFromResponse(responsebody));
+        if (!TextUtils.isEmpty(store)) {
+            validatedStore = store;
         }
+
+        captureEtHuFromPallet(responsebody);
+        txtHub.setText("");
+        txtStore.setText("");
+        txtNoOfHu.setText("");
     }
 
     private boolean applyHuValidateSuccess(JSONObject responsebody) {
         String scannedHuHub = extractEsHubWerks(responsebody);
-        if (!TextUtils.isEmpty(validatedHub) && !TextUtils.isEmpty(scannedHuHub)
+        String scannedHuStore = extractEsStoreWerks(responsebody);
+
+        if (!palletEtHuList.isEmpty()) {
+            String currentHub = firstNonEmpty(validatedHub, UIFuncs.toUpperTrim(txtHub));
+            String currentStore = firstNonEmpty(validatedStore, UIFuncs.toUpperTrim(txtStore));
+            boolean hubMismatch = !TextUtils.isEmpty(currentHub) && !TextUtils.isEmpty(scannedHuHub)
+                    && !currentHub.equalsIgnoreCase(scannedHuHub);
+            boolean storeMismatch = !TextUtils.isEmpty(currentStore) && !TextUtils.isEmpty(scannedHuStore)
+                    && !currentStore.equalsIgnoreCase(scannedHuStore);
+            if (hubMismatch || storeMismatch) {
+                rejectInvalidHuScan();
+                UIFuncs.errorSound(con);
+                box.getBox("Validation", "HU is tagged with (" + formatHubStoreName(scannedHuHub, scannedHuStore) + ")");
+                return false;
+            }
+        } else if (!TextUtils.isEmpty(validatedHub) && !TextUtils.isEmpty(scannedHuHub)
                 && !validatedHub.equalsIgnoreCase(scannedHuHub)) {
             rejectInvalidHuScan();
             UIFuncs.errorSound(con);
@@ -478,9 +499,9 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
             txtHub.setText(scannedHuHub);
         }
 
-        String store = extractEsStoreWerks(responsebody);
-        if (!TextUtils.isEmpty(store)) {
-            txtStore.setText(store);
+        if (!TextUtils.isEmpty(scannedHuStore)) {
+            validatedStore = scannedHuStore;
+            txtStore.setText(scannedHuStore);
         }
 
         incrementNoOfHuCount();
@@ -503,16 +524,73 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     }
 
     private boolean isHuAlreadyScanned(String scannedHu) {
-        if (TextUtils.isEmpty(scannedHu)) {
+        return containsHu(scannedHuList, scannedHu);
+    }
+
+    private boolean isHuInPalletEtHu(String scannedHu) {
+        return containsHu(palletEtHuList, scannedHu);
+    }
+
+    private static boolean containsHu(List<String> huList, String scannedHu) {
+        if (huList == null || huList.isEmpty() || TextUtils.isEmpty(scannedHu)) {
             return false;
         }
-        String normalized = scannedHu.trim();
-        for (String hu : scannedHuList) {
-            if (hu.equalsIgnoreCase(normalized)) {
+        String normalized = normalizeHu(scannedHu);
+        for (String hu : huList) {
+            if (normalizeHu(hu).equalsIgnoreCase(normalized)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static String normalizeHu(String hu) {
+        if (TextUtils.isEmpty(hu)) {
+            return "";
+        }
+        String trimmed = hu.trim();
+        String withoutZeros = UIFuncs.removeLeadingZeros(trimmed);
+        return TextUtils.isEmpty(withoutZeros) ? trimmed : withoutZeros;
+    }
+
+    private void showHuAlreadyScan() {
+        UIFuncs.errorSound(con);
+        pendingSaveAfterHuValidate = false;
+        txtScanHu.setText("");
+        box.getBox("Validation", "HU already scan");
+        txtScanHu.requestFocus();
+    }
+
+    private void captureEtHuFromPallet(JSONObject responsebody) {
+        palletEtHuList.clear();
+        JSONArray etHu = responsebody.optJSONArray("ET_HU");
+        if (etHu == null || etHu.length() == 0) {
+            return;
+        }
+        for (int i = 0; i < etHu.length(); i++) {
+            JSONObject row = etHu.optJSONObject(i);
+            if (row == null) {
+                continue;
+            }
+            String exidv = row.optString("EXIDV", "").trim();
+            if (TextUtils.isEmpty(exidv) || "EXIDV".equalsIgnoreCase(exidv)
+                    || "null".equalsIgnoreCase(exidv)) {
+                continue;
+            }
+            palletEtHuList.add(exidv);
+            String rowHub = row.optString("HUB", "").trim();
+            if (TextUtils.isEmpty(validatedHub) && !TextUtils.isEmpty(rowHub)
+                    && !"null".equalsIgnoreCase(rowHub)) {
+                validatedHub = rowHub;
+            }
+        }
+    }
+
+    private static String formatHubStoreName(String hub, String store) {
+        if (!TextUtils.isEmpty(hub) && !TextUtils.isEmpty(store)) {
+            return hub + "/" + store;
+        }
+        return firstNonEmpty(hub, store);
     }
 
     /** {@link Vars#ZWM_PTL_HU_V6LIDATE_RFC} — {@code ES_HUB-WERKS} → HUB field. */
@@ -617,8 +695,11 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
     private void clearAfterPalletValidateFailure() {
         validatedPallet = "";
         validatedHub = "";
+        validatedStore = "";
+        palletEtHuList.clear();
         txtPallet.setText("");
         txtHub.setText("");
+        txtStore.setText("");
         txtNoOfHu.setText("");
         txtScanPallet.requestFocus();
     }
@@ -639,7 +720,9 @@ public class FragmentPTLPackedHuPndTrfFloorDcla extends Fragment implements View
         validatedPallet = "";
         validatedHu = "";
         validatedHub = "";
+        validatedStore = "";
         scannedHuList.clear();
+        palletEtHuList.clear();
         txtScanPallet.setText("");
         txtPallet.setText("");
         txtScanHu.setText("");
