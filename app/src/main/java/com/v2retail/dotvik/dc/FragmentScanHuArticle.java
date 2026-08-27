@@ -261,7 +261,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         }
 
         String matnr = eanRow.optString("MATNR", "").trim();
-        double umrez = parseQty(eanRow.optString("UMREZ", "1"));
+        double umrez = parseQty(eanRow, "UMREZ");
         if (umrez <= 0) {
             umrez = 1;
         }
@@ -275,8 +275,8 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         }
 
         try {
-            double huQty = parseQty(articleRow.optString("HU_QTY", "0"));
-            double scanQty = parseQty(articleRow.optString("SCAN_QTY", "0"));
+            double huQty = parseQty(articleRow, "HU_QTY");
+            double scanQty = parseQty(articleRow, "SCAN_QTY");
             double newScanQty = scanQty + umrez;
 
             if (newScanQty > huQty + 0.0001) {
@@ -334,13 +334,26 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
 
     private void bindArticleFields(JSONObject articleRow) {
         if (articleRow == null) {
-            clearDetailFields();
+            txtMat.setText("");
             return;
         }
         txtMat.setText(formatMatnrDisplay(articleRow.optString("MATNR", "")));
-        txtHuQty.setText(formatQty(articleRow.optString("HU_QTY", "0")));
-        txtScanQty.setText(formatQty(articleRow.optString("SCAN_QTY", "0")));
-        txtDiffQty.setText(String.valueOf(normalizeDiffQty(articleRow.optString("DIFF_QTY", "0"))));
+    }
+
+    /** Header HU Q. / Scan Q / Difi Q show totals of all table rows. */
+    private void updateTotalQtyFields() {
+        double totalHuQty = 0;
+        double totalScanQty = 0;
+        for (JSONObject row : articleRows) {
+            if (row == null) {
+                continue;
+            }
+            totalHuQty += parseQty(row, "HU_QTY");
+            totalScanQty += parseQty(row, "SCAN_QTY");
+        }
+        txtHuQty.setText(formatQty(String.valueOf(totalHuQty)));
+        txtScanQty.setText(formatQty(String.valueOf(totalScanQty)));
+        txtDiffQty.setText(String.valueOf((int) Math.round(totalHuQty - totalScanQty)));
     }
 
     private void refreshArticleTable() {
@@ -353,6 +366,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         if (tvNoData != null) {
             tvNoData.setVisibility(articleRows.isEmpty() ? View.VISIBLE : View.GONE);
         }
+        updateTotalQtyFields();
     }
 
     private void requestSaveHu() {
@@ -376,8 +390,8 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             if (row == null) {
                 continue;
             }
-            totalHuQty += parseQty(row.optString("HU_QTY", "0"));
-            totalScanQty += parseQty(row.optString("SCAN_QTY", "0"));
+            totalHuQty += parseQty(row, "HU_QTY");
+            totalScanQty += parseQty(row, "SCAN_QTY");
         }
 
         // Save RFC only after at least one article has been scanned.
@@ -415,11 +429,18 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         JSONObject args = new JSONObject();
         try {
             JSONArray imArticles = buildImArticles();
+            if (imArticles.length() <= 1) {
+                box.getBox("Alert", "No article data to save.");
+                return;
+            }
             args.put("bapiname", Vars.ZWM_SAVE_HU);
             args.put("IM_USER", USER);
             args.put("IM_PLANT", WERKS);
             args.put("IM_HU", hu);
+            // ZWM_SAVE_HU Import: IM_ARTICLES TYPE ZHU_ARTICLE_TT (line type ZHU_ARTICLE_ST).
             args.put("IM_ARTICLES", imArticles);
+            Log.d(TAG, "ZWM_SAVE_HU IM_ARTICLES rows=" + (imArticles.length() - 1)
+                    + " payload=" + imArticles);
             showProcessingAndSubmit(Vars.ZWM_SAVE_HU, REQUEST_SAVE_HU, args);
         } catch (JSONException e) {
             Log.e(TAG, "submitSaveHu", e);
@@ -427,25 +448,45 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         }
     }
 
+    /**
+     * Builds {@code IM_ARTICLES} as {@code ZHU_ARTICLE_TT} / {@code ZHU_ARTICLE_ST}.
+     * <p>
+     * Production {@code noacljsonrfcadaptor} treats row 0 as a column template
+     * (field name = value). Without that row, SAP often receives an empty table
+     * and the matched article lines never reach {@code ZWM_SAVE_HU}.
+     * Row 1+ is the current on-screen table (MATNR, HU_QTY, SCAN_QTY, DIFF_QTY).
+     */
     private JSONArray buildImArticles() throws JSONException {
         JSONArray arr = new JSONArray();
+        JSONObject header = new JSONObject();
+        header.put("MATNR", "MATNR");
+        header.put("HU_QTY", "HU_QTY");
+        header.put("SCAN_QTY", "SCAN_QTY");
+        header.put("DIFF_QTY", "DIFF_QTY");
+        arr.put(header);
+
         for (JSONObject src : articleRows) {
             if (src == null) {
                 continue;
             }
-            // Send only articles that were actually scanned.
-            double scanQty = parseQty(src.optString("SCAN_QTY", "0"));
-            if (scanQty <= 0) {
+            String matnr = src.optString("MATNR", "").trim();
+            if (matnr.isEmpty() || "MATNR".equalsIgnoreCase(matnr)) {
                 continue;
             }
-            JSONObject row = new JSONObject();
-            row.put("MATNR", src.optString("MATNR", "").trim());
-            row.put("HU_QTY", normalizeMenge(src.optString("HU_QTY", "0")));
-            row.put("SCAN_QTY", normalizeMenge(src.optString("SCAN_QTY", "0")));
-            row.put("DIFF_QTY", normalizeDiffQty(src.optString("DIFF_QTY", "0")));
+            JSONObject row = toZhuArticleRow(src);
             arr.put(row);
         }
         return arr;
+    }
+
+    /** One {@code ZHU_ARTICLE_ST} row: MATNR CHAR40, HU_QTY/SCAN_QTY MENGE_D, DIFF_QTY INT4. */
+    private JSONObject toZhuArticleRow(JSONObject src) throws JSONException {
+        JSONObject row = new JSONObject();
+        row.put("MATNR", src.optString("MATNR", "").trim());
+        row.put("HU_QTY", normalizeMenge(qtyString(src, "HU_QTY")));
+        row.put("SCAN_QTY", normalizeMenge(qtyString(src, "SCAN_QTY")));
+        row.put("DIFF_QTY", normalizeDiffQty(qtyString(src, "DIFF_QTY")));
+        return row;
     }
 
     private void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
@@ -537,6 +578,9 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
 
             JSONArray articles = responsebody.optJSONArray("ET_ATICLES");
             if (articles == null) {
+                articles = responsebody.optJSONArray("ET_ARTICLES");
+            }
+            if (articles == null) {
                 articles = new JSONArray();
             }
             int articleStart = SapJsonRows.startIndex(articles, "MATNR", "HU_QTY", "SCAN_QTY", "DIFF_QTY");
@@ -546,12 +590,16 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
                     continue;
                 }
                 String matnr = row.optString("MATNR", "").trim();
-                if (matnr.isEmpty()) {
+                if (matnr.isEmpty() || "MATNR".equalsIgnoreCase(matnr)) {
                     continue;
                 }
-                articleRows.add(row);
-                addArticleTableRow(row);
+                JSONObject normalized = toZhuArticleRow(row);
+                double huQty = parseQty(normalized, "HU_QTY");
+                double scanQty = parseQty(normalized, "SCAN_QTY");
+                normalized.put("DIFF_QTY", (int) Math.round(huQty - scanQty));
+                articleRows.add(normalized);
             }
+            refreshArticleTable();
 
             JSONArray eans = responsebody.optJSONArray("ET_EAN");
             if (eans == null) {
@@ -591,14 +639,16 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
 
     private void handleSaveHuResponse(JSONObject responsebody) {
         try {
-            if (isErrorReturn(responsebody)) {
-                String message = getReturnMessage(responsebody, "Save failed.");
-                box.getBox("Err", message);
+            String type = getReturnType(responsebody);
+            // TYPE E/A → error. TYPE S → success. Blank TYPE is an empty ET_ERROR — do not show success.
+            if ("E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type)) {
+                box.getBox("Err", getReturnMessage(responsebody, "Save failed."));
                 return;
             }
-
-            String message = getReturnMessage(responsebody, "Saved successfully.");
-            box.getBox("Ok", message, (d, w) -> resetAfterSave());
+            if ("S".equalsIgnoreCase(type)) {
+                box.getBox("Ok", getReturnMessage(responsebody, "Saved successfully."),
+                        (d, w) -> resetAfterSave());
+            }
         } catch (Exception e) {
             Log.e(TAG, "handleSaveHuResponse", e);
             box.getErrBox(e);
@@ -606,12 +656,16 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
     }
 
     private boolean isErrorReturn(JSONObject responsebody) throws JSONException {
+        String type = getReturnType(responsebody);
+        return "E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type);
+    }
+
+    private String getReturnType(JSONObject responsebody) throws JSONException {
         JSONObject returnObj = extractReturnObject(responsebody);
         if (returnObj == null) {
-            return false;
+            return "";
         }
-        String type = returnObj.optString("TYPE", "").trim();
-        return "E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type);
+        return returnObj.optString("TYPE", "").trim();
     }
 
     private String getReturnMessage(JSONObject responsebody, String fallback) throws JSONException {
@@ -671,9 +725,9 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         TableRow tr = new TableRow(con);
 
         tr.addView(makeCell(formatMatnrDisplay(row.optString("MATNR", "")), 5f));
-        tr.addView(makeCell(formatQty(row.optString("HU_QTY", "0")), 1f));
-        tr.addView(makeCell(formatQty(row.optString("SCAN_QTY", "0")), 1f));
-        tr.addView(makeCell(row.optString("DIFF_QTY", "0"), 1f));
+        tr.addView(makeCell(formatQty(qtyString(row, "HU_QTY")), 1f));
+        tr.addView(makeCell(formatQty(qtyString(row, "SCAN_QTY")), 1f));
+        tr.addView(makeCell(String.valueOf(normalizeDiffQty(qtyString(row, "DIFF_QTY"))), 1f));
 
         tableItems.addView(tr);
     }
@@ -786,7 +840,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             return "0";
         }
         try {
-            double d = Double.parseDouble(qty.trim());
+            double d = Double.parseDouble(qty.trim().replace(',', '.'));
             if (d == Math.rint(d)) {
                 return String.valueOf((long) d);
             }
@@ -796,12 +850,31 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         }
     }
 
+    private String qtyString(JSONObject row, String key) {
+        if (row == null || key == null) {
+            return "0";
+        }
+        Object raw = row.opt(key);
+        if (raw == null || raw == JSONObject.NULL) {
+            return "0";
+        }
+        if (raw instanceof Number) {
+            return String.valueOf(((Number) raw).doubleValue());
+        }
+        String value = String.valueOf(raw).trim();
+        return value.isEmpty() ? "0" : value;
+    }
+
+    private double parseQty(JSONObject row, String key) {
+        return parseQty(qtyString(row, key));
+    }
+
     private double parseQty(String qty) {
         if (qty == null || qty.trim().isEmpty()) {
             return 0;
         }
         try {
-            return Double.parseDouble(qty.trim());
+            return Double.parseDouble(qty.trim().replace(',', '.'));
         } catch (NumberFormatException e) {
             return 0;
         }
@@ -812,7 +885,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             return "0.000";
         }
         try {
-            double d = Double.parseDouble(qty.trim());
+            double d = Double.parseDouble(qty.trim().replace(',', '.'));
             return String.format(Locale.US, "%.3f", d);
         } catch (NumberFormatException e) {
             return qty.trim();
@@ -824,7 +897,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             return 0;
         }
         try {
-            return (int) Math.round(Double.parseDouble(qty.trim()));
+            return (int) Math.round(Double.parseDouble(qty.trim().replace(',', '.')));
         } catch (NumberFormatException e) {
             return 0;
         }

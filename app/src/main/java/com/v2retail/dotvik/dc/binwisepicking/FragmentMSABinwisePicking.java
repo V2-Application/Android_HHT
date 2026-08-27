@@ -589,9 +589,13 @@ public class FragmentMSABinwisePicking extends Fragment implements View.OnClickL
         JSONArray ET_DATA_ARRAY = new JSONArray(etBinJsonString);
         int totalEtRecords = ET_DATA_ARRAY.length();
         Gson gson = new Gson();
-        for (int recordIndex = 1; recordIndex < totalEtRecords; recordIndex++) {
-            BinCrateHU binCrateData = gson.fromJson(
-                    ET_DATA_ARRAY.getJSONObject(recordIndex).toString(), BinCrateHU.class);
+        int startIndex = SapJsonRows.startIndex(ET_DATA_ARRAY, "CRATE", "BIN", "QTY");
+        for (int recordIndex = startIndex; recordIndex < totalEtRecords; recordIndex++) {
+            JSONObject row = ET_DATA_ARRAY.getJSONObject(recordIndex);
+            if (SapJsonRows.isMetadataRow(row, "CRATE", "BIN", "QTY")) {
+                continue;
+            }
+            BinCrateHU binCrateData = gson.fromJson(row.toString(), BinCrateHU.class);
             map.put(binCrateData.getBin() + "-" + binCrateData.getCrate(), binCrateData);
         }
         return map;
