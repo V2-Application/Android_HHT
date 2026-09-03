@@ -41,6 +41,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.android.volley.toolbox.StringRequest;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -508,27 +509,42 @@ public class TO_Creation_Fragment extends Fragment implements View.OnClickListen
                                         JSONArray etBin = responsebody.getJSONArray("ET_BINS");
                                         JSONArray etCrate = responsebody.getJSONArray("ET_CRATE");
 
-                                        // we need to start ffrom 1 index, and - 0 is meta information
-                                        for (int i=1;i<etBin.length();i++){
-                                            String LGTYP = etBin.getJSONObject(i).getString("LGTYP");
-                                            String MANDT = etBin.getJSONObject(i).getString("MANDT");
-                                            String MJAHR = etBin.getJSONObject(i).getString("MJAHR");
-                                            String LOCKED = etBin.getJSONObject(i).getString("LOCKED");
-                                            String MBLNR = etBin.getJSONObject(i).getString("MBLNR");
-                                            String LGPLA = etBin.getJSONObject(i).getString("LGPLA");
-                                            String LGNUM = etBin.getJSONObject(i).getString("LGNUM");
+                                        etBinModels.clear();
+                                        etCreateModels.clear();
 
-                                            etBinModels.add(new EtBinModel(LGTYP,MANDT,MJAHR,LOCKED,MBLNR,LGPLA,LGNUM));
-
+                                        // Skip SAP template row only when index 0 is metadata; otherwise
+                                        // the first real dest bin is dropped and scan shows Invalid Destination.
+                                        int binStart = SapJsonRows.startIndex(etBin, "LGPLA", "LGTYP", "MBLNR");
+                                        for (int i = binStart; i < etBin.length(); i++) {
+                                            JSONObject row = etBin.optJSONObject(i);
+                                            if (row == null || SapJsonRows.isMetadataRow(row, "LGPLA", "LGTYP")) {
+                                                continue;
+                                            }
+                                            String LGPLA = row.optString("LGPLA", "").trim();
+                                            if (LGPLA.isEmpty()) {
+                                                continue;
+                                            }
+                                            etBinModels.add(new EtBinModel(
+                                                    row.optString("LGTYP", "").trim(),
+                                                    row.optString("MANDT", "").trim(),
+                                                    row.optString("MJAHR", "").trim(),
+                                                    row.optString("LOCKED", "").trim(),
+                                                    row.optString("MBLNR", "").trim(),
+                                                    LGPLA,
+                                                    row.optString("LGNUM", "").trim()));
                                         }
 
-                                        // we need to start ffrom 1 index, and - 0 is meta information
-                                        for (int i=1;i<etCrate.length();i++){
-
-                                            String MANDT = etCrate.getJSONObject(i).getString("MANDT");
-                                            String CRATE = etCrate.getJSONObject(i).getString("CRATE");
-
-                                            etCreateModels.add(new EtCreateModel(CRATE,MANDT));
+                                        int crateStart = SapJsonRows.startIndex(etCrate, "CRATE", "MANDT");
+                                        for (int i = crateStart; i < etCrate.length(); i++) {
+                                            JSONObject row = etCrate.optJSONObject(i);
+                                            if (row == null || SapJsonRows.isMetadataRow(row, "CRATE")) {
+                                                continue;
+                                            }
+                                            String CRATE = row.optString("CRATE", "").trim();
+                                            if (CRATE.isEmpty()) {
+                                                continue;
+                                            }
+                                            etCreateModels.add(new EtCreateModel(CRATE, row.optString("MANDT", "").trim()));
                                         }
 
                                         gr_no.setEnabled(false);
@@ -591,45 +607,50 @@ public class TO_Creation_Fragment extends Fragment implements View.OnClickListen
 
 
     private void loadDestData() {
-        String bin = dest_bin_et.getText().toString();
-        int flag =0;
-        String Str55 = "";
+        String bin = dest_bin_et.getText().toString().trim();
+        int flag = 0;
 
-        if (bin == null || bin.length() < 0 || bin.equals("")) {
-            UIFuncs.blinkEffectOnError(con,dest_bin_et,true);
+        if (bin.isEmpty()) {
+            UIFuncs.blinkEffectOnError(con, dest_bin_et, true);
             box.getBox("Alert", "Enter Destination Bin First!");
             return;
         }
         JSONObject jsonObject = new JSONObject();
         JSONArray IT_DATA = new JSONArray();
-        Log.v(TAG,jsonArray.toString()+"------"+ jsonArray.length());
+        Log.v(TAG, jsonArray.toString() + "------" + jsonArray.length());
 
-        for (int i=0;i<etBinModels.size();i++){
-            if (bin.equals(etBinModels.get(i).getLGPLA())){
+        for (int i = 0; i < etBinModels.size(); i++) {
+            String expected = etBinModels.get(i).getLGPLA();
+            if (expected != null && bin.equalsIgnoreCase(expected.trim())) {
                 flag = 1;
-                scanCount = scanCount+1;
+                scanCount = scanCount + 1;
                 total_Scanned_et.setText(String.valueOf(scanCount));
                 try {
-                    jsonObject.put("LGPLA", bin);
-                    jsonObject.put("CRATE",Crate);
-                }catch (Exception e){
+                    jsonObject.put("LGPLA", expected.trim());
+                    jsonObject.put("CRATE", Crate);
+                } catch (Exception e) {
                     box.getErrBox(e);
                 }
                 jsonArray = IT_DATA.put(jsonObject);
-                Log.v(TAG,jsonArray.toString());
+                Log.v(TAG, jsonArray.toString());
                 break;
             }
         }
-        if (flag==0){
+        if (flag == 0) {
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
             UIFuncs.errorSound(con);
             box.getBox("Alert", "Invalid Destination");
             dest_bin_et.setText("");
             dest_bin_et.requestFocus();
+            return;
         }
-        dialog.dismiss();
+        if (dialog != null && dialog.isShowing()) {
+            dialog.dismiss();
+        }
 
         sendDataToServer();
-
     }
 
     private void loadCrateDate() {
@@ -681,20 +702,25 @@ public class TO_Creation_Fragment extends Fragment implements View.OnClickListen
     }
 
     void loadCrate(String crate){
-        int flag =0;
-        for (int i = 0;i<etCreateModels.size();i++){
-
-            if (crate.equals(etCreateModels.get(i).getCRATE())){
+        int flag = 0;
+        crate = crate == null ? "" : crate.trim();
+        for (int i = 0; i < etCreateModels.size(); i++) {
+            String expected = etCreateModels.get(i).getCRATE();
+            if (expected != null && crate.equalsIgnoreCase(expected.trim())) {
                 dest_bin_et.requestFocus();
-                Crate = crate;
-                flag=1;
-                dialog.dismiss();
+                Crate = expected.trim();
+                flag = 1;
+                if (dialog != null && dialog.isShowing()) {
+                    dialog.dismiss();
+                }
                 break;
             }
         }
 
         if (flag==0){
-            dialog.dismiss();
+            if (dialog != null && dialog.isShowing()) {
+                dialog.dismiss();
+            }
             Crate = "";
             UIFuncs.errorSound(con);
             box.getBox("Alert","Invalid Crate against the GR " + Gr);

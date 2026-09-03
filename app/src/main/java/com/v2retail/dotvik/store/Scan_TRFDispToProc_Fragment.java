@@ -38,6 +38,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.v2retail.ApplicationController;
@@ -355,10 +356,14 @@ public class Scan_TRFDispToProc_Fragment extends Fragment implements View.OnClic
                                         JSONArray ET_EAN_DATA = responsebody.getJSONArray("ET_EAN_DATA");
                                         String openQty = EX_MARD.getString("LABST");
                                         article_available_stock_et.setText(openQty);
+                                        article_no_et.setText(EX_MARD.optString("MATNR"));
                                         boolean check = true;
 
-                                        for (int i =1 ;i<ET_EAN_DATA.length();i++){
+                                        for (int i = SapJsonRows.startIndex(ET_EAN_DATA, "EAN11", "MATNR"); i < ET_EAN_DATA.length(); i++){
                                             JSONObject jsonObject1 = ET_EAN_DATA.getJSONObject(i);
+                                            if (SapJsonRows.isMetadataRow(jsonObject1, "EAN11", "MATNR")) {
+                                                continue;
+                                            }
                                             for (int j =0 ; j<jsonArray.length();j++){
                                                 JSONObject jsonObject = jsonArray.getJSONObject(j);
                                                 if (jsonObject.get("MATERIAL").equals(jsonObject1.getString("MATNR"))){
@@ -605,7 +610,7 @@ public class Scan_TRFDispToProc_Fragment extends Fragment implements View.OnClic
                                     } else {
 
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
+                                        box.getBox("Success", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
                                                 article_no_et.setText("");

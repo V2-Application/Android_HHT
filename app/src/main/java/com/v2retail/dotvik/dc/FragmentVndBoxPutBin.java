@@ -3,11 +3,16 @@ package com.v2retail.dotvik.dc;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 
@@ -16,31 +21,27 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.SharedPreferencesData;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Inbound Process New — VND Box Put to BIN
- * Flow: Scan HU (client-side) → Scan BIN →
- *       {@link Vars#ZVND_PUTWAY_BIN_VAL_RFC} →
- *       {@link Vars#ZVND_PUTWAY_PALETTE_VAL_RFC} (IM_PALL = scanned HU) →
- *       {@link Vars#ZVND_PUTWAY_SAVE_DATA_RFC}
+ * Flow: Scan HU (client-side) → auto focus Scan BIN →
+ *       {@link Vars#ZVND_HU_PUTWAY_BIN_RFC} (I_WERKS, I_HU, I_BIN → ES_RETURN).
+ * RFC message is shown as a bottom Toast.
  */
 public class FragmentVndBoxPutBin extends Fragment {
 
-    private static final String DEFAULT_USER = "250";
+    private static final String TAG = "FragmentVndBoxPutBin";
 
     private Activity activity;
     private ProgressDialog dialog;
@@ -49,11 +50,8 @@ public class FragmentVndBoxPutBin extends Fragment {
     private TextView tvStatus;
 
     private String URL = "";
-    private String USER = "";
     private String werks = "";
     private String huNumber = "";
-    private String poNo = "";
-    private String billNo = "";
     private boolean requestInProgress = false;
 
     public FragmentVndBoxPutBin() {}
@@ -74,22 +72,42 @@ public class FragmentVndBoxPutBin extends Fragment {
         tvStatus   = view.findViewById(R.id.tv_status);
 
         etScanHu.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int actionId, android.view.KeyEvent event) {
-                String hu = etScanHu.getText().toString().trim();
-                if (!hu.isEmpty()) {
-                    onHuScanned(hu);
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean enterDown = event != null
+                        && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_DOWN;
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_GO
+                        || enterDown
+                        || actionId == EditorInfo.IME_NULL) {
+                    String hu = etScanHu.getText().toString().trim();
+                    if (!hu.isEmpty()) {
+                        onHuScanned(hu);
+                    }
+                    return true;
                 }
-                return true;
+                return false;
             }
         });
 
         etScanBin.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override public boolean onEditorAction(TextView v, int actionId, android.view.KeyEvent event) {
-                String bin = etScanBin.getText().toString().trim();
-                if (!bin.isEmpty()) {
-                    onBinScanned(bin);
+            @Override public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean enterDown = event != null
+                        && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_DOWN;
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_GO
+                        || enterDown
+                        || actionId == EditorInfo.IME_NULL) {
+                    String bin = etScanBin.getText().toString().trim();
+                    if (!bin.isEmpty()) {
+                        onBinScanned(bin);
+                    }
+                    return true;
                 }
-                return true;
+                return false;
             }
         });
 
@@ -114,11 +132,7 @@ public class FragmentVndBoxPutBin extends Fragment {
 
         SharedPreferencesData prefs = new SharedPreferencesData(activity);
         URL = prefs.read("URL");
-        USER = prefs.read("USER");
         werks = prefs.read("WERKS");
-        if (USER == null || USER.trim().isEmpty()) {
-            USER = DEFAULT_USER;
-        }
         if (werks == null) {
             werks = "";
         }
@@ -129,21 +143,20 @@ public class FragmentVndBoxPutBin extends Fragment {
         showStatus("Scan HU Barcode.", true);
     }
 
-    /** Step A — client-side HU capture (no API). */
+    /** Step A — capture HU locally, then move focus to Scan BIN. */
     private void onHuScanned(String scannedHu) {
         if (werks.trim().isEmpty()) {
             showStatus("Enter plant first.", false);
+            showBottomToast("Enter plant first.");
             return;
         }
 
-        String hu = scannedHu.trim();
+        String hu = scannedHu.trim().toUpperCase(Locale.ROOT);
         if (hu.isEmpty()) {
             return;
         }
 
         huNumber = hu;
-        poNo = "";
-        billNo = "";
         etHuNumber.setText(hu);
         etBin.setText("");
         etScanBin.setText("");
@@ -153,204 +166,136 @@ public class FragmentVndBoxPutBin extends Fragment {
         showStatus("Scan destination BIN.", true);
     }
 
-    /** Step B — BIN scan triggers validate + save chain. */
+    /** Step B — BIN scan immediately calls ZVND_HU_PUTWAY_BIN_RFC. */
     private void onBinScanned(final String scannedBin) {
         if (requestInProgress) {
             return;
         }
 
-        final String bin = scannedBin.trim();
+        final String bin = scannedBin.trim().toUpperCase(Locale.ROOT);
         if (werks.trim().isEmpty() || huNumber.trim().isEmpty() || bin.isEmpty()) {
             showStatus("Plant, HU Number, and Bin are required. Scan HU first.", false);
+            showBottomToast("Plant, HU Number, and Bin are required. Scan HU first.");
             return;
         }
 
-        String validateUrl = GatewayUrls.apiUrl(URL, "/api/" + Vars.ZVND_PUTWAY_BIN_VAL_RFC);
-        if (validateUrl.isEmpty()) {
+        String rfcUrl = GatewayUrls.noAclJsonRfcUrl(URL, Vars.ZVND_HU_PUTWAY_BIN_RFC);
+        if (rfcUrl.isEmpty()) {
             showStatus("Server URL missing. Please log in again.", false);
+            showBottomToast("Server URL missing. Please log in again.");
+            return;
+        }
+
+        JSONObject payload;
+        try {
+            payload = new JSONObject();
+            payload.put("bapiname", Vars.ZVND_HU_PUTWAY_BIN_RFC);
+            payload.put("I_WERKS", werks);
+            payload.put("I_HU", huNumber);
+            payload.put("I_BIN", bin);
+        } catch (JSONException e) {
+            showBottomToast("Could not build request.");
             return;
         }
 
         requestInProgress = true;
         etScanBin.setEnabled(false);
-        showProgress("Validating BIN...");
+        showProgress("Putting HU to BIN...");
+        Log.d(TAG, "RFC request -> " + Vars.ZVND_HU_PUTWAY_BIN_RFC);
+        Log.d(TAG, "RFC url -> " + rfcUrl);
+        Log.d(TAG, "RFC payload -> " + payload);
 
-        StringRequest req = new StringRequest(Request.Method.POST, validateUrl,
-            new Response.Listener<String>() {
-                @Override public void onResponse(String body) {
-                    try {
-                        JSONObject r = new JSONObject(body != null ? body : "{}");
-                        if (!isSuccess(r)) {
-                            failAfterBinSubmit(r.optString("Message",
-                                    exReturnMessage(r, "BIN validation failed")));
-                            return;
-                        }
-                        validateHuAgainstBin(bin, r.optString("Message", ""));
-                    } catch (JSONException e) {
-                        failAfterBinSubmit("Parse error while validating BIN.");
-                    }
-                }
-            },
-            new Response.ErrorListener() {
-                @Override public void onErrorResponse(VolleyError e) {
-                    failAfterBinSubmit("Network error. Please retry.");
-                }
-            }) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("IM_USER", USER);
-                p.put("IM_PLANT", werks);
-                p.put("IM_BIN", bin);
-                return p;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
-
-    private void validateHuAgainstBin(final String bin, final String binValidateMessage) {
-        showProgress("Validating HU...");
-        String validateUrl = GatewayUrls.apiUrl(URL, "/api/" + Vars.ZVND_PUTWAY_PALETTE_VAL_RFC);
-        if (validateUrl.isEmpty()) {
-            failAfterBinSubmit("Server URL missing. Please log in again.");
-            return;
-        }
-
-        StringRequest req = new StringRequest(Request.Method.POST, validateUrl,
-            new Response.Listener<String>() {
-                @Override public void onResponse(String body) {
-                    try {
-                        JSONObject r = new JSONObject(body != null ? body : "{}");
-                        if (!isSuccess(r)) {
-                            failAfterBinSubmit(r.optString("Message",
-                                    exReturnMessage(r, "HU validation failed")));
-                            return;
-                        }
-
-                        JSONArray et = r.optJSONArray("ET_DATA");
-                        if (et == null) {
-                            JSONObject data = r.optJSONObject("Data");
-                            if (data != null) {
-                                et = data.optJSONArray("ET_DATA");
-                            }
-                        }
-                        if (et != null && et.length() > 0) {
-                            JSONObject row = et.getJSONObject(0);
-                            poNo = row.optString("PO_NO", "");
-                            billNo = row.optString("BILL_NO", "");
-                        }
-
-                        savePutaway(bin, r.optString("Message", binValidateMessage));
-                    } catch (JSONException e) {
-                        failAfterBinSubmit("Parse error while validating HU.");
-                    }
-                }
-            },
-            new Response.ErrorListener() {
-                @Override public void onErrorResponse(VolleyError e) {
-                    failAfterBinSubmit("Network error. Please retry.");
-                }
-            }) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("IM_USER", USER);
-                p.put("IM_PLANT", werks);
-                p.put("IM_BIN", bin);
-                p.put("IM_PALL", huNumber);
-                return p;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
-
-    private void savePutaway(final String bin, final String priorMessage) {
-        showProgress("Saving...");
-        String saveUrl = GatewayUrls.apiUrl(URL, "/api/" + Vars.ZVND_PUTWAY_SAVE_DATA_RFC);
-        if (saveUrl.isEmpty()) {
-            failAfterBinSubmit("Server URL missing. Please log in again.");
-            return;
-        }
-
-        JSONObject body;
-        try {
-            body = new JSONObject();
-            body.put("IM_USER", USER);
-            JSONObject row = new JSONObject();
-            row.put("PLANT", werks);
-            row.put("BIN", bin);
-            row.put("PALETTE", huNumber);
-            row.put("PO_NO", poNo);
-            row.put("BILL_NO", billNo);
-            JSONArray it = new JSONArray();
-            it.put(row);
-            body.put("IT_DATA", it);
-        } catch (JSONException e) {
-            failAfterBinSubmit("Could not build save request.");
-            return;
-        }
-
-        final JSONObject payload = body;
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST, saveUrl, payload,
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, payload,
             new Response.Listener<JSONObject>() {
                 @Override public void onResponse(JSONObject r) {
                     dismissProgress();
                     requestInProgress = false;
-                    if (!isSuccess(r)) {
-                        failAfterBinSubmit(r.optString("Message",
-                                exReturnMessage(r, "Putaway to bin failed.")));
-                        return;
-                    }
-                    String msg = r.optString("Message", priorMessage);
-                    if (msg == null || msg.trim().isEmpty()) {
-                        msg = "HU putaway to bin completed.";
-                    }
-                    etBin.setText(bin);
-                    clearHuAndBinScanFields();
-                    showStatus(msg, true);
-                    etScanHu.requestFocus();
+                    Log.d(TAG, "RFC response -> " + Vars.ZVND_HU_PUTWAY_BIN_RFC + ": " + r);
+                    handleRfcResponse(bin, r != null ? r : new JSONObject());
                 }
             },
             new Response.ErrorListener() {
                 @Override public void onErrorResponse(VolleyError e) {
+                    Log.e(TAG, "RFC error -> " + Vars.ZVND_HU_PUTWAY_BIN_RFC, e);
                     failAfterBinSubmit("Network error. Please retry.");
                 }
-            }) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> h = new HashMap<>();
-                h.put("Accept", "application/json");
-                h.put("Content-Type", "application/json");
-                return h;
-            }
-        };
+            });
         req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
         ApplicationController.getInstance().getRequestQueue().add(req);
+    }
+
+    private void handleRfcResponse(String bin, JSONObject r) {
+        JSONObject esReturn = extractEsReturn(r);
+        String type = esReturn != null ? esReturn.optString("TYPE", "").trim() : "";
+        String message = esReturn != null ? esReturn.optString("MESSAGE", "").trim() : "";
+        if (message.isEmpty()) {
+            message = r.optString("Message", "").trim();
+        }
+
+        boolean success = isSapSuccess(type, r);
+        if (success) {
+            if (message.isEmpty()) {
+                message = "HU putaway to bin completed.";
+            }
+            etBin.setText(bin);
+            clearHuAndBinScanFields();
+            showStatus(message, true);
+            showBottomToast(message);
+            etScanHu.requestFocus();
+        } else {
+            if (message.isEmpty()) {
+                message = "Putaway to bin failed.";
+            }
+            failAfterBinSubmit(message);
+        }
+    }
+
+    private static JSONObject extractEsReturn(JSONObject r) {
+        JSONObject es = r.optJSONObject("ES_RETURN");
+        if (es != null) {
+            return es;
+        }
+        JSONObject data = r.optJSONObject("Data");
+        if (data != null) {
+            es = data.optJSONObject("ES_RETURN");
+            if (es != null) {
+                return es;
+            }
+        }
+        return r.optJSONObject("EX_RETURN");
+    }
+
+    /** BAPIRET2 TYPE S / blank, or gateway Status S, is success. TYPE E is error. */
+    private static boolean isSapSuccess(String type, JSONObject r) {
+        if ("E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type)) {
+            return false;
+        }
+        if ("S".equalsIgnoreCase(type) || "W".equalsIgnoreCase(type) || "I".equalsIgnoreCase(type)) {
+            return true;
+        }
+        Object status = r.opt("Status");
+        if (status instanceof Boolean) {
+            return (Boolean) status;
+        }
+        if (status != null && "S".equalsIgnoreCase(status.toString())) {
+            return true;
+        }
+        if (status instanceof Number && ((Number) status).intValue() == 1) {
+            return true;
+        }
+        return type.isEmpty();
     }
 
     private void failAfterBinSubmit(String message) {
         dismissProgress();
         requestInProgress = false;
         showStatus(message, false);
-        clearAllAndRefocusHu(true);
+        showBottomToast(message);
+        clearAllAndRefocusHu(false);
     }
 
     private void clearHuAndBinScanFields() {
         huNumber = "";
-        poNo = "";
-        billNo = "";
         etHuNumber.setText("");
         etScanHu.setText("");
         etScanBin.setText("");
@@ -359,8 +304,6 @@ public class FragmentVndBoxPutBin extends Fragment {
 
     private void clearAllAndRefocusHu(boolean showScanHuStatus) {
         huNumber = "";
-        poNo = "";
-        billNo = "";
         etHuNumber.setText("");
         etBin.setText("");
         etScanHu.setText("");
@@ -382,36 +325,6 @@ public class FragmentVndBoxPutBin extends Fragment {
         etScanBin.setBackgroundResource(R.drawable.border_disabled_input);
     }
 
-    private static boolean isSuccess(JSONObject r) {
-        Object status = r.opt("Status");
-        if (status instanceof Boolean && (Boolean) status) {
-            return true;
-        }
-        if (status != null && "S".equalsIgnoreCase(status.toString())) {
-            return true;
-        }
-        if (status instanceof Number && ((Number) status).intValue() == 1) {
-            return true;
-        }
-        JSONObject ret = r.optJSONObject("EX_RETURN");
-        if (ret != null) {
-            String type = ret.optString("TYPE", "");
-            return "S".equalsIgnoreCase(type) || type.isEmpty();
-        }
-        return false;
-    }
-
-    private static String exReturnMessage(JSONObject r, String fallback) {
-        JSONObject ret = r.optJSONObject("EX_RETURN");
-        if (ret != null) {
-            String msg = ret.optString("MESSAGE", "");
-            if (!msg.trim().isEmpty()) {
-                return msg.trim();
-            }
-        }
-        return fallback;
-    }
-
     private void showStatus(String msg, boolean ok) {
         if (tvStatus == null) {
             return;
@@ -420,6 +333,15 @@ public class FragmentVndBoxPutBin extends Fragment {
         tvStatus.setText(msg);
         tvStatus.setBackgroundColor(ok ? 0xFFE8F5E9 : 0xFFFFEBEE);
         tvStatus.setTextColor(ok ? 0xFF065F46 : 0xFFB71C1C);
+    }
+
+    private void showBottomToast(String message) {
+        if (activity == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+        Toast toast = Toast.makeText(activity, message, Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 120);
+        toast.show();
     }
 
     private void showProgress(String msg) {

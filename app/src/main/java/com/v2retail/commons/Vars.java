@@ -423,7 +423,9 @@ public class Vars {
     public static String ZVND_PUTWAY_SAVE_DATA_RFC = "ZVND_PUTWAY_SAVE_DATA_RFC";
 
     // ── DC Inbound: VND Box Put to BIN ───────────────────────────────────────────
-    // HU capture is client-side; on BIN scan: BIN_VAL → PALETTE_VAL (IM_PALL = HU) → SAVE.
+    // Scan HU (client-side) → Scan BIN → ZVND_HU_PUTWAY_BIN_RFC (I_WERKS, I_HU, I_BIN → ES_RETURN).
+    /** VND Box Put to BIN — put HU into destination BIN (I_WERKS, I_HU, I_BIN → ES_RETURN BAPIRET2). */
+    public static String ZVND_HU_PUTWAY_BIN_RFC = "ZVND_HU_PUTWAY_BIN_RFC";
 
     // ── DC Inbound: HU Picking from BIN (GateLot2) ────────────────────────────────
     /** HU Picking from BIN — validate picklist (IM_USER, IM_PLANT, IM_PICKLIST → ET_DATA, EX_RETURN). */
