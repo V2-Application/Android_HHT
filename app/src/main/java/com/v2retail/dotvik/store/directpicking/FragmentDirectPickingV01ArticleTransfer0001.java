@@ -83,7 +83,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
 
     // Article-level data for the validated HU, keyed by article (MATNR). Holds available qty/type/size/bin.
     Map<String, FloorBarcode> huArtDataMap = new HashMap<>();
-    // EAN -> article mapping for the validated HU, keyed by scanned BARCODE. Holds MATNR + UMREZ.
+    // EAN/EAN2 -> article mapping for the validated HU, keyed by scanned BARCODE. Holds MATNR + UMREZ.
     Map<String, FloorBarcode> eanArtDataMap = new HashMap<>();
     Map<String, String[]> articleLookupMap = new HashMap<>();
 
@@ -409,7 +409,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         }
     }
 
-    // Parses ET_EAN_ART_DATA rows (EAN, UMREZ, MATERIAL) into eanArtDataMap keyed by EAN.
+    // Parses ET_EAN_ART_DATA rows (EAN, EAN2, UMREZ, MATERIAL) into eanArtDataMap keyed by EAN and EAN2.
     private void parseEanArtData(JSONArray arr) throws JSONException {
         if (arr == null || arr.length() == 0) {
             return;
@@ -421,15 +421,23 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
                 continue;
             }
             String ean = row.optString("EAN", "").trim();
-            String key = normalizeKey(ean);
-            if (key.isEmpty()) {
+            String ean2 = row.optString("EAN2", "").trim();
+            String eanKey = normalizeKey(ean);
+            String ean2Key = normalizeKey(ean2);
+            if (eanKey.isEmpty() && ean2Key.isEmpty()) {
                 continue;
             }
             FloorBarcode mapping = new FloorBarcode();
-            mapping.setBarcode(ean);
+            // Prefer primary EAN for save payload; fall back to EAN2 when EAN is blank.
+            mapping.setBarcode(!ean.isEmpty() ? ean : ean2);
             mapping.setMatnr(row.optString("MATERIAL", "").trim());
             mapping.setUmrez(row.optString("UMREZ", "").trim());
-            eanArtDataMap.put(key, mapping);
+            if (!eanKey.isEmpty()) {
+                eanArtDataMap.put(eanKey, mapping);
+            }
+            if (!ean2Key.isEmpty()) {
+                eanArtDataMap.put(ean2Key, mapping);
+            }
         }
     }
 
@@ -577,7 +585,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     }
 
     private void updateQtyAfterScan(String barcode) {
-        // Resolve the scanned EAN/barcode to an article using the local EAN map.
+        // Resolve scanned EAN or EAN2 to an article using the local map from ET_EAN_ART_DATA.
         FloorBarcode ean = eanArtDataMap.get(barcode);
         if (ean == null) {
             showScanError("Invalid", "Scanned Barcode is invalid and not part of this HU");
