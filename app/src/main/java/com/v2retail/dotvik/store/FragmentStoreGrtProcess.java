@@ -3,6 +3,7 @@ package com.v2retail.dotvik.store;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.SystemClock;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
@@ -26,6 +27,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
@@ -33,12 +35,15 @@ import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -50,7 +55,12 @@ import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.TSPLPrinter;
 import com.v2retail.util.Util;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -102,6 +112,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     volatile boolean viewDestroyed = false;
     volatile boolean suppressPicklistSelection = false;
     volatile int picklistDataLoadSeq = 0;
+    Request<?> inFlightPicklistDataRequest;
     boolean packingMaterialsLoaded = false;
     ArrayAdapter<String> picklistSpinnerAdapter;
     ArrayAdapter<String> packingSpinnerAdapter;
@@ -156,7 +167,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         double pend;
     }
 
-    private static class PicklistArticleLine {
+    static class PicklistArticleLine {
         String picklistNo;
         String source;
         String majCat;
@@ -167,7 +178,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         String matkl;
     }
 
-    private static class EanRecord {
+    static class EanRecord {
         String matnr;
         String ean11;
         double umrez;
@@ -184,10 +195,16 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         double scanQty;
     }
 
-    private static class PicklistDataParseResult {
-        Map<String, PicklistArticleLine> articlesByMatnr = new HashMap<>();
-        Map<String, EanRecord> eanByScanCode = new HashMap<>();
+    static class PicklistDataParseResult {
+        final Map<String, PicklistArticleLine> articlesByMatnr = new HashMap<>(262144);
+        final Map<String, EanRecord> eanByScanCode = new HashMap<>(524288);
         String rdcPlant = "";
+        String errorType = "";
+        String errorMessage = "";
+        long parseMs;
+        int httpStatus;
+        int responseBytes;
+        long networkMs;
     }
 
     private static class PicklistNumbersParseResult {
@@ -279,6 +296,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (spinnerPicklistNo != null) {
             spinnerPicklistNo.setOnItemSelectedListener(null);
         }
+        inFlightPicklistDataRequest = null;
         ApplicationController.getInstance().cancelPendingRequests(VOLLEY_TAG);
         dismissDialogSafely();
         if (picklistParseExecutor != null) {
@@ -647,18 +665,30 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
         if (picklistArticlesByMatnr.isEmpty()) {
             UIFuncs.errorSound(con);
-            box.getBox("Err", "Picklist data not loaded. Reselect picklist and try again.");
+            if (inFlightPicklistDataRequest != null) {
+                box.getBox("Please wait", "Picklist data is still loading. Scan article after loading completes.");
+            } else {
+                box.getBox("Err", "Picklist data not loaded. Reselect picklist and try again.");
+            }
             resetArticleInput();
             return;
         }
 
+        Log.d(TAG, "Article local cache lookup scan=" + article
+                + " eanKeys=" + eanByScanCode.size()
+                + " articles=" + picklistArticlesByMatnr.size());
         EanRecord eanRec = resolveEanRecord(article);
         if (eanRec == null || eanRec.matnr == null || eanRec.matnr.isEmpty()) {
+            Log.w(TAG, "Article local cache miss scan=" + article);
             UIFuncs.errorSound(con);
             box.getBox("Err", "Article not allowed for this picklist.");
             resetArticleInput();
             return;
         }
+        Log.d(TAG, "Article local cache hit scan=" + article
+                + " matnr=" + eanRec.matnr
+                + " ean11=" + eanRec.ean11
+                + " umrez=" + eanRec.umrez);
 
         PicklistArticleLine articleLine = findArticleLine(eanRec.matnr);
         if (articleLine == null) {
@@ -716,13 +746,21 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         scannedQtyByCategory.put(category.toUpperCase(), proposedCategoryQty);
         lastScannedCategory = category;
 
-        if (!articleLine.matnr.isEmpty()) {
+        bindArticleScan(articleLine, eanRec, proposedCategoryQty);
+        resetArticleInput();
+    }
+
+    private void bindArticleScan(PicklistArticleLine articleLine, EanRecord eanRec, double scanQty) {
+        if (articleLine != null && articleLine.matnr != null && !articleLine.matnr.isEmpty()) {
             txtArticle.setText(UIFuncs.removeLeadingZeros(articleLine.matnr));
-        } else if (eanRec.ean11 != null && !eanRec.ean11.isEmpty()) {
+        } else if (eanRec != null && eanRec.ean11 != null && !eanRec.ean11.isEmpty()) {
             txtArticle.setText(eanRec.ean11);
         }
-        txtScanQty.setText(Util.formatDouble(proposedCategoryQty));
-        resetArticleInput();
+        txtScanQty.setText(Util.formatDouble(scanQty));
+        Log.d(TAG, "Article local cache bind matnr=" + (articleLine != null ? articleLine.matnr : "")
+                + " ean11=" + (eanRec != null ? eanRec.ean11 : "")
+                + " qty=" + scanQty
+                + " cat=" + (articleLine != null ? resolveCategoryKey(articleLine.majCat, articleLine.size1) : ""));
     }
 
     private double getCategoryScannedQty(String category) {
@@ -752,7 +790,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
         String noZeros = UIFuncs.removeLeadingZeros(upper);
         if (!noZeros.isEmpty()) {
-            hit = eanByScanCode.get(noZeros);
+            hit = eanByScanCode.get(noZeros.toUpperCase());
             if (hit != null) {
                 return hit;
             }
@@ -787,28 +825,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return null;
     }
 
-    private static boolean isPicklistDataHeaderRow(JSONObject row) {
-        if (row == null) {
-            return true;
-        }
-        String matnr = row.optString("MATNR", "").trim();
-        String picklist = row.optString("PICKLIST_NO", "").trim();
-        return "MATNR".equalsIgnoreCase(matnr) || "PICKLIST_NO".equalsIgnoreCase(picklist);
-    }
-
-    private static boolean isEanDataHeaderRow(JSONObject row) {
-        if (row == null) {
-            return true;
-        }
-        String matnr = row.optString("MATNR", "").trim();
-        String ean11 = row.optString("EAN11", "").trim();
-        return "MATNR".equalsIgnoreCase(matnr) || "EAN11".equalsIgnoreCase(ean11);
-    }
-
-    private void indexEanRecord(EanRecord record) {
-        indexEanRecord(eanByScanCode, record);
-    }
-
     private static void indexEanRecord(Map<String, EanRecord> target, EanRecord record) {
         if (target == null || record == null || record.matnr == null || record.matnr.isEmpty()) {
             return;
@@ -820,6 +836,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
         if (record.ean11 != null && !record.ean11.isEmpty()) {
             target.put(record.ean11.toUpperCase(), record);
+            String eanNz = UIFuncs.removeLeadingZeros(record.ean11);
+            if (!eanNz.isEmpty()) {
+                target.put(eanNz.toUpperCase(), record);
+            }
         }
     }
 
@@ -1196,129 +1216,461 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
         PicklistDataParseResult cached = picklistDataCache.get(picklistNo);
         if (cached != null) {
+            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA memory cache hit picklist=" + picklistNo
+                    + " articles=" + cached.articlesByMatnr.size()
+                    + " eans=" + cached.eanByScanCode.size());
             applyPicklistDataResult(picklistNo, cached);
             return;
         }
+        if (viewDestroyed || !isAdded()) {
+            return;
+        }
         final int loadSeq = ++picklistDataLoadSeq;
+        final String plant = WERKS;
+        final Context appCtx = con != null ? con.getApplicationContext() : null;
+        showLoadingDialog();
+        if (picklistParseExecutor == null || picklistParseExecutor.isShutdown() || appCtx == null) {
+            startPicklistDataRfc(picklistNo, loadSeq);
+            return;
+        }
+        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA check local cache picklist=" + picklistNo
+                + " plant=" + plant + " seq=" + loadSeq);
+        picklistParseExecutor.execute(() -> {
+            PicklistDataParseResult disk = StoreGrtPicklistLocalCache.load(appCtx, plant, picklistNo);
+            FragmentActivity activity = getActivity();
+            if (activity == null) {
+                return;
+            }
+            activity.runOnUiThread(() -> {
+                if (viewDestroyed || !isAdded() || loadSeq != picklistDataLoadSeq) {
+                    finishRequest();
+                    return;
+                }
+                if (disk != null && !disk.articlesByMatnr.isEmpty()) {
+                    picklistDataCache.put(picklistNo, disk);
+                    Log.i(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA local cache hit picklist=" + picklistNo
+                            + " articles=" + disk.articlesByMatnr.size()
+                            + " eans=" + disk.eanByScanCode.size());
+                    applyPicklistDataResult(picklistNo, disk);
+                    finishRequest();
+                    return;
+                }
+                Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA local cache miss, calling RFC picklist="
+                        + picklistNo);
+                startPicklistDataRfc(picklistNo, loadSeq);
+            });
+        });
+    }
+
+    private void startPicklistDataRfc(String picklistNo, int loadSeq) {
         JSONObject args = new JSONObject();
         try {
             args.put("bapiname", Vars.ZWM_ST_GRT_GET_PICKLIST_DATA);
             args.put("IM_PLANT", WERKS);
             args.put("IM_USER", USER);
             args.put("IM_PICKLIST", picklistNo);
-            showProcessingAndSubmit(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, REQUEST_GET_PICKLIST_DATA, args, loadSeq);
+            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA load start picklist=" + picklistNo
+                    + " plant=" + WERKS + " user=" + USER + " seq=" + loadSeq);
+            submitPicklistDataRequest(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, args, loadSeq);
         } catch (JSONException e) {
+            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA args error", e);
             e.printStackTrace();
             UIFuncs.errorSound(con);
-            dismissDialog();
+            finishRequest();
             box.getErrBox(e);
         }
     }
 
-    private void bindPicklistData(JSONObject response, int loadSeq) {
+    private void cancelInFlightPicklistDataRequest() {
+        if (inFlightPicklistDataRequest == null) {
+            return;
+        }
+        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA cancel previous in-flight request");
+        inFlightPicklistDataRequest.cancel();
+        inFlightPicklistDataRequest = null;
+        finishRequest();
+    }
+
+    /**
+     * Stream-parse ZWM_ST_GRT_GET_PICKLIST_DATA on a background thread.
+     * Do not build a JSONObject tree: ET_DATA / ET_EAN_DATA can be tens of MB and
+     * org.json + SapJsonRows sanitization blocked Volley and the UI for a long time.
+     */
+    private void bindPicklistDataBytes(final byte[] body, final int loadSeq, final int httpStatus,
+                                       final long networkMs) {
         if (viewDestroyed || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
+            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA skip parse viewDestroyed/executor down seq=" + loadSeq);
             finishRequest();
             return;
         }
         if (loadSeq != picklistDataLoadSeq) {
+            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA skip stale response seq=" + loadSeq
+                    + " current=" + picklistDataLoadSeq);
             finishRequest();
             return;
         }
-        try {
-            final String exRdc = response.optString("EX_RDC", "").trim();
-            final JSONArray etData = response.optJSONArray("ET_DATA");
-            final JSONArray etEanData = response.optJSONArray("ET_EAN_DATA");
-            final String werks = WERKS;
-            picklistParseExecutor.execute(() -> {
-                if (loadSeq != picklistDataLoadSeq) {
-                    return;
-                }
-                PicklistDataParseResult parsed = parsePicklistDataArrays(exRdc, etData, etEanData, werks);
-                FragmentActivity activity = getActivity();
-                if (activity == null || viewDestroyed || loadSeq != picklistDataLoadSeq) {
-                    return;
-                }
-                activity.runOnUiThread(() -> {
-                    if (viewDestroyed || !isAdded() || loadSeq != picklistDataLoadSeq) {
-                        finishRequest();
-                        return;
-                    }
-                    String picklist = getSelectedPicklist();
-                    if (!picklist.isEmpty() && !parsed.articlesByMatnr.isEmpty()) {
-                        picklistDataCache.put(picklist, parsed);
-                    }
-                    applyPicklistDataResult(picklist, parsed);
-                    finishRequest();
-                });
-            });
-        } catch (Exception exce) {
+        if (body == null || body.length == 0) {
+            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA empty body http=" + httpStatus
+                    + " networkMs=" + networkMs);
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "No response from Server");
             finishRequest();
-            box.getErrBox(exce);
+            return;
+        }
+        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse start bytes=" + body.length
+                + " http=" + httpStatus + " networkMs=" + networkMs + " seq=" + loadSeq);
+        final String werks = WERKS;
+        picklistParseExecutor.execute(() -> {
+            PicklistDataParseResult parsed = null;
+            Exception parseError = null;
+            try {
+                if (loadSeq == picklistDataLoadSeq) {
+                    parsed = parsePicklistDataBytes(body, werks);
+                    parsed.httpStatus = httpStatus;
+                    parsed.responseBytes = body.length;
+                    parsed.networkMs = networkMs;
+                }
+            } catch (Exception ex) {
+                parseError = ex;
+                Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse error seq=" + loadSeq, ex);
+            }
+            final PicklistDataParseResult result = parsed;
+            final Exception error = parseError;
+            FragmentActivity activity = getActivity();
+            if (activity == null) {
+                Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse done but activity null seq=" + loadSeq);
+                return;
+            }
+            activity.runOnUiThread(() -> {
+                if (viewDestroyed || !isAdded()) {
+                    finishRequest();
+                    return;
+                }
+                if (loadSeq != picklistDataLoadSeq) {
+                    Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA drop stale parse seq=" + loadSeq
+                            + " current=" + picklistDataLoadSeq);
+                    finishRequest();
+                    return;
+                }
+                if (error != null) {
+                    finishRequest();
+                    box.getErrBox(error);
+                    return;
+                }
+                String picklist = getSelectedPicklist();
+                if (!picklist.isEmpty() && result != null && result.articlesByMatnr.size() > 0
+                        && !isPicklistDataError(result)) {
+                    picklistDataCache.put(picklist, result);
+                    persistPicklistDataCache(picklist, result);
+                }
+                if (result != null) {
+                    Log.i(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA done picklist=" + picklist
+                            + " http=" + result.httpStatus
+                            + " bytes=" + result.responseBytes
+                            + " networkMs=" + result.networkMs
+                            + " parseMs=" + result.parseMs
+                            + " totalMs=" + (result.networkMs + result.parseMs)
+                            + " articles=" + result.articlesByMatnr.size()
+                            + " eans=" + result.eanByScanCode.size()
+                            + " rdc=" + result.rdcPlant
+                            + " type=" + result.errorType
+                            + " msg=" + result.errorMessage);
+                }
+                applyPicklistDataResult(picklist, result);
+                finishRequest();
+            });
+        });
+    }
+
+    private static boolean isPicklistDataError(PicklistDataParseResult parsed) {
+        if (parsed == null) {
+            return false;
+        }
+        return "E".equals(parsed.errorType) || "A".equals(parsed.errorType);
+    }
+
+    private static PicklistDataParseResult parsePicklistDataBytes(byte[] body, String werks) throws IOException {
+        long started = SystemClock.elapsedRealtime();
+        PicklistDataParseResult result = new PicklistDataParseResult();
+        int offset = 0;
+        if (body.length >= 3 && (body[0] & 0xFF) == 0xEF && (body[1] & 0xFF) == 0xBB && (body[2] & 0xFF) == 0xBF) {
+            offset = 3;
+        }
+        JsonReader reader = new JsonReader(new InputStreamReader(
+                new ByteArrayInputStream(body, offset, body.length - offset), StandardCharsets.UTF_8));
+        reader.setLenient(true);
+        try {
+            if (reader.peek() == JsonToken.BEGIN_OBJECT) {
+                parsePicklistDataObject(reader, result, werks);
+            } else {
+                reader.skipValue();
+            }
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException ignored) {
+            }
+        }
+        result.parseMs = SystemClock.elapsedRealtime() - started;
+        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse ms=" + result.parseMs
+                + " bytes=" + body.length
+                + " articles=" + result.articlesByMatnr.size()
+                + " eans=" + result.eanByScanCode.size()
+                + " rdc=" + result.rdcPlant
+                + " type=" + result.errorType);
+        return result;
+    }
+
+    private static void parsePicklistDataObject(JsonReader reader, PicklistDataParseResult result, String werks)
+            throws IOException {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String key = reader.nextName();
+            if (key == null) {
+                reader.skipValue();
+                continue;
+            }
+            String ukey = key.toUpperCase(Locale.ROOT);
+            JsonToken token = reader.peek();
+            if ("DATA".equals(ukey) && token == JsonToken.BEGIN_OBJECT) {
+                parsePicklistDataObject(reader, result, werks);
+            } else if ("ET_DATA".equals(ukey)) {
+                parseEtDataTable(reader, result, werks);
+            } else if ("ET_EAN_DATA".equals(ukey)) {
+                parseEtEanTable(reader, result);
+            } else if ("EX_RDC".equals(ukey)) {
+                String rdc = readJsonAsString(reader).trim();
+                if (!rdc.isEmpty() && !"null".equalsIgnoreCase(rdc)) {
+                    result.rdcPlant = rdc;
+                }
+            } else if ("EX_RETURN".equals(ukey) || "ER_RETURN".equals(ukey)) {
+                readReturnInto(reader, result);
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+    }
+
+    private static void parseEtDataTable(JsonReader reader, PicklistDataParseResult result, String werks)
+            throws IOException {
+        JsonToken token = reader.peek();
+        if (token == JsonToken.BEGIN_ARRAY) {
+            reader.beginArray();
+            while (reader.hasNext()) {
+                readEtDataRow(reader, result, werks);
+            }
+            reader.endArray();
+            return;
+        }
+        if (token == JsonToken.BEGIN_OBJECT) {
+            reader.beginObject();
+            boolean nested = false;
+            while (reader.hasNext()) {
+                String name = reader.nextName();
+                if ("item".equalsIgnoreCase(name) || "results".equalsIgnoreCase(name)) {
+                    nested = true;
+                    parseEtDataTable(reader, result, werks);
+                } else {
+                    reader.skipValue();
+                }
+            }
+            reader.endObject();
+            if (!nested) {
+                return;
+            }
+            return;
+        }
+        reader.skipValue();
+    }
+
+    private static void readEtDataRow(JsonReader reader, PicklistDataParseResult result, String werks)
+            throws IOException {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+            reader.skipValue();
+            return;
+        }
+        PicklistArticleLine line = new PicklistArticleLine();
+        line.picklistNo = "";
+        line.source = "";
+        line.majCat = "";
+        line.size1 = "";
+        line.floor = "";
+        line.bgt = "";
+        line.matnr = "";
+        line.matkl = "";
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String uk = reader.nextName().toUpperCase(Locale.ROOT);
+            if ("MATNR".equals(uk)) {
+                line.matnr = readJsonAsString(reader).trim();
+            } else if ("PICKLIST_NO".equals(uk)) {
+                line.picklistNo = readJsonAsString(reader).trim();
+            } else if ("SOUR".equals(uk) || "SOURCE".equals(uk)) {
+                line.source = readJsonAsString(reader).trim();
+            } else if ("MAJ_CAT".equals(uk)) {
+                line.majCat = readJsonAsString(reader).trim();
+            } else if ("SIZE1".equals(uk)) {
+                line.size1 = readJsonAsString(reader).trim();
+            } else if ("FLOOR".equals(uk)) {
+                line.floor = readJsonAsString(reader).trim();
+            } else if ("BGT".equals(uk)) {
+                line.bgt = readJsonAsString(reader).trim();
+            } else if ("MATKL".equals(uk)) {
+                line.matkl = readJsonAsString(reader).trim();
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+        if (line.matnr.isEmpty() || "MATNR".equalsIgnoreCase(line.matnr)
+                || "PICKLIST_NO".equalsIgnoreCase(line.picklistNo)) {
+            return;
+        }
+        if (line.source.isEmpty()) {
+            line.source = werks != null ? werks : "";
+        }
+        result.articlesByMatnr.put(line.matnr.toUpperCase(Locale.ROOT), line);
+        String noZeros = UIFuncs.removeLeadingZeros(line.matnr);
+        if (!noZeros.isEmpty()) {
+            result.articlesByMatnr.putIfAbsent(noZeros.toUpperCase(Locale.ROOT), line);
         }
     }
 
-    private static PicklistDataParseResult parsePicklistDataArrays(String exRdc,
-                                                                   JSONArray etData,
-                                                                   JSONArray etEanData,
-                                                                   String werks) {
-        PicklistDataParseResult result = new PicklistDataParseResult();
-        if (exRdc != null && !exRdc.isEmpty() && !"null".equalsIgnoreCase(exRdc)) {
-            result.rdcPlant = exRdc;
+    private static void parseEtEanTable(JsonReader reader, PicklistDataParseResult result) throws IOException {
+        JsonToken token = reader.peek();
+        if (token == JsonToken.BEGIN_ARRAY) {
+            reader.beginArray();
+            while (reader.hasNext()) {
+                readEtEanRow(reader, result);
+            }
+            reader.endArray();
+            return;
         }
-
-        if (etData != null) {
-            for (int i = 0; i < etData.length(); i++) {
-                JSONObject row = etData.optJSONObject(i);
-                if (row == null || isPicklistDataHeaderRow(row)) {
-                    continue;
-                }
-                String matnr = row.optString("MATNR", "").trim();
-                if (matnr.isEmpty()) {
-                    continue;
-                }
-                PicklistArticleLine line = new PicklistArticleLine();
-                line.picklistNo = row.optString("PICKLIST_NO", "").trim();
-                line.source = row.optString("SOUR", row.optString("SOURCE", werks)).trim();
-                line.majCat = row.optString("MAJ_CAT", "").trim();
-                line.size1 = row.optString("SIZE1", "").trim();
-                line.floor = row.optString("FLOOR", "").trim();
-                line.bgt = row.optString("BGT", "").trim();
-                line.matnr = matnr;
-                line.matkl = row.optString("MATKL", "").trim();
-                String matnrKey = matnr.toUpperCase();
-                result.articlesByMatnr.put(matnrKey, line);
-                String noZeros = UIFuncs.removeLeadingZeros(matnr);
-                if (!noZeros.isEmpty()) {
-                    result.articlesByMatnr.putIfAbsent(noZeros.toUpperCase(), line);
+        if (token == JsonToken.BEGIN_OBJECT) {
+            reader.beginObject();
+            while (reader.hasNext()) {
+                String name = reader.nextName();
+                if ("item".equalsIgnoreCase(name) || "results".equalsIgnoreCase(name)) {
+                    parseEtEanTable(reader, result);
+                } else {
+                    reader.skipValue();
                 }
             }
+            reader.endObject();
+            return;
         }
+        reader.skipValue();
+    }
 
-        if (etEanData != null) {
-            for (int i = 0; i < etEanData.length(); i++) {
-                JSONObject row = etEanData.optJSONObject(i);
-                if (row == null || isEanDataHeaderRow(row)) {
-                    continue;
-                }
-                String matnr = row.optString("MATNR", "").trim();
-                if (matnr.isEmpty()) {
-                    continue;
-                }
-                EanRecord record = new EanRecord();
-                record.matnr = matnr;
-                record.ean11 = row.optString("EAN11", "").trim();
-                record.umrez = Util.convertStringToDouble(row.optString("UMREZ", "1"));
-                if (record.umrez <= 0) {
-                    record.umrez = 1;
-                }
-                indexEanRecord(result.eanByScanCode, record);
+    private static void readEtEanRow(JsonReader reader, PicklistDataParseResult result) throws IOException {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+            reader.skipValue();
+            return;
+        }
+        String matnr = "";
+        String ean11 = "";
+        String umrez = "1";
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String uk = reader.nextName().toUpperCase(Locale.ROOT);
+            if ("MATNR".equals(uk)) {
+                matnr = readJsonAsString(reader).trim();
+            } else if ("EAN11".equals(uk)) {
+                ean11 = readJsonAsString(reader).trim();
+            } else if ("UMREZ".equals(uk)) {
+                umrez = readJsonAsString(reader).trim();
+            } else {
+                reader.skipValue();
             }
         }
-        return result;
+        reader.endObject();
+        if (matnr.isEmpty() || "MATNR".equalsIgnoreCase(matnr) || "EAN11".equalsIgnoreCase(ean11)) {
+            return;
+        }
+        EanRecord record = new EanRecord();
+        record.matnr = matnr;
+        record.ean11 = ean11;
+        record.umrez = Util.convertStringToDouble(umrez);
+        if (record.umrez <= 0) {
+            record.umrez = 1;
+        }
+        indexEanRecord(result.eanByScanCode, record);
+    }
+
+    private static void readReturnInto(JsonReader reader, PicklistDataParseResult result) throws IOException {
+        JsonToken token = reader.peek();
+        if (token == JsonToken.BEGIN_ARRAY) {
+            reader.beginArray();
+            while (reader.hasNext()) {
+                applyReturnObject(reader, result);
+            }
+            reader.endArray();
+            return;
+        }
+        if (token == JsonToken.BEGIN_OBJECT) {
+            applyReturnObject(reader, result);
+            return;
+        }
+        reader.skipValue();
+    }
+
+    private static void applyReturnObject(JsonReader reader, PicklistDataParseResult result) throws IOException {
+        if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+            reader.skipValue();
+            return;
+        }
+        String type = "";
+        String message = "";
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String uk = reader.nextName().toUpperCase(Locale.ROOT);
+            if ("TYPE".equals(uk)) {
+                type = readJsonAsString(reader).trim();
+            } else if ("MESSAGE".equals(uk)) {
+                message = readJsonAsString(reader).trim();
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+        if (type.isEmpty() || "TYPE".equalsIgnoreCase(type)) {
+            return;
+        }
+        if ("E".equals(type) || "A".equals(type) || result.errorType.isEmpty()) {
+            result.errorType = type;
+            result.errorMessage = message;
+        }
+    }
+
+    private static String readJsonAsString(JsonReader reader) throws IOException {
+        JsonToken token = reader.peek();
+        if (token == JsonToken.NULL) {
+            reader.nextNull();
+            return "";
+        }
+        if (token == JsonToken.BOOLEAN) {
+            return Boolean.toString(reader.nextBoolean());
+        }
+        if (token == JsonToken.BEGIN_OBJECT || token == JsonToken.BEGIN_ARRAY) {
+            reader.skipValue();
+            return "";
+        }
+        return reader.nextString();
     }
 
     private void applyPicklistDataResult(String picklistNo, PicklistDataParseResult parsed) {
         if (parsed == null) {
+            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA apply skipped parsed=null picklist=" + picklistNo);
+            return;
+        }
+        if (isPicklistDataError(parsed)) {
+            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA SAP error TYPE=" + parsed.errorType
+                    + " MESSAGE=" + parsed.errorMessage + " picklist=" + picklistNo);
+            UIFuncs.errorSound(con);
+            box.getBox("Err", parsed.errorMessage == null || parsed.errorMessage.isEmpty()
+                    ? "No picklist article data returned."
+                    : parsed.errorMessage);
             return;
         }
         picklistArticlesByMatnr = parsed.articlesByMatnr;
@@ -1328,9 +1680,22 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             applyPlantForSelectedPicklist();
         }
         if (picklistArticlesByMatnr.isEmpty()) {
+            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA no article rows picklist=" + picklistNo);
             UIFuncs.errorSound(con);
             box.getBox("No Data", "No picklist article data returned.");
         }
+    }
+
+    private void persistPicklistDataCache(String picklistNo, PicklistDataParseResult parsed) {
+        if (parsed == null || picklistNo == null || picklistNo.isEmpty()) {
+            return;
+        }
+        final Context appCtx = con != null ? con.getApplicationContext() : null;
+        final String plant = WERKS;
+        if (appCtx == null || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
+            return;
+        }
+        picklistParseExecutor.execute(() -> StoreGrtPicklistLocalCache.save(appCtx, plant, picklistNo, parsed));
     }
 
     private void bindPicklistNumbers(JSONObject response) {
@@ -1461,6 +1826,8 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         items.addAll(parsed.picklistNos);
         updatePicklistSpinnerItems(items);
         applyPlantForSelectedPicklist();
+        Log.d(TAG, "ZWM_ST_GRT_PICKLIST_RFC done count=" + parsed.picklistNos.size()
+                + " sourceName=" + sourceSiteName);
 
         if (parsed.picklistNos.isEmpty()) {
             box.getBox("No Data", "No picklist found for this site.");
@@ -1605,14 +1972,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (viewDestroyed || !isAdded()) {
             return;
         }
-        activeRequests++;
-        if (dialog == null || !dialog.isShowing()) {
-            dialog = new ProgressDialog(getContext());
-            dialog.setMessage("Please wait...");
-            dialog.setCancelable(false);
-            dialog.show();
-        }
-
+        showLoadingDialog();
         try {
             submitRequest(rfc, request, args, loadSeq);
         } catch (Exception e) {
@@ -1621,25 +1981,43 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
     }
 
+    private void showLoadingDialog() {
+        if (viewDestroyed || !isAdded()) {
+            return;
+        }
+        activeRequests++;
+        if (dialog == null || !dialog.isShowing()) {
+            dialog = new ProgressDialog(getContext());
+            dialog.setMessage("Please wait...");
+            dialog.setCancelable(false);
+            dialog.show();
+        }
+    }
+
     private void submitRequest(String rfc, int request, JSONObject args) {
         submitRequest(rfc, request, args, 0);
     }
 
     private void submitRequest(String rfc, int request, JSONObject args, final int loadSeq) {
+        if (request == REQUEST_GET_PICKLIST_DATA) {
+            submitPicklistDataRequest(rfc, args, loadSeq);
+            return;
+        }
+
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
 
         final JSONObject params = args;
-        Log.d(TAG, "RFC request -> " + rfc);
+        Log.d(TAG, "RFC request -> " + rfc + " payload=" + params);
 
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
         mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject responsebody) {
                 boolean dismissLoading = true;
-                Log.d(TAG, "RFC response -> " + rfc);
+                Log.d(TAG, "RFC response -> " + rfc + " body=" + responsebody);
 
                 if (viewDestroyed || !isAdded()) {
                     finishRequest();
@@ -1667,9 +2045,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                             focusArticleField();
                         } else if (request == REQUEST_GET_PICKLIST) {
                             bindPicklistNumbers(responsebody);
-                            dismissLoading = false;
-                        } else if (request == REQUEST_GET_PICKLIST_DATA) {
-                            bindPicklistData(responsebody, loadSeq);
                             dismissLoading = false;
                         } else if (request == REQUEST_GET_PACKING) {
                             bindPackingMaterials(responsebody);
@@ -1710,23 +2085,85 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 return super.parseNetworkResponse(response);
             }
         };
-        mJsonRequest.setRetryPolicy(new RetryPolicy() {
-            @Override
-            public int getCurrentTimeout() {
-                return 50000;
-            }
-
-            @Override
-            public int getCurrentRetryCount() {
-                return 1;
-            }
-
-            @Override
-            public void retry(VolleyError error) throws VolleyError {
-            }
-        });
+        mJsonRequest.setRetryPolicy(new DefaultRetryPolicy(50000, 0, 1.0f));
+        mJsonRequest.setShouldCache(false);
         mJsonRequest.setTag(VOLLEY_TAG);
         mRequestQueue.add(mJsonRequest);
+    }
+
+    private void submitPicklistDataRequest(final String rfc, JSONObject args, final int loadSeq) {
+        cancelInFlightPicklistDataRequest();
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
+        if (url == null || url.isEmpty()) {
+            String stored = URL != null ? URL : "";
+            int last = stored.lastIndexOf('/');
+            url = (last > 0 ? stored.substring(0, last) : stored)
+                    + "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+        }
+        final byte[] bodyBytes = args.toString().getBytes(StandardCharsets.UTF_8);
+        final long startedAt = SystemClock.elapsedRealtime();
+        Log.d(TAG, "RFC request -> " + rfc + " url=" + url + " payload=" + args + " seq=" + loadSeq);
+        Request<byte[]> req = new Request<byte[]>(Request.Method.POST, url, picklistDataErrorListener()) {
+            int httpStatus;
+
+            @Override
+            public String getBodyContentType() {
+                return "application/json; charset=utf-8";
+            }
+
+            @Override
+            public byte[] getBody() {
+                return bodyBytes;
+            }
+
+            @Override
+            protected Response<byte[]> parseNetworkResponse(NetworkResponse response) {
+                httpStatus = response == null ? 0 : response.statusCode;
+                byte[] data = response == null || response.data == null ? new byte[0] : response.data;
+                Log.d(TAG, "RFC network -> " + rfc
+                        + " http=" + httpStatus
+                        + " bytes=" + data.length
+                        + " networkMs=" + (SystemClock.elapsedRealtime() - startedAt)
+                        + " seq=" + loadSeq);
+                return Response.success(data, HttpHeaderParser.parseCacheHeaders(response));
+            }
+
+            @Override
+            protected void deliverResponse(byte[] response) {
+                if (inFlightPicklistDataRequest == this) {
+                    inFlightPicklistDataRequest = null;
+                }
+                long networkMs = SystemClock.elapsedRealtime() - startedAt;
+                Log.d(TAG, "RFC response -> " + rfc
+                        + " http=" + httpStatus
+                        + " bytes=" + (response == null ? 0 : response.length)
+                        + " networkMs=" + networkMs
+                        + " seq=" + loadSeq);
+                bindPicklistDataBytes(response, loadSeq, httpStatus, networkMs);
+            }
+        };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1.0f));
+        req.setTag(VOLLEY_TAG);
+        inFlightPicklistDataRequest = req;
+        ApplicationController.getInstance().getRequestQueue().add(req);
+    }
+
+    private Response.ErrorListener picklistDataErrorListener() {
+        return new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                inFlightPicklistDataRequest = null;
+                int status = error != null && error.networkResponse != null
+                        ? error.networkResponse.statusCode : 0;
+                int bytes = error != null && error.networkResponse != null
+                        && error.networkResponse.data != null
+                        ? error.networkResponse.data.length : 0;
+                Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA error http=" + status
+                        + " bytes=" + bytes + " err=" + error, error);
+                volleyErrorListener().onErrorResponse(error);
+            }
+        };
     }
 
     Response.ErrorListener volleyErrorListener() {
@@ -1737,7 +2174,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                     finishRequest();
                     return;
                 }
-                Log.i(TAG, "Error :" + error.toString());
+                Log.e(TAG, "RFC error -> " + error.toString(), error);
                 String err;
                 if (error instanceof TimeoutError || error instanceof NoConnectionError) {
                     err = "Communication Error!";

@@ -27,7 +27,7 @@ public class MenuDirectPickingV01To0001 extends Fragment implements
     Context con;
     String TAG = MenuDirectPickingV01To0001.class.getName();
 
-    Button huwise_article_scan_v01_v09, article_putway_0001, article_transfer_v01_0001;
+    Button huwise_article_scan_v01_v09, article_putway_0001, article_transfer_v01_0001, article_transfer_v01_0008, article_transfer_0008_0001;
 
     private OnFragmentInteractionListener mListener;
 
@@ -65,10 +65,14 @@ public class MenuDirectPickingV01To0001 extends Fragment implements
         huwise_article_scan_v01_v09 = view.findViewById(R.id.direct_picking_v01_0001_huwise_article_v01_v09);
         article_putway_0001 = view.findViewById(R.id.direct_picking_v01_0001_huwise_article_putway_0001);
         article_transfer_v01_0001 = view.findViewById(R.id.direct_picking_v01_0001_article_transfer_v01_0001);
+        article_transfer_v01_0008 = view.findViewById(R.id.direct_picking_v01_0001_article_transfer_v01_0008);
+        article_transfer_0008_0001 = view.findViewById(R.id.direct_picking_v01_0001_article_transfer_0008_0001);
 
         huwise_article_scan_v01_v09.setOnClickListener(this);
         article_putway_0001.setOnClickListener(this);
         article_transfer_v01_0001.setOnClickListener(this);
+        article_transfer_v01_0008.setOnClickListener(this);
+        article_transfer_0008_0001.setOnClickListener(this);
 
         disableAndGreyOut(huwise_article_scan_v01_v09);
         disableAndGreyOut(article_putway_0001);
@@ -121,6 +125,12 @@ public class MenuDirectPickingV01To0001 extends Fragment implements
                 break;
             case R.id.direct_picking_v01_0001_article_transfer_v01_0001:
                 fragment = FragmentDirectPickingV01ArticleTransfer0001.newInstance();
+                break;
+            case R.id.direct_picking_v01_0001_article_transfer_v01_0008:
+                fragment = FragmentDirectPickingV01ArticleTransfer0008.newInstance();
+                break;
+            case R.id.direct_picking_v01_0001_article_transfer_0008_0001:
+                fragment = FragmentDirectPickingArticleTransfer0008To0001.newInstance();
                 break;
         }
         if (fragment != null) {

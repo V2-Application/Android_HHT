@@ -337,12 +337,18 @@ public class Vars {
     public static String ZSTORE_DISCOUNT_SAVE_EAN_DATA = "ZSTORE_DISCOUNT_SAVE_EAN_DATA";
     public static String ZSDC_DIRECT_FLR_RFC = "ZSDC_DIRECT_FLR_RFC";
     public static String ZSDC_DIRECT_ART_VAL_BARCOD_RFC = "ZSDC_DIRECT_ART_VAL_BARCOD_RFC";
-    /** Article Transfer (V01 To 0001) — HU validate (IM_USER, IM_PLANT, IM_HU → EX_RETURN, EX_HU). */
+    /** Article Transfer (V01 To 0001 / V01 To 0008) — HU validate (IM_USER, IM_PLANT, IM_HU → EX_RETURN, EX_HU, ET_HU_ART_DATA, ET_EAN_ART_DATA). */
     public static String ZSDC_DIRECT_HU_VALIDATE_RFC = "ZSDC_DIRECT_HU_VALIDATE_RFC";
     /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE → EX_BARCODE). */
     public static String ZSDC_DIRECT_ARTICLE_VAL_RFC = "ZSDC_DIRECT_ARTICLE_VAL_RFC";
     /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, IM_HU, ET_DATA). */
     public static String ZSDC_DIRECT_ART_V01_0001_RFC = "ZSDC_DIRECT_ART_V01_0001_RFC";
+    /** Article Transfer (V01 To 0008) — save (IM_USER, IM_STORE_CODE, IM_HU, ET_DATA). */
+    public static String ZSDC_DIRECT_ART_V01_0008_RFC = "ZSDC_DIRECT_ART_V01_0008_RFC";
+    /** Article Transfer (0008 To 0001) — barcode validate (IM_WERKS, IM_BARCODE → EX_RETURN, EX_DATA/ZSDC_BARCODE_TT). */
+    public static String ZSDC_DIRECT_BARCODE_VAL_RFC = "ZSDC_DIRECT_BARCODE_VAL_RFC";
+    /** Article Transfer (0008 To 0001) — save (IM_USER, IM_STORE_CODE, ET_DATA). */
+    public static String ZSDC_DIRECT_ART_0008_0001_RFC = "ZSDC_DIRECT_ART_0008_0001_RFC";
     public static String ZSDC_DIRECT_ART_VAL1_SAVE1_RFC = "ZSDC_DIRECT_ART_VAL1_SAVE1_RFC";
     public static String ARTICLE_LOOKUP_URL = "https://sap-api.v2retail.net/api/article-lookup";
     public static String ZBIN_GRT_HU_VALIDATION = "ZBIN_GRT_HU_VALIDATION";

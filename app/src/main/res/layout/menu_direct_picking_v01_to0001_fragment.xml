@@ -39,6 +39,24 @@
             android:id="@+id/direct_picking_v01_0001_article_transfer_v01_0001"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Article Transfer from (V01 To 0008)"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/direct_picking_v01_0001_article_transfer_v01_0008"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Article Transfer from (0008 To 0001)"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/direct_picking_v01_0001_article_transfer_0008_0001"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>
