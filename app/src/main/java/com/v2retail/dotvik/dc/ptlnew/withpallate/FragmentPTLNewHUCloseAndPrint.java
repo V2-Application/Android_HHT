@@ -37,6 +37,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.SapJsonRows;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -45,6 +46,7 @@ import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.TSPLPrinter;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -72,12 +74,16 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     String tvsprinter = null;
     SharedPreferencesData data;
     private boolean huRequestInFlight = false;
+    private String lastValidatedHu = "";
 
     public FragmentPTLNewHUCloseAndPrint() {
     }
 
     public static FragmentPTLNewHUCloseAndPrint newInstance(String process) {
         FragmentPTLNewHUCloseAndPrint fragment = new FragmentPTLNewHUCloseAndPrint();
+        Bundle args = new Bundle();
+        args.putString("process", process);
+        fragment.setArguments(args);
         fragment.process = process;
         return fragment;
     }
@@ -86,6 +92,9 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fm = getParentFragmentManager();
+        if (getArguments() != null) {
+            process = getArguments().getString("process", process);
+        }
     }
 
     @Override
@@ -93,6 +102,8 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
         super.onResume();
         if("msa_binwise".equalsIgnoreCase(this.process)){
             ((Process_Selection_Activity) getActivity()).setActionBarTitle("External HU Print");
+        }else if(Vars.ZWM_STORE_HU_PRINT.equalsIgnoreCase(this.process)){
+            ((Process_Selection_Activity) getActivity()).setActionBarTitle("STORE RETURN GRT HU PRINT");
         }else{
             ((Process_Selection_Activity) getActivity()).setActionBarTitle("PTL-" + this.process);
         }
@@ -241,23 +252,35 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
         UIFuncs.enableInput(con, txt_scan_ext_hu);
     }
 
+    private boolean isHuGrtPrint() {
+        return Vars.ZWM_STORE_HU_PRINT.equalsIgnoreCase(this.process);
+    }
+
     private void validateExtHU(String hu){
         if (huRequestInFlight) {
             return;
         }
         huRequestInFlight = true;
+        lastValidatedHu = hu;
         JSONObject args = new JSONObject();
         boolean isClose = this.process.equalsIgnoreCase("HU Close");
         try {
-            String rfc = isClose ? Vars.ZWM_PTL_HU_VALIDATE_CLOSE : ("msa_binwise".equalsIgnoreCase(this.process) ? Vars.ZWM_PTL_TVS_HU_PRINT_2 : Vars.ZWM_PTL_TVS_HU_PRINT);
-            args.put("bapiname", rfc);
-            args.put("IM_USER", USER);
-            if(isClose){
-                args.put("IM_PLANT", WERKS);
-                args.put("IM_HU", hu);
-                args.put("IM_HU_CLOSED", "X");
-            }else{
+            String rfc;
+            if (isHuGrtPrint()) {
+                rfc = Vars.ZWM_STORE_HU_PRINT;
+                args.put("bapiname", rfc);
                 args.put("IM_EXIDV", hu);
+            } else {
+                rfc = isClose ? Vars.ZWM_PTL_HU_VALIDATE_CLOSE : ("msa_binwise".equalsIgnoreCase(this.process) ? Vars.ZWM_PTL_TVS_HU_PRINT_2 : Vars.ZWM_PTL_TVS_HU_PRINT);
+                args.put("bapiname", rfc);
+                args.put("IM_USER", USER);
+                if(isClose){
+                    args.put("IM_PLANT", WERKS);
+                    args.put("IM_HU", hu);
+                    args.put("IM_HU_CLOSED", "X");
+                }else{
+                    args.put("IM_EXIDV", hu);
+                }
             }
             showProcessingAndSubmit(rfc, REQUEST_VALIDATE_EXT_HU, args);
         } catch (JSONException e) {
@@ -276,6 +299,83 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
     private void printHU(JSONObject huObj){
         TSPLPrinter printer = new TSPLPrinter(getContext(), Vars.PTL_NEW_MODULE_HU_CLOSE);
         printer.sendPrintCommandToBluetoothPrinter(this.tvsprinter, huObj, "1");
+    }
+
+    /**
+     * SAP often prefixes ET_HUDATA with a column-description row at index 0
+     * (e.g. DATUM="Character Field with Length 10", SWERKS="Plant").
+     * Walk the array and return the first real data row.
+     */
+    private JSONObject firstEtHuData(JSONObject responsebody) {
+        if (responsebody == null || !responsebody.has("ET_HUDATA")) {
+            return null;
+        }
+        try {
+            Object et = responsebody.get("ET_HUDATA");
+            if (et instanceof JSONArray) {
+                JSONArray arr = (JSONArray) et;
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject row = arr.optJSONObject(i);
+                    if (row == null || isHuDataHeaderRow(row)) {
+                        continue;
+                    }
+                    return row;
+                }
+            } else if (et instanceof JSONObject) {
+                JSONObject row = (JSONObject) et;
+                if (!isHuDataHeaderRow(row)) {
+                    return row;
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private boolean isHuDataHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        if (SapJsonRows.isMetadataRow(row, "DATUM", "SWERKS", "VEMNG", "DWERKS", "HHT_ID")) {
+            return true;
+        }
+        String datum = row.optString("DATUM", "").trim();
+        String swerks = row.optString("SWERKS", "").trim();
+        String dwerks = row.optString("DWERKS", "").trim();
+        String vemng = row.optString("VEMNG", "").trim();
+        String hhtId = row.optString("HHT_ID", "").trim();
+        if ("Plant".equalsIgnoreCase(swerks) || "Plant".equalsIgnoreCase(dwerks)) {
+            return true;
+        }
+        String datumLc = datum.toLowerCase();
+        String vemngLc = vemng.toLowerCase();
+        String hhtLc = hhtId.toLowerCase();
+        return datumLc.contains("character field")
+                || vemngLc.contains("quantity packed")
+                || vemngLc.contains("handling unit item")
+                || hhtLc.contains("user id in internet")
+                || hhtLc.contains("internet user master");
+    }
+
+    private void printHuGrt(String hu, JSONObject huRow) {
+        final Context ctx = getContext();
+        if (ctx == null) {
+            return;
+        }
+        final String printerName = tvsprinter;
+        new Thread(() -> {
+            TSPLPrinter printer = new TSPLPrinter(ctx, Vars.ZWM_STORE_HU_PRINT);
+            boolean printed = printer.sendHuGrtPrintCommand(printerName, hu, huRow);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (!printed) {
+                        UIFuncs.errorSound(con);
+                        box.getBox("Err", "Unable to print HU label. Check TVS printer pairing.");
+                    }
+                });
+            }
+        }).start();
     }
 
     /**
@@ -364,12 +464,12 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
                         if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
                             JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
                             if (returnobj != null) {
-                                String type = returnobj.getString("TYPE");
+                                String type = returnobj.optString("TYPE", "");
                                 if (type != null) {
                                     if (type.equals("E")) {
                                         UIFuncs.errorSound(getContext());
                                         AlertBox box = new AlertBox(getContext());
-                                        box.getBox("Err", returnobj.getString("MESSAGE"));
+                                        box.getBox("Err", returnobj.optString("MESSAGE", "Validation failed"));
                                         if (request == REQUEST_VALIDATE_EXT_HU) {
                                             txt_scan_ext_hu.setText("");
                                             txt_ext_hu.setText("");
@@ -378,11 +478,23 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
                                     } else {
                                         if (request == REQUEST_VALIDATE_EXT_HU) {
                                             String scannedHu = UIFuncs.toUpperTrim(txt_scan_ext_hu);
+                                            if (scannedHu.isEmpty()) {
+                                                scannedHu = lastValidatedHu;
+                                            }
                                             txt_ext_hu.setText(scannedHu);
                                             txt_scan_ext_hu.setText("");
                                             txt_scan_ext_hu.requestFocus();
                                             if(process.equalsIgnoreCase("HU Close")){
                                                 fetchPrintDataAndPrint(scannedHu);
+                                            }else if (isHuGrtPrint()) {
+                                                JSONObject huRow = firstEtHuData(responsebody);
+                                                if (huRow == null) {
+                                                    UIFuncs.errorSound(getContext());
+                                                    box.getBox("Err", "No HU print data returned");
+                                                } else {
+                                                    Toast.makeText(con, "Details sent to printer " + tvsprinter, Toast.LENGTH_SHORT).show();
+                                                    printHuGrt(scannedHu, huRow);
+                                                }
                                             }else{
                                                 Toast.makeText(con, "Details sent to printer " + tvsprinter, Toast.LENGTH_SHORT).show();
                                                 printHU(responsebody.getJSONObject("EX_HUDATA"));

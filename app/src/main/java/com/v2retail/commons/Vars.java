@@ -36,8 +36,6 @@ public class Vars {
     public static final String BREADCRUMB_IROD_TO_IROD = "IROD To IROD";
     public static final String PTL_NEW_MODULE_HU_CLOSE = "PTL_NEW_HU_CLOSE";
 
-
-
     public static final Collection<String> PRODUCT_CODE_TYPES = list(CODE_128, CODE_39, EAN_8, EAN_13, CODE_93, QR_CODE);
 
     private static List<String> list(String... values) {
@@ -148,6 +146,8 @@ public class Vars {
     public static String ZWM_STORE_IROD_TRAN_VALIDATE = "ZWM_STORE_IROD_TRAN_VALIDATE";
     public static String ZWM_STORE_IROD_GANDOLA_TAG = "ZWM_STORE_IROD_GANDOLA_TAG";
     public static String ZWM_PRINT_HU_TVS = "ZWM_PRINT_HU_TVS";
+    /** Outward → HU GRT PRINT — validate Ext. HU and return print data (IM_EXIDV → EX_RETURN, ET_HUDATA/ZWM_STORE_HU_TT). */
+    public static String ZWM_STORE_HU_PRINT = "ZWM_STORE_HU_PRINT";
     /** RFC: swap old HU → new HU (FragmentHUSwapPrint). */
     public static String ZWM_HUSWAP = "ZWM_HUSWAP";
     /** Process key for TSPLPrinter HU-swap label layout. */
@@ -194,6 +194,14 @@ public class Vars {
     public static String ZWM_PALATE_RECEIVE = "ZWM_PALATE_RECEIVE";
     public static String ZWM_EXTERNAL_HU_VALIDATE = "ZWM_EXTERNAL_HU_VALIDATE";
     public static String ZWM_ACTUAL_HU_SAVE = "ZWM_ACTUAL_HU_SAVE";
+    /** Inward → V01 HU TRF PRINT — get HU (IM_USER, IM_PLANT, IM_PO, IM_CRATE → EX_RETURN, EX_HU). */
+    public static String ZWM_V01_HUTRF_RFC = "ZWM_V01_HUTRF_RFC";
+    /** Outward → GRT HU Creation Print — validate D. Plant (IM_PLANT → EX_RETURN). */
+    public static String ZWM_GRT_PLANT_VALIDATE = "ZWM_GRT_PLANT_VALIDATE";
+    /** Outward → GRT HU Creation Print — validate HU (IM_HU → EX_RETURN). */
+    public static String ZWM_GRT_HU_VALIDATE = "ZWM_GRT_HU_VALIDATE";
+    /** Outward → GRT HU Creation Print — save (IM_USER, IM_EXIDV, IM_SWERKS, IM_DWERKS → EX_RETURN). */
+    public static String ZWM_GRT_STORE_HU = "ZWM_GRT_STORE_HU";
 
     public static String ZWM_BIN_VALIDATION_PUT = "ZWM_BIN_VALIDATION_PUT";
     public static String ZWM_HU_VALIDATION_PUT = "ZWM_HU_VALIDATION_PUT";
@@ -347,8 +355,8 @@ public class Vars {
     public static String ZSDC_DIRECT_ART_V01_0008_RFC = "ZSDC_DIRECT_ART_V01_0008_RFC";
     /** Article Transfer (0008 To 0001) — barcode validate (IM_WERKS, IM_BARCODE → EX_RETURN, EX_DATA/ZSDC_BARCODE_TT). */
     public static String ZSDC_DIRECT_BARCODE_VAL_RFC = "ZSDC_DIRECT_BARCODE_VAL_RFC";
-    /** Article Transfer (0008 To 0001) — save (IM_USER, IM_STORE_CODE, ET_DATA). */
-    public static String ZSDC_DIRECT_ART_0008_0001_RFC = "ZSDC_DIRECT_ART_0008_0001_RFC";
+    /** Article Transfer (0008 To 0001) — save (IM_WERKS, IT_BARCODE/ZSDC_BCODE_TT → EX_RETURN). */
+    public static String ZSDC_DIRECT_0008_0001_RFC = "ZSDC_DIRECT_0008_0001_RFC";
     public static String ZSDC_DIRECT_ART_VAL1_SAVE1_RFC = "ZSDC_DIRECT_ART_VAL1_SAVE1_RFC";
     public static String ARTICLE_LOOKUP_URL = "https://sap-api.v2retail.net/api/article-lookup";
     public static String ZBIN_GRT_HU_VALIDATION = "ZBIN_GRT_HU_VALIDATION";
@@ -378,13 +386,6 @@ public class Vars {
     public static String ZWM_HU_SELECTION_RFC = "ZWM_HU_SELECTION_RFC";
     /** CLA Vehicle Loading — save scanned / removed HU (→ HU_LIST). */
     public static String ZWM_SAVE_SCANNEDHULIST_RFC = "ZWM_SAVE_SCANNEDHULIST_RFC";
-    /**
-     * CLA Vehicle Loading — production RFC REST API base ({@code /api/<RFC_NAME>}, form-encoded,
-     * responds {@code {"Status":..,"Message":..,"Data":{"ET_Data":[..]}}}).
-     * Used instead of {@code noacljsonrfcadaptor} on production gateways only: the adaptor route
-     * never returns for the hub branch of ZWM_HU_SELECTION_RFC, while this API answers in ~4 s.
-     */
-    public static String ROUTEMASTER_API_BASE = "https://routemaster.v2retail.com:9010";
 
     // ── Gate Entry Lot Putaway — Box Putaway to Pallet ─────────────────────────────
     /** Gate Entry Lot Putaway — load open gate entries (IM_USER, IM_WERKS, IM_DOCNO → ET_Data.DOCNO). */

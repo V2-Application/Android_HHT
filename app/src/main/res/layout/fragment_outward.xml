@@ -103,16 +103,26 @@
                 android:id="@+id/dc_grt"
                 android:layout_margin="5dp"
                 android:textColor="#fff"
-                android:background="@color/colorAccent" />
+                android:background="@color/colorAccent"
+                android:visibility="gone" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="HU Move To CLA"
-                android:textColor="#fff"
-                android:id="@+id/hu_move_cla"
+                android:text="STORE RETURN GRT HU PRINT"
+                android:id="@+id/hu_grt_print"
                 android:layout_margin="5dp"
-                android:background="@color/colorAccent" />
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="GRT HU Creation Print"
+                android:textColor="#fff"
+                android:id="@+id/grt_hu_creation_print"
+                android:layout_margin="5dp"
+                android:background="#e71821" />
 
             <Button
                 android:layout_width="match_parent"

@@ -36,7 +36,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
     Button create_scan;
     Button grc_putway;
     Button putway;
-    Button bin_consolidation, ecom_putway, stored_stock, grt_scanning03, grt_scanning01, grt_putway_hu_in_bin, hu_tag_ext, rdc_to_rdc_hu_putway, crate_putway;
+    Button bin_consolidation, ecom_putway, stored_stock, grt_scanning03, grt_scanning01, grt_putway_hu_in_bin, hu_tag_ext, v01_hu_trf_print, rdc_to_rdc_hu_putway, crate_putway;
     FragmentManager fm;
     Context con;
 
@@ -96,6 +96,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         grt_scanning01 = (Button) view.findViewById(R.id.grt_scanning01);
         grt_putway_hu_in_bin = (Button) view.findViewById(R.id.grt_putway_hu_in_bin);
         hu_tag_ext = (Button) view.findViewById(R.id.inward_hu_tag_ext);
+        v01_hu_trf_print = (Button) view.findViewById(R.id.inward_v01_hu_trf_print);
         rdc_to_rdc_hu_putway = (Button) view.findViewById(R.id.rdc_to_rdc_hu_putway);
         crate_putway = (Button) view.findViewById(R.id.crate_putway);
 
@@ -108,6 +109,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         grt_scanning01.setOnClickListener(this);
         grt_putway_hu_in_bin.setOnClickListener(this);
         hu_tag_ext.setOnClickListener(this);
+        v01_hu_trf_print.setOnClickListener(this);
         rdc_to_rdc_hu_putway.setOnClickListener(this);
         crate_putway.setOnClickListener(this);
 
@@ -187,6 +189,9 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
                 break;
             case R.id.inward_hu_tag_ext:
                 fragment = new FragmentInwardHuTagExt();
+                break;
+            case R.id.inward_v01_hu_trf_print:
+                fragment = new FragmentV01HuTrfPrint();
                 break;
             case R.id.rdc_to_rdc_hu_putway:
                 fragment = new FragmentRdcToRdcHuPutway();

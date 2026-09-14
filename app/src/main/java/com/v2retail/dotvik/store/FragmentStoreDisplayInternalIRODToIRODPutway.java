@@ -35,6 +35,7 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.google.gson.Gson;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.UIFuncs;
@@ -345,23 +346,39 @@ public class FragmentStoreDisplayInternalIRODToIRODPutway extends Fragment imple
             JSONArray arrEtData = rsponse.getJSONArray("ET_DATA");
             JSONArray arrEtEanData = rsponse.getJSONArray("ET_EAN_DATA");
 
-            int arrlength = arrEtData.length();
-            if(arrlength > 0){
-                for(int recordIndex = 1; recordIndex < arrlength; recordIndex++){
-                    JSONObject ET_RECORD  = arrEtData.getJSONObject(recordIndex);
-                    ETDataStorePutway putwayData = ETDataStorePutway.newInstance(ET_RECORD,UIFuncs.toUpperTrim(txt_sloc),WERKS,"");
-                    putwayData.setIrod(UIFuncs.toUpperTrim(txt_irod));
-                    etData.put(ET_RECORD.getString("MATNR"), putwayData);
+            int dataStart = SapJsonRows.startIndex(arrEtData, "MATNR");
+            for (int recordIndex = dataStart; recordIndex < arrEtData.length(); recordIndex++) {
+                JSONObject ET_RECORD = arrEtData.getJSONObject(recordIndex);
+                if (SapJsonRows.isMetadataRow(ET_RECORD, "MATNR")) {
+                    continue;
                 }
-            }
-            arrlength = arrEtEanData.length();
-            if(arrlength > 0){
-                HashMap<String, ETEanDataStorePutway> mapEtEanData = new HashMap<>();
-                for(int recordIndex = 1; recordIndex < arrlength; recordIndex++){
-                    JSONObject ET_EAN_RECORD  = arrEtEanData.getJSONObject(recordIndex);
-                    etEanData.put(ET_EAN_RECORD.getString("EAN11"),ETEanDataStorePutway.newInstance(ET_EAN_RECORD));
+                String matnr = ET_RECORD.optString("MATNR", "").trim();
+                if (matnr.isEmpty() || etData.containsKey(matnr)) {
+                    continue;
                 }
+                ETDataStorePutway putwayData = ETDataStorePutway.newInstance(
+                        ET_RECORD, UIFuncs.toUpperTrim(txt_sloc), WERKS, "");
+                putwayData.setIrod(UIFuncs.toUpperTrim(txt_irod));
+                etData.put(matnr, putwayData);
             }
+
+            int eanStart = SapJsonRows.startIndex(arrEtEanData, "EAN11", "MATNR");
+            for (int recordIndex = eanStart; recordIndex < arrEtEanData.length(); recordIndex++) {
+                JSONObject ET_EAN_RECORD = arrEtEanData.getJSONObject(recordIndex);
+                if (SapJsonRows.isMetadataRow(ET_EAN_RECORD, "EAN11", "MATNR")) {
+                    continue;
+                }
+                String ean11 = ET_EAN_RECORD.optString("EAN11", "").trim();
+                if (ean11.isEmpty()) {
+                    continue;
+                }
+                String eanKey = ean11.toUpperCase();
+                if (etEanData.containsKey(eanKey)) {
+                    continue;
+                }
+                etEanData.put(eanKey, ETEanDataStorePutway.newInstance(ET_EAN_RECORD));
+            }
+
             UIFuncs.disableInput(con, txt_irod);
             txt_ean.setText("");
             UIFuncs.enableInput(con, txt_ean);

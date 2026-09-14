@@ -582,17 +582,15 @@ public class FragmentDirectPickingArticleTransfer0008To0001 extends Fragment imp
                 if (sqty <= 0) {
                     continue;
                 }
-                JSONObject itDataJson = new JSONObject();
-                itDataJson.put("BARCODE", art.getBarcode() != null ? art.getBarcode() : "");
-                itDataJson.put("UMREZ", art.getUmrez() != null && !art.getUmrez().trim().isEmpty() ? art.getUmrez() : "1");
-                itDataJson.put("WERKS", WERKS);
-                itDataJson.put("MATNR", art.getMatnr());
-                itDataJson.put("LGPLA", art.getLgpla() != null ? art.getLgpla() : "");
-                itDataJson.put("VERME", art.getVerme() != null ? art.getVerme() : "0");
-                itDataJson.put("FLOOR_BIN", art.getFloorBin() != null ? art.getFloorBin() : "");
-                itDataJson.put("SCAN_QTY", Util.formatDouble(sqty));
-                itDataJson.put("ART_TYPE", art.getArtType() != null ? art.getArtType() : "");
-                arrScanData.put(itDataJson);
+                String barcode = art.getBarcode() != null ? art.getBarcode().trim() : "";
+                if (barcode.isEmpty()) {
+                    barcode = entry.getKey();
+                }
+                JSONObject itBarcodeJson = new JSONObject();
+                // IT_BARCODE uses structure ZSDC_BCODE_STR (ZSDC_BCODE_TT)
+                itBarcodeJson.put("IM_BARCODE", barcode);
+                itBarcodeJson.put("SCAN_QTY", Util.formatDouble(sqty));
+                arrScanData.put(itBarcodeJson);
             }
             return arrScanData;
         } catch (Exception exce) {
@@ -613,11 +611,10 @@ public class FragmentDirectPickingArticleTransfer0008To0001 extends Fragment imp
             return;
         }
         try {
-            args.put("bapiname", Vars.ZSDC_DIRECT_ART_0008_0001_RFC);
-            args.put("IM_USER", USER);
-            args.put("IM_STORE_CODE", WERKS);
-            args.put("ET_DATA", dataToSave);
-            showProcessingAndSubmit(Vars.ZSDC_DIRECT_ART_0008_0001_RFC, REQUEST_SAVE, args);
+            args.put("bapiname", Vars.ZSDC_DIRECT_0008_0001_RFC);
+            args.put("IM_WERKS", WERKS);
+            args.put("IT_BARCODE", dataToSave);
+            showProcessingAndSubmit(Vars.ZSDC_DIRECT_0008_0001_RFC, REQUEST_SAVE, args);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);

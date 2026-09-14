@@ -109,15 +109,34 @@
             android:id="@+id/grt_putway_hu_in_bin"
             android:background="#e71821" />
 
-        <Button
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="HU Tag EXT"
-            android:textAllCaps="false"
-            android:layout_margin="5dp"
-            android:textColor="#fff"
-            android:id="@+id/inward_hu_tag_ext"
-            android:background="#e71821" />
+            android:layout_height="wrap_content">
+
+            <Button
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:background="#e71821"
+                android:id="@+id/inward_hu_tag_ext"
+                android:text="HU Tag EXT"
+                android:textAllCaps="false"
+                android:textColor="#fff"
+                android:textSize="12sp" />
+
+            <Button
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:layout_weight="1"
+                android:background="#e71821"
+                android:id="@+id/inward_v01_hu_trf_print"
+                android:text="V01 HU TRF PRINT"
+                android:textAllCaps="false"
+                android:textColor="#fff"
+                android:textSize="12sp" />
+        </LinearLayout>
 
 
         <Button

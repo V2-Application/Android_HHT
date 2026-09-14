@@ -13,6 +13,7 @@ import android.widget.Button;
 
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
+import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewHUCloseAndPrint;
 import com.v2retail.dotvik.store.PaperLessDate;
 import com.v2retail.util.AlertBox;
 
@@ -37,10 +38,9 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
     Button hu_scan;
     Button paperless_picking;
     Button dc_grt;
-    Button hu_cla;
     Context con;
     AlertBox box;
-    Button sample_stock_movement,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu,hu_swap_print;
+    Button sample_stock_movement,grt_hu_move,hu_weight,tvs_paperless_picking,tvs_paperless_picking_live_hu,hu_swap_print,hu_grt_print,grt_hu_creation_print;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -109,13 +109,14 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         paperless_picking = (Button) view.findViewById(R.id.paperless_picking);
 
         dc_grt = (Button) view.findViewById(R.id.dc_grt);
-        hu_cla = (Button) view.findViewById(R.id.hu_move_cla);
         sample_stock_movement = (Button) view.findViewById(R.id.stock_movement);
         grt_hu_move = (Button) view.findViewById(R.id.grt_hu_move);
         hu_weight = view.findViewById(R.id.outward_hu_weight);
         tvs_paperless_picking= view.findViewById(R.id.tvs_paperless_picking);
         tvs_paperless_picking_live_hu= view.findViewById(R.id.tvs_paperless_picking_live_hu);
         hu_swap_print = view.findViewById(R.id.hu_swap_print);
+        hu_grt_print = view.findViewById(R.id.hu_grt_print);
+        grt_hu_creation_print = view.findViewById(R.id.grt_hu_creation_print);
 
 
         picking.setOnClickListener(this);
@@ -126,6 +127,8 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         tvs_paperless_picking.setOnClickListener(this);
         tvs_paperless_picking_live_hu.setOnClickListener(this);
         hu_swap_print.setOnClickListener(this);
+        hu_grt_print.setOnClickListener(this);
+        grt_hu_creation_print.setOnClickListener(this);
 
         disableAndGreyOut(picking);
         disableAndGreyOut(paperless_picking);
@@ -185,10 +188,11 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
                 box.getBox("Alert", "Implementation In Process");
                 // fragment=new Bin_To_Bin_Transfer_Fragment();
                 break;
-            case R.id.hu_move_cla:
-
-                box.getBox("Alert", "Implementation In Process");
-                // fragment=new Sloc_To_Sloc_without_WM_Fragment();
+            case R.id.hu_grt_print:
+                fragment = FragmentPTLNewHUCloseAndPrint.newInstance(Vars.ZWM_STORE_HU_PRINT);
+                break;
+            case R.id.grt_hu_creation_print:
+                fragment = FragmentGrtHuCreationPrint.newInstance();
                 break;
             case R.id.stock_movement:
 

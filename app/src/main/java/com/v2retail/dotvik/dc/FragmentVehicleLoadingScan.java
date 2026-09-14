@@ -41,12 +41,11 @@ import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.v2retail.ApplicationController;
-import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
@@ -75,8 +74,6 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
     private String WERKS = "";
     private String USER = "";
     private String hub = "";
-    /** Mirrors FragmentVehicleLoading: production saves go to the routemaster REST API. */
-    private boolean useRoutemaster = false;
 
     private EditText txtVehicleNo;
     private EditText txtTotalHu;
@@ -133,7 +130,6 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
-        useRoutemaster = GatewayUrls.isProductionGateway(URL);
 
         txtVehicleNo = rootView.findViewById(R.id.txt_vehicle_loading_scan_vehicle_no);
         txtTotalHu = rootView.findViewById(R.id.txt_vehicle_loading_scan_total_hu);
@@ -330,11 +326,7 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         Handler handler = new Handler();
         handler.postDelayed(() -> {
             try {
-                if (useRoutemaster) {
-                    submitApiRequest(rfc, request, args, hu, scanMode);
-                } else {
-                    submitRequest(rfc, request, args, hu, scanMode);
-                }
+                submitRequest(rfc, request, args, hu, scanMode);
             } catch (Exception e) {
                 dismissDialog();
                 txtScanHu.setEnabled(true);
@@ -346,10 +338,17 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
 
     private void submitRequest(String rfc, int request, JSONObject args,
                                String hu, boolean scanMode) {
-        String url = URL.substring(0, URL.lastIndexOf("/"));
-        url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
+        if (url.isEmpty()) {
+            dismissDialog();
+            txtScanHu.setEnabled(true);
+            showError("Err", "Server URL missing. Please log in again.");
+            clearScanInput();
+            return;
+        }
         final JSONObject params = args;
 
+        Log.d(TAG, "url -> " + url);
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue mRequestQueue = ApplicationController.getInstance().getRequestQueue();
@@ -411,59 +410,6 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         mRequestQueue.add(mJsonRequest);
     }
 
-    /**
-     * Production path: form-encoded POST to the routemaster RFC API, mirroring
-     * {@link FragmentVehicleLoading#submitApiRequest}. HU_LIST rows are sent as
-     * {@code HU_LIST[0].FIELD}. Still 0 retries — this posts a scan.
-     */
-    private void submitApiRequest(String rfc, int request, JSONObject args,
-                                  String hu, boolean scanMode) throws JSONException {
-        String url = GatewayUrls.routemasterApiUrl(rfc);
-        final Map<String, String> formParams = FragmentVehicleLoading.toFormParams(args);
-
-        Log.d(TAG, "api payload -> " + url + " " + formParams);
-
-        StringRequest apiRequest = new StringRequest(Request.Method.POST, url, body -> {
-            dismissDialog();
-            txtScanHu.setEnabled(true);
-            Log.d(TAG, "api response -> " + body);
-
-            if (body == null || body.trim().isEmpty()) {
-                showError("Err", "No response from Server");
-                clearScanInput();
-                return;
-            }
-
-            try {
-                JSONObject parsed = new JSONObject(body);
-                if (parsed.has("Status") && !parsed.optBoolean("Status", false)) {
-                    showError("Err", parsed.optString("Message", "Save failed."));
-                    clearScanInput();
-                    return;
-                }
-                if (request == REQUEST_SAVE_SCANNED_HU) {
-                    applyLocalScanState(hu, scanMode);
-                }
-            } catch (JSONException e) {
-                box.getErrBox(e);
-                clearScanInput();
-            }
-        }, volleyErrorListener()) {
-            @Override
-            protected Map<String, String> getParams() {
-                return formParams;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-        };
-
-        apiRequest.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(apiRequest);
-    }
-
     private void applyLocalScanState(String hu, boolean scanMode) {
         if (scanMode) {
             HuRow row = allHus.get(hu);
@@ -492,32 +438,48 @@ public class FragmentVehicleLoadingScan extends Fragment implements View.OnClick
         }
     }
 
+    /**
+     * {@code ET_ERROR} is BAPIRET2: TYPE S Success, E Error, W Warning, I Info, A Abort.
+     * Only E/A fail the call. NUMBER is a message id, not a success flag.
+     */
     private boolean isEtErrorSuccess(JSONObject responseBody) throws JSONException {
-        if (!responseBody.has("ET_ERROR")) {
+        JSONObject etError = extractEtError(responseBody);
+        if (etError == null) {
             return true;
         }
-        Object etError = responseBody.get("ET_ERROR");
-        if (etError instanceof JSONObject) {
-            String errorNumber = ((JSONObject) etError).optString("NUMBER", "").trim();
-            return errorNumber.isEmpty() || "000".equals(errorNumber) || "0".equals(errorNumber);
-        }
-        String errorCode = String.valueOf(etError).trim();
-        return errorCode.isEmpty() || "000".equals(errorCode) || "0".equals(errorCode);
+        String type = etError.optString("TYPE", "").trim();
+        return !"E".equalsIgnoreCase(type) && !"A".equalsIgnoreCase(type);
     }
 
     private String getEtErrorMessage(JSONObject responseBody) throws JSONException {
-        if (responseBody.has("ET_ERROR") && responseBody.get("ET_ERROR") instanceof JSONObject) {
-            JSONObject etError = responseBody.getJSONObject("ET_ERROR");
+        JSONObject etError = extractEtError(responseBody);
+        if (etError != null) {
             String message = etError.optString("MESSAGE", "").trim();
             if (!message.isEmpty()) {
                 return message;
             }
-            String number = etError.optString("NUMBER", "").trim();
-            if (!number.isEmpty()) {
-                return "Error: " + number;
-            }
         }
         return "Unable to save scanned HU.";
+    }
+
+    private static JSONObject extractEtError(JSONObject responseBody) throws JSONException {
+        if (responseBody == null || !responseBody.has("ET_ERROR") || responseBody.isNull("ET_ERROR")) {
+            return null;
+        }
+        Object etError = responseBody.get("ET_ERROR");
+        if (etError instanceof JSONObject) {
+            return (JSONObject) etError;
+        }
+        if (etError instanceof JSONArray) {
+            JSONArray arr = (JSONArray) etError;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject row = arr.optJSONObject(i);
+                if (row != null) {
+                    return row;
+                }
+            }
+        }
+        return null;
     }
 
     private Response.ErrorListener volleyErrorListener() {

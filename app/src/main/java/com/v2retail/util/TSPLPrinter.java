@@ -526,6 +526,95 @@ public class TSPLPrinter {
                 "PRINT 1, 1\n";
     }
 
+    /**
+     * Outward HU GRT PRINT — ZWM_STORE_HU_PRINT / ZWM_STORE_HU_STR.
+     * Layout: S. SITE, D. SITE, QTY, DATE, centered Code128 + HU.
+     */
+    public boolean sendHuGrtPrintCommand(String printerName, String huNo, JSONObject huRow) {
+        try {
+            if (!locateStoreGrtPrinter(printerName)) {
+                Log.e("TSPLPrinter", "HU GRT PRINT: printer not found: " + printerName);
+                return false;
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                Log.e("TSPLPrinter", "HU GRT PRINT: Bluetooth not connected");
+                return false;
+            }
+
+            String tspl = buildHuGrtLabel(huNo, huRow);
+            OutputStream out = bluetoothSocket.getOutputStream();
+            PrintWriter w = new PrintWriter(out, true);
+            w.write(tspl);
+            w.flush();
+            w.close();
+            out.close();
+            bluetoothSocket.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String buildHuGrtLabel(String huNo, JSONObject huRow) {
+        String rawHu = huNo != null ? huNo.trim() : "";
+        String printHu = removeLeadingZeros(rawHu);
+        if (printHu.isEmpty() && !rawHu.isEmpty()) {
+            printHu = rawHu;
+        }
+
+        String swerks = jsonField(huRow, "SWERKS");
+        String dwerks = jsonField(huRow, "DWERKS");
+        String vemng = jsonField(huRow, "VEMNG");
+        String datum = formatPrintDate(jsonField(huRow, "DATUM"));
+
+        String lineSrcSite = "S. SITE: " + (swerks.isEmpty() ? "-" : swerks);
+        String lineDSite = "D. SITE: " + (dwerks.isEmpty() ? "-" : dwerks);
+        String lineQty = "QTY : " + (vemng.isEmpty() ? "0" : Util.convertToDoubleString(vemng));
+        String lineDate = "DATE: " + (datum.isEmpty() ? "-" : datum);
+
+        final int maxLen = 32;
+        lineSrcSite = truncate(lineSrcSite, maxLen);
+        lineDSite = truncate(lineDSite, maxLen);
+        lineQty = truncate(lineQty, maxLen);
+        lineDate = truncate(lineDate, maxLen);
+
+        int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
+        int textX = 20;
+        int ySrcSite = 25;
+        int yDSite = 55;
+        int yQty = 85;
+        int yDate = 115;
+        int barcodeY = 185;
+        int barcodeHeight = 90;
+        int narrow = 4;
+        int wide = 8;
+        int barcodeCenterX = labelWidthInDots / 2;
+        final int humanReadableCenter = 2;
+        final int barcodeAlignCenter = 2;
+
+        return "SIZE 70 mm, 40 mm\n" +
+                "GAP 3 mm, 0 mm\n" +
+                "DIRECTION 0\n" +
+                "CLS\n" +
+                "TEXT " + textX + ", " + ySrcSite + ", \"3\", 0, 1, 1, \"" + lineSrcSite + "\"\n" +
+                "TEXT " + textX + ", " + yDSite + ", \"3\", 0, 1, 1, \"" + lineDSite + "\"\n" +
+                "TEXT " + textX + ", " + yQty + ", \"3\", 0, 1, 1, \"" + lineQty + "\"\n" +
+                "TEXT " + textX + ", " + yDate + ", \"3\", 0, 1, 1, \"" + lineDate + "\"\n" +
+                "BARCODE " + barcodeCenterX + ", " + barcodeY + ", \"128\", " + barcodeHeight + ", " +
+                humanReadableCenter + ", 0, " + narrow + ", " + wide + ", " + barcodeAlignCenter +
+                ", \"" + printHu + "\"\n" +
+                "PRINT 1, 1\n";
+    }
+
+    private static String jsonField(JSONObject obj, String key) {
+        if (obj == null || key == null || !obj.has(key) || obj.isNull(key)) {
+            return "";
+        }
+        return obj.optString(key, "").trim();
+    }
+
     /** e.g. "D. SITE: DH27 (Kolkata)" when code and name are present. */
     private static String formatCodeWithName(String prefix, String code, String name) {
         String c = code != null ? code.trim() : "";

@@ -180,6 +180,18 @@ public final class SapJsonRows {
         if (v.startsWith("section")) {
             return true;
         }
+        if ("plant".equals(v)) {
+            return true;
+        }
+        if (v.contains("character field")) {
+            return true;
+        }
+        if (v.contains("quantity packed") || v.contains("handling unit item")) {
+            return true;
+        }
+        if (v.contains("user id in internet") || v.contains("internet user master")) {
+            return true;
+        }
         return false;
     }
 

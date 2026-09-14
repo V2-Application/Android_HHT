@@ -35,12 +35,10 @@ import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
@@ -55,10 +53,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class FragmentVehicleLoading extends Fragment implements View.OnClickListener {
 
@@ -87,8 +82,6 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
     private String WERKS = "";
     private String USER = "";
     private String lastValidatedHub = "";
-    /** Production gateways use the routemaster REST API; dev/QA keep the RFC adaptor. */
-    private boolean useRoutemaster = false;
 
     private EditText txtPlant;
     private EditText txtVehicleNo;
@@ -143,7 +136,6 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         URL = data.read("URL");
         WERKS = data.read("WERKS");
         USER = data.read("USER");
-        useRoutemaster = GatewayUrls.isProductionGateway(URL);
 
         txtPlant = rootView.findViewById(R.id.txt_vehicle_loading_plant);
         txtVehicleNo = rootView.findViewById(R.id.txt_vehicle_loading_vehicle_no);
@@ -361,32 +353,48 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         }
     }
 
+    /**
+     * {@code ET_ERROR} is BAPIRET2: TYPE S Success, E Error, W Warning, I Info, A Abort.
+     * Only E/A fail the call. NUMBER is a message id, not a success flag.
+     */
     private boolean isEtErrorSuccess(JSONObject responseBody) throws JSONException {
-        if (!responseBody.has("ET_ERROR")) {
+        JSONObject etError = extractEtError(responseBody);
+        if (etError == null) {
             return true;
         }
-        Object etError = responseBody.get("ET_ERROR");
-        if (etError instanceof JSONObject) {
-            String errorNumber = ((JSONObject) etError).optString("NUMBER", "").trim();
-            return errorNumber.isEmpty() || "000".equals(errorNumber) || "0".equals(errorNumber);
-        }
-        String errorCode = String.valueOf(etError).trim();
-        return errorCode.isEmpty() || "000".equals(errorCode) || "0".equals(errorCode);
+        String type = etError.optString("TYPE", "").trim();
+        return !"E".equalsIgnoreCase(type) && !"A".equalsIgnoreCase(type);
     }
 
     private String getEtErrorMessage(JSONObject responseBody) throws JSONException {
-        if (responseBody.has("ET_ERROR") && responseBody.get("ET_ERROR") instanceof JSONObject) {
-            JSONObject etError = responseBody.getJSONObject("ET_ERROR");
+        JSONObject etError = extractEtError(responseBody);
+        if (etError != null) {
             String message = etError.optString("MESSAGE", "").trim();
             if (!message.isEmpty()) {
                 return message;
             }
-            String number = etError.optString("NUMBER", "").trim();
-            if (!number.isEmpty()) {
-                return "Error: " + number;
+        }
+        return "Request failed.";
+    }
+
+    private static JSONObject extractEtError(JSONObject responseBody) throws JSONException {
+        if (responseBody == null || !responseBody.has("ET_ERROR") || responseBody.isNull("ET_ERROR")) {
+            return null;
+        }
+        Object etError = responseBody.get("ET_ERROR");
+        if (etError instanceof JSONObject) {
+            return (JSONObject) etError;
+        }
+        if (etError instanceof JSONArray) {
+            JSONArray arr = (JSONArray) etError;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject row = arr.optJSONObject(i);
+                if (row != null) {
+                    return row;
+                }
             }
         }
-        return "Unable to load store list.";
+        return null;
     }
 
     private void loadTransporterList() {
@@ -600,11 +608,7 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         Handler handler = new Handler();
         handler.postDelayed(() -> {
             try {
-                if (useRoutemaster) {
-                    submitApiRequest(rfc, request, args);
-                } else {
-                    submitRequest(rfc, request, args);
-                }
+                submitRequest(rfc, request, args);
             } catch (Exception e) {
                 if (dialog != null) {
                     dialog.dismiss();
@@ -616,10 +620,18 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
     }
 
     private void submitRequest(String rfc, int request, JSONObject args) {
-        String url = URL.substring(0, URL.lastIndexOf("/"));
-        url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
+        if (url.isEmpty()) {
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            box.getBox("Err", "Server URL missing. Please log in again.");
+            return;
+        }
         final JSONObject params = args;
 
+        Log.d(TAG, "url -> " + url);
         Log.d(TAG, "payload -> " + params);
 
         RequestQueue mRequestQueue = ApplicationController.getInstance().getRequestQueue();
@@ -691,7 +703,6 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
         mRequestQueue.add(mJsonRequest);
     }
 
-    /** Shared by both transports — the response is already normalized to RFC table names here. */
     private void dispatchResponse(int request, JSONObject responseBody, JSONObject args)
             throws JSONException {
         if (request == REQUEST_TRANSPORTER_LIST) {
@@ -707,120 +718,6 @@ public class FragmentVehicleLoading extends Fragment implements View.OnClickList
             }
             openScanScreen(huList);
         }
-    }
-
-    /** RFC table name each screen expects, so both transports feed the same handlers. */
-    private static String tableKeyFor(int request) {
-        if (request == REQUEST_TRANSPORTER_LIST) {
-            return "ET_TRANSPORT_DET";
-        }
-        if (request == REQUEST_HUB_STORE_LIST) {
-            return "ET_STORES";
-        }
-        return "ET_HULIST";
-    }
-
-    /**
-     * Flattens RFC args to form fields. Scalars go as-is; table parameters become
-     * {@code NAME[i].FIELD} (URL-encoded by Volley to {@code NAME%5Bi%5D.FIELD}), and an
-     * empty table is sent as a single blank field — the shape the API expects.
-     */
-    static Map<String, String> toFormParams(JSONObject args) throws JSONException {
-        Map<String, String> params = new LinkedHashMap<>();
-        Iterator<String> keys = args.keys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            if ("bapiname".equals(key)) {
-                continue;
-            }
-            Object value = args.get(key);
-            if (value instanceof JSONArray) {
-                JSONArray rows = (JSONArray) value;
-                if (rows.length() == 0) {
-                    params.put(key, "");
-                    continue;
-                }
-                for (int i = 0; i < rows.length(); i++) {
-                    JSONObject row = rows.optJSONObject(i);
-                    if (row == null) {
-                        continue;
-                    }
-                    Iterator<String> fields = row.keys();
-                    while (fields.hasNext()) {
-                        String field = fields.next();
-                        params.put(key + "[" + i + "]." + field, row.optString(field, ""));
-                    }
-                }
-            } else {
-                params.put(key, String.valueOf(value));
-            }
-        }
-        return params;
-    }
-
-    /** {"Status":..,"Message":..,"Data":{"ET_Data":[..]}} → {"<RFC table>":[..]}. */
-    private static JSONObject normalizeApiResponse(JSONObject body, String tableKey)
-            throws JSONException {
-        JSONObject normalized = new JSONObject();
-        JSONObject data = body.optJSONObject("Data");
-        JSONArray rows = data != null ? data.optJSONArray("ET_Data") : null;
-        normalized.put(tableKey, rows != null ? rows : new JSONArray());
-        return normalized;
-    }
-
-    /**
-     * Production path: form-encoded POST to the routemaster RFC API. The RFC adaptor route
-     * never returns for the hub branch of ZWM_HU_SELECTION_RFC; this answers in a few seconds.
-     */
-    private void submitApiRequest(String rfc, int request, JSONObject args) throws JSONException {
-        String url = GatewayUrls.routemasterApiUrl(rfc);
-        final Map<String, String> formParams = toFormParams(args);
-
-        Log.d(TAG, "api payload -> " + url + " " + formParams);
-
-        StringRequest apiRequest = new StringRequest(Request.Method.POST, url, body -> {
-            if (dialog != null) {
-                dialog.dismiss();
-                dialog = null;
-            }
-            Log.d(TAG, "api response -> " + body);
-
-            if (body == null || body.trim().isEmpty()) {
-                UIFuncs.errorSound(con);
-                box.getBox("Err", "No response from Server");
-                return;
-            }
-
-            try {
-                JSONObject parsed = new JSONObject(body);
-                if (parsed.has("Status") && !parsed.optBoolean("Status", false)) {
-                    UIFuncs.errorSound(con);
-                    if (request == REQUEST_HUB_STORE_LIST) {
-                        lastValidatedHub = "";
-                        txtStore.setText("");
-                        txtHub.requestFocus();
-                    }
-                    box.getBox("Err", parsed.optString("Message", "Request failed."));
-                    return;
-                }
-                dispatchResponse(request, normalizeApiResponse(parsed, tableKeyFor(request)), args);
-            } catch (JSONException e) {
-                box.getErrBox(e);
-            }
-        }, volleyErrorListener()) {
-            @Override
-            protected Map<String, String> getParams() {
-                return formParams;
-            }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-        };
-
-        apiRequest.setRetryPolicy(new DefaultRetryPolicy(180000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(apiRequest);
     }
 
     private Response.ErrorListener volleyErrorListener() {
