@@ -72,6 +72,8 @@ public class FragmentGrtHuCreationPrint extends Fragment implements View.OnClick
     String validatedHu = "";
     String validatedPlant = "";
     String lastSavedHu = "";
+    /** HU from {@code ZWM_GRT_STORE_HU} export {@code EX_HU}; used as print RFC HU. */
+    String lastPrintHu = "";
     boolean requestInFlight = false;
     boolean continueAfterHuValidate = false;
     boolean printAfterPlantValidate = false;
@@ -225,6 +227,7 @@ public class FragmentGrtHuCreationPrint extends Fragment implements View.OnClick
         validatedHu = "";
         validatedPlant = "";
         lastSavedHu = "";
+        lastPrintHu = "";
         continueAfterHuValidate = false;
         printAfterPlantValidate = false;
         txt_scan_hu.setText("");
@@ -260,8 +263,8 @@ public class FragmentGrtHuCreationPrint extends Fragment implements View.OnClick
             validatePlant(true);
             return;
         }
-        if (hu.equals(lastSavedHu)) {
-            printHu(hu);
+        if (hu.equals(lastSavedHu) && !lastPrintHu.isEmpty()) {
+            printHu(lastPrintHu);
             return;
         }
         submitSave();
@@ -383,9 +386,16 @@ public class FragmentGrtHuCreationPrint extends Fragment implements View.OnClick
     }
 
     private void onSaveSuccess(JSONObject responsebody) {
-        String hu = UIFuncs.toUpperTrim(txt_scan_hu);
-        lastSavedHu = hu;
-        printHu(hu);
+        String scannedHu = UIFuncs.toUpperTrim(txt_scan_hu);
+        String exportHu = readHuExport(responsebody);
+        if (exportHu.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "HU not received from save (EX_HU)");
+            return;
+        }
+        lastSavedHu = scannedHu;
+        lastPrintHu = exportHu;
+        printHu(exportHu);
     }
 
     private void printHu(String hu) {
@@ -455,6 +465,73 @@ public class FragmentGrtHuCreationPrint extends Fragment implements View.OnClick
         } catch (JSONException ignored) {
         }
         return null;
+    }
+
+    /**
+     * Reads {@code EX_HU} (TYPE EXIDV) from {@link Vars#ZWM_GRT_STORE_HU}.
+     * Gateway may return a string or a nested object/array.
+     */
+    private static String readHuExport(JSONObject obj) {
+        if (obj == null || !obj.has("EX_HU") || obj.isNull("EX_HU")) {
+            return "";
+        }
+        try {
+            return huFromValue(obj.get("EX_HU"));
+        } catch (JSONException ignored) {
+            return "";
+        }
+    }
+
+    private static String huFromValue(Object raw) {
+        if (raw instanceof JSONArray) {
+            JSONArray arr = (JSONArray) raw;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject row = arr.optJSONObject(i);
+                if (row != null) {
+                    if (SapJsonRows.isMetadataRow(row, "EXIDV", "EX_HU", "HU")) {
+                        continue;
+                    }
+                    String nestedHu = huFromObject(row);
+                    if (!nestedHu.isEmpty()) {
+                        return nestedHu;
+                    }
+                    continue;
+                }
+                String text = normalizeHuText(arr.optString(i, ""));
+                if (!text.isEmpty()) {
+                    return text;
+                }
+            }
+            return "";
+        }
+        if (raw instanceof JSONObject) {
+            JSONObject nested = (JSONObject) raw;
+            if (SapJsonRows.isMetadataRow(nested, "EXIDV", "EX_HU", "HU")) {
+                return "";
+            }
+            return huFromObject(nested);
+        }
+        return normalizeHuText(String.valueOf(raw));
+    }
+
+    private static String huFromObject(JSONObject nested) {
+        String nestedHu = nested.optString("EXIDV",
+                nested.optString("EX_HU", nested.optString("HU", ""))).trim();
+        return normalizeHuText(nestedHu);
+    }
+
+    private static String normalizeHuText(String text) {
+        if (text == null) {
+            return "";
+        }
+        String value = text.trim();
+        if (value.isEmpty() || "null".equalsIgnoreCase(value)
+                || "EXIDV".equalsIgnoreCase(value)
+                || "EX_HU".equalsIgnoreCase(value)
+                || "HU".equalsIgnoreCase(value)) {
+            return "";
+        }
+        return UIFuncs.removeLeadingZeros(value);
     }
 
     private void resetHuInput() {

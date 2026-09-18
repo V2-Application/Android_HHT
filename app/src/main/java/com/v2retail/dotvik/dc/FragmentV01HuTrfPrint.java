@@ -196,7 +196,7 @@ public class FragmentV01HuTrfPrint extends Fragment implements View.OnClickListe
 
     private void validatePrinter(String printerName, boolean isSilentCheck) {
         TSPLPrinter printerHelper = new TSPLPrinter(con);
-        if (!printerHelper.findBluetoothPrinter(printerName, false)) {
+        if (!printerHelper.findBluetoothPrinterByScan(printerName)) {
             if (!isSilentCheck) {
                 box.getBox("Not Paired", "Scanned printer ( " + printerName + " ) is not paired with this device.");
             }
@@ -208,8 +208,10 @@ public class FragmentV01HuTrfPrint extends Fragment implements View.OnClickListe
             UIFuncs.disableInput(con, txt_scan_crate);
             return;
         }
-        data.write(Vars.TVS_PRINTER, printerName);
-        this.tvsprinter = printerName;
+        String resolved = printerHelper.getPrinterName();
+        data.write(Vars.TVS_PRINTER, resolved);
+        this.tvsprinter = resolved;
+        txt_printer.setText(resolved);
         UIFuncs.enableInput(con, txt_scan_dplant);
         UIFuncs.disableInput(con, txt_scan_po);
         UIFuncs.disableInput(con, txt_scan_crate);

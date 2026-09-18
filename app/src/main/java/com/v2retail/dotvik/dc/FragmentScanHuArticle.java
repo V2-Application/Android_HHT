@@ -429,7 +429,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         JSONObject args = new JSONObject();
         try {
             JSONArray imArticles = buildImArticles();
-            if (imArticles.length() <= 1) {
+            if (imArticles.length() == 0) {
                 box.getBox("Alert", "No article data to save.");
                 return;
             }
@@ -439,7 +439,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             args.put("IM_HU", hu);
             // ZWM_SAVE_HU Import: IM_ARTICLES TYPE ZHU_ARTICLE_TT (line type ZHU_ARTICLE_ST).
             args.put("IM_ARTICLES", imArticles);
-            Log.d(TAG, "ZWM_SAVE_HU IM_ARTICLES rows=" + (imArticles.length() - 1)
+            Log.d(TAG, "ZWM_SAVE_HU IM_ARTICLES rows=" + imArticles.length()
                     + " payload=" + imArticles);
             showProcessingAndSubmit(Vars.ZWM_SAVE_HU, REQUEST_SAVE_HU, args);
         } catch (JSONException e) {
@@ -450,21 +450,10 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
 
     /**
      * Builds {@code IM_ARTICLES} as {@code ZHU_ARTICLE_TT} / {@code ZHU_ARTICLE_ST}.
-     * <p>
-     * Production {@code noacljsonrfcadaptor} treats row 0 as a column template
-     * (field name = value). Without that row, SAP often receives an empty table
-     * and the matched article lines never reach {@code ZWM_SAVE_HU}.
-     * Row 1+ is the current on-screen table (MATNR, HU_QTY, SCAN_QTY, DIFF_QTY).
+     * Each row is the current on-screen table (MATNR, HU_QTY, SCAN_QTY, DIFF_QTY).
      */
     private JSONArray buildImArticles() throws JSONException {
         JSONArray arr = new JSONArray();
-        JSONObject header = new JSONObject();
-        header.put("MATNR", "MATNR");
-        header.put("HU_QTY", "HU_QTY");
-        header.put("SCAN_QTY", "SCAN_QTY");
-        header.put("DIFF_QTY", "DIFF_QTY");
-        arr.put(header);
-
         for (JSONObject src : articleRows) {
             if (src == null) {
                 continue;

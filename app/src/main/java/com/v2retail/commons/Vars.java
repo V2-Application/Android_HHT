@@ -30,6 +30,7 @@ public class Vars {
     public static final String TVS_PAPER_LESS = "tvs_paperless";
     public static final String TVS_PAPER_LESS_LHU = "tvs_paperless_live_hu";
     public static final String TVS_PRINTER = "TVS_PRINTER";
+    /** Bluetooth name tokens: existing 4B-2033 series and MLP-360 3-inch mobile printer. */
     public static final String LAST_HU = "last_tvs_paperless_hu";
 
     public static final String BREADCRUMB_DISPLAY_INTERNAL = "Display > Internal";
@@ -200,7 +201,7 @@ public class Vars {
     public static String ZWM_GRT_PLANT_VALIDATE = "ZWM_GRT_PLANT_VALIDATE";
     /** Outward → GRT HU Creation Print — validate HU (IM_HU → EX_RETURN). */
     public static String ZWM_GRT_HU_VALIDATE = "ZWM_GRT_HU_VALIDATE";
-    /** Outward → GRT HU Creation Print — save (IM_USER, IM_EXIDV, IM_SWERKS, IM_DWERKS → EX_RETURN). */
+    /** Outward → GRT HU Creation Print — save (IM_USER, IM_EXIDV, IM_SWERKS, IM_DWERKS → EX_RETURN, EX_HU). */
     public static String ZWM_GRT_STORE_HU = "ZWM_GRT_STORE_HU";
 
     public static String ZWM_BIN_VALIDATION_PUT = "ZWM_BIN_VALIDATION_PUT";
@@ -347,9 +348,9 @@ public class Vars {
     public static String ZSDC_DIRECT_ART_VAL_BARCOD_RFC = "ZSDC_DIRECT_ART_VAL_BARCOD_RFC";
     /** Article Transfer (V01 To 0001 / V01 To 0008) — HU validate (IM_USER, IM_PLANT, IM_HU → EX_RETURN, EX_HU, ET_HU_ART_DATA, ET_EAN_ART_DATA). */
     public static String ZSDC_DIRECT_HU_VALIDATE_RFC = "ZSDC_DIRECT_HU_VALIDATE_RFC";
-    /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE → EX_BARCODE). */
+    /** Article Transfer (V01 To 0001) — barcode validate (IM_USER, IM_STORE_CODE, IM_BARCODE, IM_HU → EX_RETURN, EX_BARCODE). */
     public static String ZSDC_DIRECT_ARTICLE_VAL_RFC = "ZSDC_DIRECT_ARTICLE_VAL_RFC";
-    /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, IM_HU, ET_DATA). */
+    /** Article Transfer (V01 To 0001) — save (IM_USER, IM_STORE_CODE, IM_HU, IM_CHK, ET_DATA). */
     public static String ZSDC_DIRECT_ART_V01_0001_RFC = "ZSDC_DIRECT_ART_V01_0001_RFC";
     /** Article Transfer (V01 To 0008) — save (IM_USER, IM_STORE_CODE, IM_HU, ET_DATA). */
     public static String ZSDC_DIRECT_ART_V01_0008_RFC = "ZSDC_DIRECT_ART_V01_0008_RFC";

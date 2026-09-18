@@ -58,9 +58,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -114,7 +116,8 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     private String hubMapCrate = "";
     private Map<String, JSONObject> etDataMap = new HashMap<>();
     private Map<String, JSONObject> eanDataMap = new HashMap<>();
-    private Map<String, Double> scannedQtyByArticle = new HashMap<>();
+    /** Scanned qty keyed by Article + HUB/Zone, not article alone. */
+    private Map<String, Double> scannedQtyByArticleHub = new HashMap<>();
     private JSONArray referenceEtData = new JSONArray();
     private JSONArray referenceEanData = new JSONArray();
     private JSONArray pendingScans = new JSONArray();
@@ -534,6 +537,23 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         return article.trim().toUpperCase(Locale.ROOT);
     }
 
+    private static String normalizeHub(String hub) {
+        if (hub == null) {
+            return "";
+        }
+        return hub.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /** Unique key for Article + HUB/Zone so the same article can be scanned per hub. */
+    private static String articleHubKey(String article, String hub) {
+        return normalizeArticle(article) + "|" + normalizeHub(hub);
+    }
+
+    private double getScannedQtyForArticleHub(String article, String hub) {
+        Double qty = scannedQtyByArticleHub.get(articleHubKey(article, hub));
+        return qty == null ? 0 : qty;
+    }
+
     private static double parseQty(JSONObject row, String primaryKey, String fallbackKey, double defaultValue) {
         if (row == null) {
             return defaultValue;
@@ -564,29 +584,107 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         return qty;
     }
 
-    /**
-     * Sums the quantity from every ET_DATA row for the article. SAP can return
-     * the same article on multiple rows, so using only etDataMap would lose rows.
-     */
-    private double resolveArticleTotalQty(String article) {
+    private boolean rowMatchesArticle(JSONObject row, String article) {
+        if (row == null || TextUtils.isEmpty(article)) {
+            return false;
+        }
         String target = normalizeArticle(article);
         String targetNoZeros = normalizeArticle(UIFuncs.removeLeadingZeros(article));
+        String rowArticle = normalizeArticle(row.optString("ARTICLE", ""));
+        String rowMatnr = normalizeArticle(row.optString("MATNR", ""));
+        return target.equals(rowArticle)
+                || target.equals(rowMatnr)
+                || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowArticle)))
+                || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowMatnr)));
+    }
+
+    private boolean rowMatchesHub(JSONObject row, String hub) {
+        return normalizeHub(hub).equals(normalizeHub(resolveHubFromEtRow(row)));
+    }
+
+    /**
+     * Sums quantity for this Article + HUB/Zone only. The same article can appear
+     * on multiple ET_DATA rows for different hubs and must not share one qty pool.
+     */
+    private double resolveArticleHubTotalQty(String article, String hub) {
         double total = 0;
+        for (JSONObject row : collectEtRowsForArticle(article)) {
+            if (rowMatchesHub(row, hub)) {
+                total += resolveMaxQty(row);
+            }
+        }
+        return total;
+    }
+
+    private List<JSONObject> collectEtRowsForArticle(String article) {
+        List<JSONObject> rows = new ArrayList<>();
+        if (referenceEtData == null || TextUtils.isEmpty(article)) {
+            return rows;
+        }
         for (int i = 0; i < referenceEtData.length(); i++) {
             JSONObject row = referenceEtData.optJSONObject(i);
             if (row == null || SapJsonRows.isMetadataRow(row, "CRATE", "ARTICLE")) {
                 continue;
             }
-            String rowArticle = normalizeArticle(row.optString("ARTICLE", ""));
-            String rowMatnr = normalizeArticle(row.optString("MATNR", ""));
-            if (target.equals(rowArticle)
-                    || target.equals(rowMatnr)
-                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowArticle)))
-                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(rowMatnr)))) {
-                total += resolveMaxQty(row);
+            if (rowMatchesArticle(row, article)) {
+                rows.add(row);
             }
         }
-        return total;
+        return rows;
+    }
+
+    /**
+     * Next ET_DATA row for this article whose Article + HUB/Zone still has open qty.
+     * Prefers {@code preferredHub} when that combination is still open.
+     */
+    private JSONObject findEtDataForArticleWithOpenQty(String article, String preferredHub) {
+        List<JSONObject> matchingRows = collectEtRowsForArticle(article);
+        if (matchingRows.isEmpty()) {
+            return null;
+        }
+        if (!TextUtils.isEmpty(preferredHub)) {
+            JSONObject preferred = firstOpenRowForArticleHub(article, preferredHub, matchingRows);
+            if (preferred != null) {
+                return preferred;
+            }
+        }
+        LinkedHashSet<String> hubs = new LinkedHashSet<>();
+        for (JSONObject row : matchingRows) {
+            hubs.add(normalizeHub(resolveHubFromEtRow(row)));
+        }
+        for (String hub : hubs) {
+            JSONObject open = firstOpenRowForArticleHub(article, hub, matchingRows);
+            if (open != null) {
+                return open;
+            }
+        }
+        return null;
+    }
+
+    private JSONObject firstOpenRowForArticleHub(String article, String hub,
+                                                 List<JSONObject> matchingRows) {
+        JSONObject firstRow = null;
+        double maxQty = 0;
+        for (JSONObject row : matchingRows) {
+            if (!rowMatchesHub(row, hub)) {
+                continue;
+            }
+            if (firstRow == null) {
+                firstRow = row;
+            }
+            maxQty += resolveMaxQty(row);
+        }
+        if (firstRow == null || maxQty <= 0) {
+            return null;
+        }
+        String keyArticle = firstRow.optString("ARTICLE", "").trim();
+        if (keyArticle.isEmpty()) {
+            keyArticle = firstRow.optString("MATNR", "").trim();
+        }
+        if (keyArticle.isEmpty()) {
+            keyArticle = article;
+        }
+        return getScannedQtyForArticleHub(keyArticle, hub) < maxQty ? firstRow : null;
     }
 
     private static double resolvePackQty(JSONObject eanRow) {
@@ -614,35 +712,13 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         }
         return null;
     }
-    private JSONObject findEtDataForArticle(String article) {
-        String target = normalizeArticle(article);
-        if (target.isEmpty()) {
-            return null;
-        }
-        JSONObject direct = etDataMap.get(target);
-        if (direct != null) {
-            return direct;
-        }
-        String targetNoZeros = normalizeArticle(UIFuncs.removeLeadingZeros(article));
-        for (JSONObject row : etDataMap.values()) {
-            String etArticle = normalizeArticle(row.optString("ARTICLE", ""));
-            String etMatnr = normalizeArticle(row.optString("MATNR", ""));
-            if (target.equals(etArticle)
-                    || target.equals(etMatnr)
-                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(etArticle)))
-                    || targetNoZeros.equals(normalizeArticle(UIFuncs.removeLeadingZeros(etMatnr)))) {
-                return row;
-            }
-        }
-        return null;
-    }
 
     private String resolveHubFromEtRow(JSONObject etRow) {
         if (etRow == null) {
             return "";
         }
-        // Purposed HUB field binds ZONE_CRATE from ET_DATA (not HUB).
-        String[] hubKeys = {"ZONE_CRATE", "PLT_REC_HUBZONE", "HUB_STN", "HUBSTN", "HUB_ZONE", "HUBZONE"};
+        // Pro HUB/ZONE binds ZONE_CRATE from the scanned article's ET_DATA row.
+        String[] hubKeys = {"ZONE_CRATE"};
         for (String key : hubKeys) {
             String hub = etRow.optString(key, "").trim();
             if (!hub.isEmpty()) {
@@ -732,9 +808,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             article = barcode;
         }
 
-        JSONObject etRow = findEtDataForArticle(article);
-        if (etRow == null) {
-            etRow = findEtDataForArticle(barcode);
+        String preferredHub = resolveHubFromEtRow(eanRow);
+        JSONObject etRow = findEtDataForArticleWithOpenQty(article, preferredHub);
+        if (etRow == null && !barcode.equals(article)) {
+            etRow = findEtDataForArticleWithOpenQty(barcode, preferredHub);
         }
 
         double packQty = eanRow == null ? 1 : resolvePackQty(eanRow);
@@ -745,10 +822,9 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
                 etArticle = etRow.optString("MATNR", article).trim();
             }
         }
-        String articleKey = normalizeArticle(etArticle);
-        double maxQty = etRow == null ? 0 : resolveArticleTotalQty(etArticle);
-        double alreadyScanned = scannedQtyByArticle.containsKey(articleKey)
-                ? scannedQtyByArticle.get(articleKey) : 0;
+        String proposedHub = resolveHubFromEtRow(etRow);
+        double maxQty = etRow == null ? 0 : resolveArticleHubTotalQty(etArticle, proposedHub);
+        double alreadyScanned = getScannedQtyForArticleHub(etArticle, proposedHub);
         boolean hasOpenQuantity = etRow != null && maxQty > 0 && alreadyScanned < maxQty;
 
         // No open quantity (missing ET_DATA / qty finished) → logged-in HUB + local cache.
@@ -765,7 +841,6 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         currentScanQty = packQty;
 
         txtArticle.setText(UIFuncs.removeLeadingZeros(etArticle));
-        String proposedHub = resolveHubFromEtRow(etRow);
         txtProposedHub.setText(proposedHub);
         hubMapCrate = "";
         txtHubMapCrate.setText("");
@@ -1162,7 +1237,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         resetArticleFields();
         etDataMap = new HashMap<>();
         eanDataMap = new HashMap<>();
-        scannedQtyByArticle = new HashMap<>();
+        scannedQtyByArticleHub = new HashMap<>();
         referenceEtData = responsebody.optJSONArray("ET_DATA");
         referenceEanData = responsebody.optJSONArray("ET_EAN_DATA");
         if (referenceEtData == null) {
@@ -1233,9 +1308,15 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void handleHubTagSuccess() {
-        scannedQtyByArticle.put(normalizeArticle(currentArticle), currentScannedQty);
+        String taggedHub = resolveHubFromEtRow(currentEtRow);
+        if (TextUtils.isEmpty(taggedHub)) {
+            taggedHub = UIFuncs.toUpperTrim(txtProposedHub);
+        }
+        scannedQtyByArticleHub.put(articleHubKey(currentArticle, taggedHub), currentScannedQty);
         persistLocalSession();
         autoTagInProgress = false;
+        lastArticleScanValue = "";
+        lastArticleScanAtMs = 0;
         hubMapCrate = "";
         txtHubMapCrate.setText("");
         UIFuncs.disableInput(con, txtHubMapCrate);
@@ -1295,7 +1376,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
         referenceEanData = new JSONArray();
         etDataMap = new HashMap<>();
         eanDataMap = new HashMap<>();
-        scannedQtyByArticle = new HashMap<>();
+        scannedQtyByArticleHub = new HashMap<>();
         txtCrate.setText("");
         txtScanCrate.setText("");
         txtEmptyCrateScan.setText("");
@@ -1345,7 +1426,7 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             session.put("ET_EAN_DATA", referenceEanData == null ? new JSONArray() : referenceEanData);
             session.put("SCANS", pendingScans == null ? new JSONArray() : pendingScans);
             JSONObject scannedQuantities = new JSONObject();
-            for (Map.Entry<String, Double> entry : scannedQtyByArticle.entrySet()) {
+            for (Map.Entry<String, Double> entry : scannedQtyByArticleHub.entrySet()) {
                 scannedQuantities.put(entry.getKey(), entry.getValue());
             }
             session.put("SCANNED_QTY", scannedQuantities);
@@ -1397,10 +1478,10 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
             if (restoredQuantities != null) {
                 Iterator<String> keys = restoredQuantities.keys();
                 while (keys.hasNext()) {
-                    String article = keys.next();
-                    scannedQtyByArticle.put(
-                            normalizeArticle(article),
-                            restoredQuantities.optDouble(article, 0));
+                    String articleHub = keys.next();
+                    scannedQtyByArticleHub.put(
+                            articleHub,
+                            restoredQuantities.optDouble(articleHub, 0));
                 }
             }
 
@@ -1459,16 +1540,18 @@ public class FragmentPTLGrtHubSortingScanCrate extends Fragment implements View.
     }
 
     private void rebuildScannedQuantities() {
-        scannedQtyByArticle = new HashMap<>();
+        scannedQtyByArticleHub = new HashMap<>();
         for (int i = 0; i < pendingScans.length(); i++) {
             JSONObject row = pendingScans.optJSONObject(i);
             if (row == null) {
                 continue;
             }
             String article = normalizeArticle(row.optString("ARTICLE", ""));
+            String hub = normalizeHub(row.optString("HUB", ""));
             double quantity = Util.convertStringToDouble(row.optString("SCAN_QTY", "0"));
-            Double existing = scannedQtyByArticle.get(article);
-            scannedQtyByArticle.put(article, (existing == null ? 0 : existing) + quantity);
+            String key = articleHubKey(article, hub);
+            Double existing = scannedQtyByArticleHub.get(key);
+            scannedQtyByArticleHub.put(key, (existing == null ? 0 : existing) + quantity);
         }
     }
 

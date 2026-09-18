@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -75,6 +76,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
     FragmentManager fm;
 
     Button btn_back, btn_save;
+    CheckBox chk_im_chk;
     EditText txt_store, txt_scan_hu, txt_hu_total_qty, txt_scan_barcode, txt_article, txt_article_type, txt_article_size;
     EditText txt_scan_qty, txt_trqty, txt_tqty, txt_taqty;
 
@@ -131,6 +133,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         txt_tqty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_tqty);
         txt_taqty = rootView.findViewById(R.id.txt_direct_picking_v01_article_transfer_0001_taqty);
 
+        chk_im_chk = rootView.findViewById(R.id.chk_direct_picking_v01_article_transfer_0001);
         btn_back = rootView.findViewById(R.id.btn_direct_picking_v01_article_transfer_0001_back);
         btn_save = rootView.findViewById(R.id.btn_direct_picking_v01_article_transfer_0001_save);
 
@@ -170,6 +173,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
         txt_scan_barcode.setText("");
         disableUnderlineInput(txt_scan_barcode);
         txt_scan_hu.setText("");
+        if (chk_im_chk != null) chk_im_chk.setChecked(false);
         enableUnderlineInput(txt_scan_hu);
         txt_scan_hu.requestFocus();
     }
@@ -674,6 +678,7 @@ public class FragmentDirectPickingV01ArticleTransfer0001 extends Fragment implem
             args.put("IM_USER", USER);
             args.put("IM_STORE_CODE", WERKS);
             args.put("IM_HU", validatedHu);
+            args.put("IM_CHK", chk_im_chk != null && chk_im_chk.isChecked() ? "X" : "");
             args.put("ET_DATA", dataToSave);
             showProcessingAndSubmit(Vars.ZSDC_DIRECT_ART_V01_0001_RFC, REQUEST_SAVE, args);
         } catch (JSONException e) {

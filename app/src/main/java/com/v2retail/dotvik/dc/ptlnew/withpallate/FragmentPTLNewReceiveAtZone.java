@@ -381,7 +381,7 @@ public class FragmentPTLNewReceiveAtZone extends Fragment implements View.OnClic
             args.put("IM_PALETTE", validatedPalette);
             // Selected ZONE_STATION from dropdown
             args.put("IM_ZONE_STATION", dd_hub_station.getSelectedItem().toString());
-            args.put("IM_HUB", WERKS);
+            args.put("IM_HUB", UIFuncs.toUpperTrim(txt_hub));
             showProcessingAndSubmit(Vars.ZWM_PTL_PLT_REC_AT_ZONE_FL, REQUEST_SAVE, args);
         } catch (JSONException e) {
             e.printStackTrace();

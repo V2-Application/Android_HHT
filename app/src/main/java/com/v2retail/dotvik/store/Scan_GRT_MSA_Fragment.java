@@ -481,12 +481,14 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
 
                 if (response == null) {
                     dialog.dismiss();
+                    articleScanInProgress = false;
                     box.getBox("Err", "No response from Server");
 
                 } else if (response.equals("")) {
                     Log.d(TAG, " Response is Failure -> " + response);
 
                     dialog.dismiss();
+                    articleScanInProgress = false;
                     box.getBox("Err", "Unable to Connect Server/ Empty Response");
 
 
@@ -519,6 +521,8 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
                         loadMatDataFromServer(response);
                         } catch (Exception e) {
                             box.getErrBox(e);
+                        } finally {
+                            articleScanInProgress = false;
                         }
                     }
                     Log.d("tag", "  response ->" + response);
@@ -528,6 +532,7 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
 
                     response = response.substring(2, response.length());
                     dialog.dismiss();
+                    articleScanInProgress = false;
                     box.getBox("Err", response);
                     barcode_art_et.setText("");
                     barcode_art_et.requestFocus();
@@ -536,6 +541,7 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
 
                     Log.d(TAG, " Response is unknown :" + response);
                     dialog.dismiss();
+                    articleScanInProgress = false;
                     box.getBox("Err", response);
                     ;
 
@@ -563,6 +569,7 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
                 } else err = error.toString();
 
                 dialog.dismiss();
+                articleScanInProgress = false;
                 box.getBox("Err", err);
             }
         }) {
@@ -785,32 +792,35 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
             }
             setFormData();
         } catch (Exception e) {
-            box.getErrBox(e);
-        } finally {
             articleScanInProgress = false;
+            box.getErrBox(e);
         }
     }
 
     private void setFormData() {
 
-        String barcode = barcode_art_et.getText().toString();
+        String barcode = barcode_art_et.getText().toString().replaceAll("[\\r\\n]", "").trim();
         arrBarQty = barcode.split("-");
 
-        rows1 = tables.getEANTAble("floor");
-        // ArrayList<ArrayList<String>> rows2 = tables.getEANTAble("floor");
-
+        // Look up the scanned EAN in already-loaded dtEAN first.
+        // tables.getEANTAble("floor") always returns empty lists, so using that
+        // forced a server round-trip on every scan.
+        rows1 = getEanTable(arrBarQty);
 
         if (rows1.get(0).size() > 0) {
           try {
             processData(arrBarQty);
              } catch (Exception e) {
                 box.getErrBox(e);
+            } finally {
+                articleScanInProgress = false;
             }
         } else {
 
             try {
-            getMatdata();
+            getMatdata(barcode);
            } catch (Exception e) {
+                articleScanInProgress = false;
                 box.getErrBox(e);
             }
 
@@ -987,9 +997,10 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
     private ArrayList<ArrayList<String>> getEanTable(String arrBarQty[]) {
         ArrayList<ArrayList<String>> rows = tables.getEANTAble("");
         int i = 0;
+        rows_index.clear();
         //   i=dtEAN.get(2).size();
         i = 0;
-        if (arrBarQty != null)
+        if (arrBarQty != null && dtEAN != null)
             if (dtEAN.size() > 4)
                 while (dtEAN.get(2).size() > i) {
                     if (dtEAN.get(2).get(i).contains(arrBarQty[0])) {//getting index of row that contains ean11=arrbarqty[0]
@@ -1027,25 +1038,17 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
     }
 
 
-    private void getMatdata() {
+    private void getMatdata(String barcode) {
+        articleScanInProgress = true;
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
 
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                String addrec = null;
-                addrec = WERKS + "#" + bin_et.getText().toString() + "#" + barcode_art_et.getText().toString();
-                String valueRequestPayload = "getmatbinstock#" + addrec + "#<eol>";
-                Log.d(TAG, "payload-> " + valueRequestPayload);
-                requester = "getMat";
-                Log.d(TAG, "Payload -> " + valueRequestPayload);
-                sendAndRequestResponse(valueRequestPayload);
-            }
-        }, 2000);
-
+        String addrec = WERKS + "#" + bin_et.getText().toString() + "#" + barcode;
+        String valueRequestPayload = "getmatbinstock#" + addrec + "#<eol>";
+        requester = "getMat";
+        Log.d(TAG, "payload-> " + valueRequestPayload);
+        sendAndRequestResponse(valueRequestPayload);
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -1071,6 +1074,10 @@ public class Scan_GRT_MSA_Fragment extends Fragment implements View.OnClickListe
     @Override
     public void onDetach() {
         super.onDetach();
+        if (scanRunnable != null) {
+            scanDebounceHandler.removeCallbacks(scanRunnable);
+        }
+        articleScanInProgress = false;
         mListener = null;
     }
 

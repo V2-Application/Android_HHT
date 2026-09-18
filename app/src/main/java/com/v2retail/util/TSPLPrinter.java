@@ -111,6 +111,12 @@ public class TSPLPrinter {
         }
         return false;
     }
+
+    /** Exact match first, then prefix (e.g. MLP-360 → MLP-360-XXXX). */
+    public boolean findBluetoothPrinterByScan(String printerName) {
+        return findBluetoothPrinter(printerName, false) || findBluetoothPrinter(printerName, true);
+    }
+
     public String getPrinterName(){
         return this.printerName;
     }
