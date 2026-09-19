@@ -309,7 +309,7 @@
                         android:paddingStart="7dp"
                         android:paddingEnd="4dp"
                         android:singleLine="true"
-                        android:text="HU.S.Q."
+                        android:text="ART.S.Q."
                         android:textColor="@color/black"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -345,7 +345,7 @@
                         android:paddingStart="7dp"
                         android:paddingEnd="4dp"
                         android:singleLine="true"
-                        android:text="HU.T.Q."
+                        android:text="ART.T.Q."
                         android:textColor="@color/black"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -387,7 +387,7 @@
                         android:paddingStart="4dp"
                         android:paddingEnd="4dp"
                         android:singleLine="true"
-                        android:text="T.R.Q."
+                        android:text="A.R.Q."
                         android:textColor="@color/black"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -423,7 +423,7 @@
                         android:paddingStart="4dp"
                         android:paddingEnd="4dp"
                         android:singleLine="true"
-                        android:text="T.A.Q."
+                        android:text="T.B.Q."
                         android:textColor="@color/black"
                         android:textSize="16sp"
                         android:textStyle="bold" />

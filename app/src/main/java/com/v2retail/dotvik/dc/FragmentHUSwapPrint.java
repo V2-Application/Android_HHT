@@ -136,10 +136,10 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         String savedPrinter = data.read(Vars.TVS_PRINTER);
         if (savedPrinter != null && savedPrinter.length() > 0) {
             TSPLPrinter helper = new TSPLPrinter(con);
-            if (helper.findBluetoothPrinter(savedPrinter, false)) {
-                tvsPrinter = savedPrinter;
-                txt_printer.setText(savedPrinter);
-                setPrinterConnected(savedPrinter);
+            if (helper.findBluetoothPrinterByScan(savedPrinter)) {
+                tvsPrinter = helper.getPrinterName();
+                txt_printer.setText(tvsPrinter);
+                setPrinterConnected(tvsPrinter);
             } else {
                 txt_printer.requestFocus();
                 setPrinterDisconnected();
@@ -263,25 +263,28 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
     // ── Printer detection ─────────────────────────────────────────────────────
 
     private void detectPrinter(String printerName) {
-        if (printerName == null || printerName.isEmpty()) {
-            box.getBox("Error", "Please enter or scan a printer name.");
-            return;
-        }
         TSPLPrinter helper = new TSPLPrinter(con);
-        if (!helper.findBluetoothPrinter(printerName, false)) {
+        boolean found;
+        if (printerName == null || printerName.isEmpty()) {
+            found = helper.findSavedOrKnownLabelPrinter(data.read(Vars.TVS_PRINTER));
+        } else {
+            found = helper.findBluetoothPrinterByScan(printerName);
+        }
+        if (!found) {
             box.getBox("Not Paired",
-                    "Printer \"" + printerName + "\" is not paired with this device.\nPair it in Bluetooth settings first.");
+                    "Printer is not paired with this device.\nPair TVS370 or PP310 in Bluetooth settings first.");
             tvsPrinter = null;
             txt_printer.setText("");
             txt_printer.requestFocus();
             setPrinterDisconnected();
             return;
         }
-        tvsPrinter = printerName;
-        data.write(Vars.TVS_PRINTER, printerName);
-        txt_printer.setText(printerName);
-        setPrinterConnected(printerName);
-        showStatus("Printer ready: " + printerName, true);
+        String resolved = helper.getPrinterName();
+        tvsPrinter = resolved;
+        data.write(Vars.TVS_PRINTER, resolved);
+        txt_printer.setText(resolved);
+        setPrinterConnected(resolved);
+        showStatus("Printer ready: " + resolved, true);
     }
 
     // ── RFC call ──────────────────────────────────────────────────────────────

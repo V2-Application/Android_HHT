@@ -237,7 +237,7 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
 
     private void validatePrinter(String printerName, boolean isSilentCheck){
         TSPLPrinter printerHelper = new TSPLPrinter(con);
-        if(!printerHelper.findBluetoothPrinter(printerName, false)){
+        if(!printerHelper.findBluetoothPrinterByScan(printerName)){
             if(!isSilentCheck){
                 box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
             }
@@ -247,8 +247,13 @@ public class FragmentPTLNewHUCloseAndPrint extends Fragment implements View.OnCl
             UIFuncs.disableInput(con, txt_scan_ext_hu);
             return;
         }
-        data.write(Vars.TVS_PRINTER, printerName);
-        this.tvsprinter = printerName;
+        String resolved = printerHelper.getPrinterName();
+        if (resolved == null || resolved.isEmpty()) {
+            resolved = printerName;
+        }
+        data.write(Vars.TVS_PRINTER, resolved);
+        this.tvsprinter = resolved;
+        txt_printer.setText(resolved);
         UIFuncs.enableInput(con, txt_scan_ext_hu);
     }
 

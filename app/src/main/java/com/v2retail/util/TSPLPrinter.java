@@ -61,6 +61,10 @@ public class TSPLPrinter {
     // Function to send print command via Bluetooth
     public void sendPrintCommandToBluetoothPrinter(String printerName, JSONObject huObj, String copies) {
         try {
+            if (isOrResolvesToPP310(printerName)) {
+                sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildHuPrintCommand(huObj, copies, this.process));
+                return;
+            }
             // Find the Bluetooth printer by name
             findBluetoothPrinter(printerName, false);
 
@@ -95,6 +99,9 @@ public class TSPLPrinter {
 
     // Function to find the Bluetooth printer by name
     public boolean findBluetoothPrinter(String printerName, boolean checkStartsWith) {
+        if (printerName == null || printerName.isEmpty() || bluetoothAdapter == null) {
+            return false;
+        }
         if (ActivityCompat.checkSelfPermission(con, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             requestBluetoothPermission(con);
         }
@@ -102,8 +109,12 @@ public class TSPLPrinter {
         if (pairedDevices.size() > 0) {
             // Loop through paired devices to find the printer
             for (BluetoothDevice device : pairedDevices) {
-                if (device.getName().equalsIgnoreCase(printerName) || (checkStartsWith && device.getName().toUpperCase().startsWith(printerName.toUpperCase()))) {
-                    this.printerName = device.getName();
+                String name = device.getName();
+                if (name == null) {
+                    continue;
+                }
+                if (name.equalsIgnoreCase(printerName) || (checkStartsWith && name.toUpperCase().startsWith(printerName.toUpperCase()))) {
+                    this.printerName = name;
                     printerDevice = device;
                     return true;
                 }
@@ -112,9 +123,142 @@ public class TSPLPrinter {
         return false;
     }
 
-    /** Exact match first, then prefix (e.g. MLP-360 → MLP-360-XXXX). */
+    /** Exact match first, then prefix, then last-4 of a paired printer name or MAC. */
     public boolean findBluetoothPrinterByScan(String printerName) {
-        return findBluetoothPrinter(printerName, false) || findBluetoothPrinter(printerName, true);
+        if (findBluetoothPrinter(printerName, false) || findBluetoothPrinter(printerName, true)) {
+            return true;
+        }
+        if (findBluetoothPrinterByLast4(printerName)) {
+            return true;
+        }
+        return PP310Printer.isPP310Name(printerName) && findPairedPP310();
+    }
+
+    /**
+     * Scan value {@code 001583A95B6C} matches paired {@code NLS-PP310-5B6C}
+     * when the last 4 characters of the name or Bluetooth MAC match.
+     */
+    public boolean findBluetoothPrinterByLast4(String scanned) {
+        String token = last4Alnum(scanned);
+        if (token.length() < 4) {
+            return false;
+        }
+        if (ActivityCompat.checkSelfPermission(con, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            requestBluetoothPermission(con);
+        }
+        if (bluetoothAdapter == null) {
+            return false;
+        }
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+        if (pairedDevices == null || pairedDevices.isEmpty()) {
+            return false;
+        }
+        String scannedAlnum = alnumUpper(scanned);
+        for (BluetoothDevice device : pairedDevices) {
+            String name = device.getName();
+            String address = device.getAddress();
+            String addressAlnum = alnumUpper(address);
+            boolean last4Match = token.equals(last4Alnum(name)) || token.equals(last4Alnum(address));
+            boolean macMatch = scannedAlnum.length() >= 12 && scannedAlnum.equals(addressAlnum);
+            if (last4Match || macMatch) {
+                this.printerName = (name != null && !name.isEmpty()) ? name : address;
+                printerDevice = device;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String alnumUpper(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+    }
+
+    private static String last4Alnum(String value) {
+        String n = alnumUpper(value);
+        if (n.length() < 4) {
+            return n;
+        }
+        return n.substring(n.length() - 4);
+    }
+
+    private boolean isOrResolvesToPP310(String printerName) {
+        if (PP310Printer.isPP310Name(printerName)) {
+            return true;
+        }
+        return findBluetoothPrinterByLast4(printerName) && PP310Printer.isPP310Name(this.printerName);
+    }
+
+    private String resolvedPrinterName(String printerName) {
+        if (this.printerName != null && !this.printerName.isEmpty()) {
+            return this.printerName;
+        }
+        return printerName;
+    }
+
+    /**
+     * Saved name first, then existing TVS 4B-2033, then Newland PP310.
+     * TVS lookup order is unchanged when a 4B-2033 device is paired.
+     */
+    public boolean findSavedOrKnownLabelPrinter(String savedName) {
+        if (savedName != null && !savedName.isEmpty() && findBluetoothPrinterByScan(savedName)) {
+            return true;
+        }
+        if (findBluetoothPrinter(Vars.TVS_PRINTER_PREFIX, true)) {
+            return true;
+        }
+        return findPairedPP310();
+    }
+
+    public boolean findPairedPP310() {
+        if (ActivityCompat.checkSelfPermission(con, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            requestBluetoothPermission(con);
+        }
+        if (bluetoothAdapter == null) {
+            return false;
+        }
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
+        if (pairedDevices == null || pairedDevices.isEmpty()) {
+            return false;
+        }
+        for (BluetoothDevice device : pairedDevices) {
+            String name = device.getName();
+            if (PP310Printer.isPP310Name(name)) {
+                this.printerName = name;
+                printerDevice = device;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean sendPP310Command(String printerName, String cpcl) {
+        try {
+            if (!findBluetoothPrinterByScan(printerName) && !findPairedPP310()) {
+                Log.e("TSPLPrinter", "PP310 printer not found: " + printerName);
+                return false;
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                Log.e("TSPLPrinter", "PP310 Bluetooth not connected");
+                return false;
+            }
+            OutputStream outputStream = bluetoothSocket.getOutputStream();
+            outputStream.write(cpcl.getBytes("GBK"));
+            outputStream.flush();
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException ignored) {
+            }
+            outputStream.close();
+            bluetoothSocket.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public String getPrinterName(){
@@ -253,6 +397,11 @@ public class TSPLPrinter {
                                        String qty,   String crDate,
                                        String crTime, String source, String dest) {
         try {
+            if (isOrResolvesToPP310(printerName)) {
+                sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildHuSwapLabel(
+                        oldHu, newHu, qty, crDate, crTime, source, dest));
+                return;
+            }
             findBluetoothPrinter(printerName, false);
             if (printerDevice == null) {
                 Log.e("TSPLPrinter", "HU Swap: printer not found: " + printerName);
@@ -439,9 +588,17 @@ public class TSPLPrinter {
                                             String qty,
                                             String dateTime) {
         try {
+            if (isOrResolvesToPP310(printerName)) {
+                return sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildStoreGrtLabel(
+                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime));
+            }
             if (!locateStoreGrtPrinter(printerName)) {
                 Log.e("TSPLPrinter", "Store GRT: printer not found: " + printerName);
                 return false;
+            }
+            if (PP310Printer.isPP310Name(this.printerName)) {
+                return sendPP310Command(this.printerName, PP310Printer.buildStoreGrtLabel(
+                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime));
             }
             connectToBluetoothPrinter();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
@@ -469,7 +626,16 @@ public class TSPLPrinter {
         if (printerName != null && !printerName.isEmpty() && findBluetoothPrinter(printerName, false)) {
             return true;
         }
-        return findBluetoothPrinter("4B-2033", true);
+        if (printerName != null && !printerName.isEmpty() && findBluetoothPrinter(printerName, true)) {
+            return true;
+        }
+        if (printerName != null && !printerName.isEmpty() && findBluetoothPrinterByLast4(printerName)) {
+            return true;
+        }
+        if (findBluetoothPrinter(Vars.TVS_PRINTER_PREFIX, true)) {
+            return true;
+        }
+        return findPairedPP310();
     }
 
     private String buildStoreGrtLabel(String huNo,
@@ -538,9 +704,15 @@ public class TSPLPrinter {
      */
     public boolean sendHuGrtPrintCommand(String printerName, String huNo, JSONObject huRow) {
         try {
+            if (isOrResolvesToPP310(printerName)) {
+                return sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildHuGrtLabel(huNo, huRow));
+            }
             if (!locateStoreGrtPrinter(printerName)) {
                 Log.e("TSPLPrinter", "HU GRT PRINT: printer not found: " + printerName);
                 return false;
+            }
+            if (PP310Printer.isPP310Name(this.printerName)) {
+                return sendPP310Command(this.printerName, PP310Printer.buildHuGrtLabel(huNo, huRow));
             }
             connectToBluetoothPrinter();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {

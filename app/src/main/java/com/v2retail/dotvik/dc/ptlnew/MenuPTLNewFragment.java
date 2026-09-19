@@ -160,22 +160,13 @@ public class MenuPTLNewFragment extends Fragment implements
     private void testPrint() {
         TSPLPrinter printerHelper = new TSPLPrinter(con);
         String defaultPrinter = data.read(Vars.TVS_PRINTER);
-        boolean printerFound = false;
-        if (defaultPrinter != null && defaultPrinter.length() > 0) {
-            printerFound = printerHelper.findBluetoothPrinter(defaultPrinter, false);
-        }
-        if (!printerFound) {
-            printerFound = printerHelper.findBluetoothPrinter("4B-2033", true);
-            if (printerFound) {
-                defaultPrinter = printerHelper.getPrinterName();
-                data.write(Vars.TVS_PRINTER, defaultPrinter);
-            }
-        }
-        if (!printerFound) {
+        if (!printerHelper.findSavedOrKnownLabelPrinter(defaultPrinter)) {
             AlertBox box = new AlertBox(con);
-            box.getBox("Printer Not Found", "No paired TVS bluetooth printer found. Please pair");
+            box.getBox("Printer Not Found", "No paired TVS or PP310 bluetooth printer found. Please pair");
             return;
         }
+        defaultPrinter = printerHelper.getPrinterName();
+        data.write(Vars.TVS_PRINTER, defaultPrinter);
         printerHelper.sendPrintCommandToBluetoothPrinter(defaultPrinter, null, "2");
     }
 

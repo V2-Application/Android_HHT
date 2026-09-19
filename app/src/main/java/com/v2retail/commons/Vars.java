@@ -30,7 +30,9 @@ public class Vars {
     public static final String TVS_PAPER_LESS = "tvs_paperless";
     public static final String TVS_PAPER_LESS_LHU = "tvs_paperless_live_hu";
     public static final String TVS_PRINTER = "TVS_PRINTER";
-    /** Bluetooth name tokens: existing 4B-2033 series and MLP-360 3-inch mobile printer. */
+    /** Bluetooth name tokens: existing TVS370 / 4B-2033 series and Newland PP310. */
+    public static final String TVS_PRINTER_PREFIX = "4B-2033";
+    public static final String PP310_PRINTER_PREFIX = "PP310";
     public static final String LAST_HU = "last_tvs_paperless_hu";
 
     public static final String BREADCRUMB_DISPLAY_INTERNAL = "Display > Internal";

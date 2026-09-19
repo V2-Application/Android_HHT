@@ -1019,17 +1019,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         focusArticleField();
     }
 
-    /** Resolves paired TVS printer name (exact match, then 4B-2033* prefix). */
+    /** Resolves paired printer name (saved, then TVS 4B-2033*, then Newland PP310). */
     private boolean resolveTvsPrinterForPrint(SharedPreferencesData data) {
         TSPLPrinter helper = new TSPLPrinter(con);
-        if (tvsPrinter != null && !tvsPrinter.isEmpty() && helper.findBluetoothPrinter(tvsPrinter, false)) {
-            tvsPrinter = helper.getPrinterName();
-            if (tvsPrinter != null && !tvsPrinter.isEmpty()) {
-                data.write(Vars.TVS_PRINTER, tvsPrinter);
-            }
-            return true;
-        }
-        if (helper.findBluetoothPrinter("4B-2033", true)) {
+        if (helper.findSavedOrKnownLabelPrinter(tvsPrinter != null && !tvsPrinter.isEmpty() ? tvsPrinter : data.read(Vars.TVS_PRINTER))) {
             tvsPrinter = helper.getPrinterName();
             if (tvsPrinter != null && !tvsPrinter.isEmpty()) {
                 data.write(Vars.TVS_PRINTER, tvsPrinter);

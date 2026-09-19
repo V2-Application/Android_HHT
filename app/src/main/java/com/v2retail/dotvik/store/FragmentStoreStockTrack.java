@@ -59,6 +59,8 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
 
     private static final String TAG = FragmentStoreStockTrack.class.getName();
     private static final int REQUEST_PUSH = 410;
+    /** Auto-submit EMP only after at least 6 characters; shorter values need manual Enter. */
+    private static final int EMP_AUTO_MIN_LEN = 6;
 
     private Context con;
     private AlertBox box;
@@ -76,6 +78,7 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
     private boolean rfcInFlight = false;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingArticleScan;
+    private Runnable pendingEmpScan;
 
     public FragmentStoreStockTrack() {}
 
@@ -114,7 +117,7 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
         btnReset = view.findViewById(R.id.btn_store_stock_track_reset);
 
         btnReset.setOnClickListener(this);
-        wireScanField(txtEmp, this::onEmpScanned);
+        wireEmpField();
         wireScanField(txtBin, this::onBinScanned);
         wireArticleField();
 
@@ -131,6 +134,63 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
 
     private interface ScanAction {
         void run(String value);
+    }
+
+    /**
+     * EMP Code: auto-hit only when 6+ characters are entered (scanner dump or typed),
+     * otherwise wait for manual Enter / Done.
+     */
+    private void wireEmpField() {
+        txtEmp.setOnEditorActionListener((tv, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE
+                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN)) {
+                UIFuncs.hideKeyboard(getActivity());
+                String v = UIFuncs.toUpperTrim(txtEmp);
+                if (!v.isEmpty()) {
+                    cancelPendingEmpScan();
+                    onEmpScanned(v);
+                    return true;
+                }
+            }
+            return false;
+        });
+        txtEmp.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!txtEmp.isEnabled()) return;
+                String v = s.toString().toUpperCase().trim();
+                if (v.length() >= EMP_AUTO_MIN_LEN) {
+                    scheduleEmpScan();
+                } else {
+                    cancelPendingEmpScan();
+                }
+            }
+        });
+    }
+
+    private void scheduleEmpScan() {
+        cancelPendingEmpScan();
+        pendingEmpScan = () -> {
+            pendingEmpScan = null;
+            if (!txtEmp.isEnabled()) return;
+            String latest = UIFuncs.toUpperTrim(txtEmp);
+            if (latest.length() >= EMP_AUTO_MIN_LEN) {
+                onEmpScanned(latest);
+            }
+        };
+        mainHandler.postDelayed(pendingEmpScan, 350);
+    }
+
+    private void cancelPendingEmpScan() {
+        if (pendingEmpScan != null) {
+            mainHandler.removeCallbacks(pendingEmpScan);
+            pendingEmpScan = null;
+        }
     }
 
     private void wireScanField(EditText field, ScanAction action) {
@@ -217,8 +277,9 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
 
     private void onEmpScanned(String value) {
         if (!txtEmp.isEnabled()) return;
-        txtEmp.setText(value);
+        cancelPendingEmpScan();
         UIFuncs.disableInput(con, txtEmp);
+        txtEmp.setText(value);
         UIFuncs.enableInput(con, txtBin);
         txtBin.requestFocus();
     }
@@ -289,6 +350,7 @@ public class FragmentStoreStockTrack extends Fragment implements View.OnClickLis
 
     private void resetAll() {
         rfcInFlight = false;
+        cancelPendingEmpScan();
         if (pendingArticleScan != null) {
             mainHandler.removeCallbacks(pendingArticleScan);
             pendingArticleScan = null;

@@ -138,8 +138,8 @@ public class PaperLessDate extends Fragment {
             TSPLPrinter printerHelper = new TSPLPrinter(con);
             String defaultrPrinter = data.read(Vars.TVS_PRINTER);
             if(defaultrPrinter != null && defaultrPrinter.length() > 0){
-                if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
-                    setPrinterFieldTextKeepingFocus(data.read(Vars.TVS_PRINTER));
+                if(printerHelper.findBluetoothPrinterByScan(defaultrPrinter)){
+                    setPrinterFieldTextKeepingFocus(printerHelper.getPrinterName());
                 }
             }
         }
@@ -211,7 +211,8 @@ public class PaperLessDate extends Fragment {
                         // Bonded-device lookup can stall the UI thread on some devices; run off main.
                         new Thread(() -> {
                             TSPLPrinter printerHelper = new TSPLPrinter(con);
-                            final boolean found = printerHelper.findBluetoothPrinter(printerName, false);
+                            final boolean found = printerHelper.findBluetoothPrinterByScan(printerName);
+                            final String resolved = printerHelper.getPrinterName();
                             Activity act = getActivity();
                             if (act == null) {
                                 finishDeliveryRequest();
@@ -227,7 +228,7 @@ public class PaperLessDate extends Fragment {
                                     box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
                                     return;
                                 }
-                                data.write(Vars.TVS_PRINTER, printerName);
+                                data.write(Vars.TVS_PRINTER, resolved != null && !resolved.isEmpty() ? resolved : printerName);
                                 String fromDate = inputFromDate.getText().toString().trim();
                                 if (TextUtils.isEmpty(fromDate)) {
                                     inputFromDate.setError("Enter the start Date");

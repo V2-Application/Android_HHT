@@ -429,7 +429,8 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
         JSONObject args = new JSONObject();
         try {
             JSONArray imArticles = buildImArticles();
-            if (imArticles.length() == 0) {
+            // Row 0 is the Production RFC adaptor field catalog, not an article.
+            if (imArticles.length() <= 1) {
                 box.getBox("Alert", "No article data to save.");
                 return;
             }
@@ -439,7 +440,7 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
             args.put("IM_HU", hu);
             // ZWM_SAVE_HU Import: IM_ARTICLES TYPE ZHU_ARTICLE_TT (line type ZHU_ARTICLE_ST).
             args.put("IM_ARTICLES", imArticles);
-            Log.d(TAG, "ZWM_SAVE_HU IM_ARTICLES rows=" + imArticles.length()
+            Log.d(TAG, "ZWM_SAVE_HU IM_ARTICLES rows=" + (imArticles.length() - 1)
                     + " payload=" + imArticles);
             showProcessingAndSubmit(Vars.ZWM_SAVE_HU, REQUEST_SAVE_HU, args);
         } catch (JSONException e) {
@@ -450,10 +451,18 @@ public class FragmentScanHuArticle extends Fragment implements View.OnClickListe
 
     /**
      * Builds {@code IM_ARTICLES} as {@code ZHU_ARTICLE_TT} / {@code ZHU_ARTICLE_ST}.
-     * Each row is the current on-screen table (MATNR, HU_QTY, SCAN_QTY, DIFF_QTY).
+     * Production {@code noacljsonrfcadaptor} maps JSON array → SAP table using row 0 as
+     * the field catalog ({@code "MATNR":"MATNR"}). QA/DEV can bind data rows without it,
+     * so omitting this row leaves Production {@code IM_ARTICLES} blank in the FM.
      */
     private JSONArray buildImArticles() throws JSONException {
         JSONArray arr = new JSONArray();
+        JSONObject header = new JSONObject();
+        header.put("MATNR", "MATNR");
+        header.put("HU_QTY", "HU_QTY");
+        header.put("SCAN_QTY", "SCAN_QTY");
+        header.put("DIFF_QTY", "DIFF_QTY");
+        arr.put(header);
         for (JSONObject src : articleRows) {
             if (src == null) {
                 continue;

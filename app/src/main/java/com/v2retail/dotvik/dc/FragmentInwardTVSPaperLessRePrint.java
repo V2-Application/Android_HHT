@@ -127,8 +127,8 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
         TSPLPrinter printerHelper = new TSPLPrinter(con);
         String defaultrPrinter = data.read(Vars.TVS_PRINTER);
         if(defaultrPrinter != null && defaultrPrinter.length() > 0){
-            if(printerHelper.findBluetoothPrinter(defaultrPrinter, false)){
-                String printerName = data.read(Vars.TVS_PRINTER);
+            if(printerHelper.findBluetoothPrinterByScan(defaultrPrinter)){
+                String printerName = printerHelper.getPrinterName();
                 this.tvsprinter = printerName;
                 txt_printer.setText(printerName);
                 validatePrinter(printerName);
@@ -258,7 +258,7 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
 
     private void validatePrinter(String printerName){
         TSPLPrinter printerHelper = new TSPLPrinter(con);
-        if(!printerHelper.findBluetoothPrinter(printerName, false)){
+        if(!printerHelper.findBluetoothPrinterByScan(printerName)){
             box.getBox("Not Paired", "Scanned printer ( "+ printerName +" ) is not paired with this device.");
             this.tvsprinter = "xxxxxxxx";
             txt_printer.setText("");
@@ -266,8 +266,13 @@ public class FragmentInwardTVSPaperLessRePrint extends Fragment implements View.
             UIFuncs.disableInput(con, txt_hu);
             return;
         }
-        data.write(Vars.TVS_PRINTER, printerName);
-        this.tvsprinter = printerName;
+        String resolved = printerHelper.getPrinterName();
+        if (resolved == null || resolved.isEmpty()) {
+            resolved = printerName;
+        }
+        data.write(Vars.TVS_PRINTER, resolved);
+        this.tvsprinter = resolved;
+        txt_printer.setText(resolved);
         UIFuncs.enableInput(con, txt_hu);
     }
 
