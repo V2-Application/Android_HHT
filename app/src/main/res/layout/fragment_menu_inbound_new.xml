@@ -16,6 +16,15 @@
             android:padding="5dp">
 
             <Button
+                android:id="@+id/btn_hu_print_putway_pallet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="HU Print &amp; Putway to Pallet"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
                 android:id="@+id/btn_hu_scan_putway"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -48,6 +57,15 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="PUT01 — HU Wise Scanning"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:id="@+id/btn_put01_hu_art_scan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="PUT01 - HU ART WISE SCANNING"
                 android:textColor="#fff"
                 android:background="#e71821" />
 

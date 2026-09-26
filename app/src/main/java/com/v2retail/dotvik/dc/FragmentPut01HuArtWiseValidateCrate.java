@@ -77,9 +77,9 @@ import java.util.Locale;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link ValidateCrate_Process_Fragment.OnFragmentInteractionListener} interface
+ * {@link FragmentPut01HuArtWiseValidateCrate.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link ValidateCrate_Process_Fragment#newInstance} factory method to
+ * Use the {@link FragmentPut01HuArtWiseValidateCrate#newInstance} factory method to
  * create an instance of this fragment.
  */
 
@@ -87,9 +87,9 @@ import java.util.Locale;
  * @author Narayanan
  * @version 11.73
  * {@code Author: Narayanan, Revision: 2, Modified: 24th Aug 2024}
- * Changes: Added logic to check and allow Mix article scan if EtPoDataModel.MXALOW is X
+ * PUT01 HU ART WISE SCANNING ? separate copy of Validate Crate (same RFCs/logic). Changes: Added logic to check and allow Mix article scan if EtPoDataModel.MXALOW is X
  */
-public class ValidateCrate_Process_Fragment extends Fragment implements View.OnClickListener {
+public class FragmentPut01HuArtWiseValidateCrate extends Fragment implements View.OnClickListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final int REQUEST_GET_CRATE_DATA = 1023;
@@ -114,7 +114,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
     ArrayList<String> SQdata;
     // TODO: Rename and change types of parameters
     ArrayList<Integer> rows_index = new ArrayList<>();
-    private String TAG = ValidateCrate_Process_Fragment.class.getName();
+    private String TAG = FragmentPut01HuArtWiseValidateCrate.class.getName();
     Tables table = new Tables();
     TextView mResponseView;
     Context con;
@@ -135,6 +135,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
     EditText bill_no_et;
     EditText ge_et;
     EditText crate_et;
+    EditText vendorHu_et;
     EditText article_no_et;
     EditText curCrate_et;
     EditText curBin_et;
@@ -156,8 +157,9 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
     int poQty =0;
     JSONArray jsonArray = new JSONArray();
     private OnFragmentInteractionListener mListener;
+    private boolean vendorHuRequestInProgress = false;
 
-    public ValidateCrate_Process_Fragment() {
+    public FragmentPut01HuArtWiseValidateCrate() {
         // Required empty public constructor
     }
 
@@ -165,7 +167,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
     public void onResume() {
         super.onResume();
         ((Process_Selection_Activity) getActivity())
-                .setActionBarTitle("Validate Crate");
+                .setActionBarTitle("PUT01 - HU ART WISE SCANNING");
     }
 
     /**
@@ -177,8 +179,8 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
      * @return A new instance of fragment OutWardFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static ValidateCrate_Process_Fragment newInstance(String param1, String param2) {
-        ValidateCrate_Process_Fragment fragment = new ValidateCrate_Process_Fragment();
+    public static FragmentPut01HuArtWiseValidateCrate newInstance(String param1, String param2) {
+        FragmentPut01HuArtWiseValidateCrate fragment = new FragmentPut01HuArtWiseValidateCrate();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -213,7 +215,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.validate_crate, container, false);
+        View view = inflater.inflate(R.layout.validate_crate_put01_hu_art, container, false);
         con = getContext();
         box = new AlertBox(con);
         dialog=new ProgressDialog(con);
@@ -235,6 +237,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
         ven_inv_et = (EditText) view.findViewById(R.id.ven_inv);//inv_text
         bill_no_et = (EditText) view.findViewById(R.id.bill_no);//bill_no
         ge_et = (EditText) view.findViewById(R.id.ge);//gate_entry
+        vendorHu_et = (EditText) view.findViewById(R.id.vendor_hu);
         crate_et = (EditText) view.findViewById(R.id.crate_no);//crate
 
 
@@ -267,7 +270,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
             lastScan.setBackgroundColor(getResources().getColor(R.color.viewBg));
             lastScan.setHint("Description");
             curCrate_et.setVisibility(View.GONE);
-            crate_et.requestFocus();
+            vendorHu_et.requestFocus();
         }
 
         lastScan.setEnabled(false);
@@ -292,6 +295,28 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
     void addEditorListeners() {
 
+        vendorHu_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_DONE) {
+                    if (keyEvent != null && keyEvent.getAction() == KeyEvent.ACTION_DOWN) return true;
+                    String vendorHu = vendorHu_et.getText().toString().trim();
+                    if (!vendorHu.isEmpty()) {
+                        try {
+                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            imm.hideSoftInputFromWindow(vendorHu_et.getWindowToken(), 0);
+                        } catch (Exception ignored) { }
+                        validateVendorHu();
+                        return true;
+                    } else {
+                        box.getBox("Alert!!", "Please Scan Vendor HU");
+                    }
+                }
+                return false;
+            }
+        });
+
         crate_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
@@ -305,11 +330,8 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                         try {
                             InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                             imm.hideSoftInputFromWindow(crate_et.getWindowToken(), 0);
-                            if(screen == 2){
-                                validateCrate();
-                            }else{
-                                loadCrateData();
-                            }
+                            Log.d(TAG, "Crate entered -> " + crate.trim() + " | RFC ZWM_VALIDATE_CRATE_VND_HU");
+                            loadCrateData();
                         } catch (Exception e) {
                             box.getErrBox(e);
                         }
@@ -328,20 +350,18 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
                     // handle only when key pressed.
                     if(keyEvent!=null && keyEvent.getAction()==KeyEvent.ACTION_DOWN) return true;
-                    if(screen != 2){
-                        String article = article_no_et.getText().toString();
-                        if (!(article.equals("") || article.length() < 0 || article.equals(null))) {
-                            try {
-                                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                                imm.hideSoftInputFromWindow(article_no_et.getWindowToken(), 0);
-                                loadArticleData();
-                            } catch (Exception e) {
-                                box.getErrBox(e);
-                            }
-                            return true;
-                        } else {
-                            box.getBox("Alert!!", "First Scan Bar Number");
+                    String article = article_no_et.getText().toString();
+                    if (!(article.equals("") || article.length() < 0 || article.equals(null))) {
+                        try {
+                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            imm.hideSoftInputFromWindow(article_no_et.getWindowToken(), 0);
+                            loadArticleData();
+                        } catch (Exception e) {
+                            box.getErrBox(e);
                         }
+                        return true;
+                    } else {
+                        box.getBox("Alert!!", "First Scan Bar Number");
                     }
 
                 }
@@ -352,6 +372,30 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
     }
 
     void addTextChangeListners() {
+        vendorHu_et.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 6;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (scannerReading && !s.toString().trim().isEmpty()) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            validateVendorHu();
+                        }
+                    });
+                }
+            }
+        });
+
         crate_et.addTextChangedListener(new TextWatcher() {
             boolean scannerReading = false;
 
@@ -374,16 +418,12 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
                 String poString = s.toString();
                 if (scannerReading) {
-                    Log.d(TAG, "Scanned poString : " + poString);
+                    Log.d(TAG, "Crate scanned -> " + poString + " | RFC ZWM_VALIDATE_CRATE_VND_HU");
 
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if(screen == 2){
-                                validateCrate();
-                            }else{
-                                loadCrateData();
-                            }
+                            loadCrateData();
                         }
                     });
                 }
@@ -410,18 +450,16 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
             @Override
             public void afterTextChanged(Editable s) {
-                if(screen != 2) {
-                    String poString = s.toString();
-                    if (scannerReading) {
-                        Log.d(TAG, "Scanned poString : " + poString);
+                String poString = s.toString();
+                if (scannerReading) {
+                    Log.d(TAG, "Scanned poString : " + poString);
 
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                loadArticleData();
-                            }
-                        });
-                    }
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadArticleData();
+                        }
+                    });
                 }
             }
         });
@@ -458,14 +496,17 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
         bol = getArguments().getString("bol_et");
         if (etPoDataModels!=null) {
             for (int i = 0; i < etPoDataModels.size(); i++) {
-
+                String material = etPoDataModels.get(i).getMATERIAL();
+                if (material == null || "MATERIAL".equalsIgnoreCase(material.trim())) {
+                    continue;
+                }
                 poQty += Double.valueOf(etPoDataModels.get(i).getPO_QTY()).intValue();
 
             }
         }
         tpoq_et.setText(String.valueOf(poQty));
 
-        crate_et.requestFocus();
+        vendorHu_et.requestFocus();
 
     }
 
@@ -526,6 +567,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                     case "crate":
                         crate_et.setText(scanContent);
                         try {
+                            Log.d(TAG, "Crate scanned -> " + scanContent + " | RFC ZWM_VALIDATE_CRATE_VND_HU");
                             loadCrateData();
                         }catch (Exception e)
                         {
@@ -580,7 +622,11 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
         if (!crate.equals("") && !crate.isEmpty()) {
             for(int i=0;i<etEanDataModels.size();i++){
-                if (etEanDataModels.get(i).getEAN11().equals(article)){
+                String ean11 = etEanDataModels.get(i).getEAN11();
+                if (ean11 == null || ean11.trim().isEmpty() || "EAN11".equalsIgnoreCase(ean11.trim())) {
+                    continue; // skip header/template row if present
+                }
+                if (ean11.trim().equalsIgnoreCase(article)){
                     getEANNR = etEanDataModels.get(i).getEANNR();
                     getEAMMAterial = etEanDataModels.get(i).getMATNR();
                     UMREZ = etEanDataModels.get(i).getUMREZ();
@@ -591,9 +637,17 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
             if (flag==1){
                 if (getEANNR.equals(StorageType)) {
-                    boolean mixallowed = etPoDataModels.get(0).getMXALOW().equals("X");
+                    String mx = (etPoDataModels != null && !etPoDataModels.isEmpty()
+                            && etPoDataModels.get(0).getMXALOW() != null)
+                            ? etPoDataModels.get(0).getMXALOW() : "";
+                    boolean mixallowed = "X".equalsIgnoreCase(mx);
                     for (int i = 0; i < etPoDataModels.size(); i++) {
-                        if (etPoDataModels.get(i).getMATERIAL().equals(getEAMMAterial)) {
+                        String material = etPoDataModels.get(i).getMATERIAL();
+                        if (material == null || material.trim().isEmpty()
+                                || "MATERIAL".equalsIgnoreCase(material.trim())) {
+                            continue; // skip header/template row if present
+                        }
+                        if (material.equals(getEAMMAterial)) {
                             lastScan.setText(article+","+getEAMMAterial);
                             MAterialDesc = etPoDataModels.get(i).getMAT_DESC();
                             OpenQty = Double.valueOf(etPoDataModels.get(i).getOPEN_QTY()).intValue();
@@ -730,6 +784,133 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
             }
         };
     }
+    /** Validate Vendor HU via ZWM_VND_HU_VAL_RFC (IM_HU -> EX_RETURN). */
+    private void validateVendorHu() {
+        if (vendorHuRequestInProgress) {
+            return;
+        }
+        final String vendorHu = vendorHu_et.getText().toString().toUpperCase(Locale.ROOT).trim();
+        if (TextUtils.isEmpty(vendorHu)) {
+            box.getBox("Alert", "Please Scan Vendor HU");
+            vendorHu_et.requestFocus();
+            return;
+        }
+        if (URL == null || URL.trim().isEmpty()) {
+            box.getBox("Err", "Server URL missing. Please log in again.");
+            return;
+        }
+
+        vendorHuRequestInProgress = true;
+        if (dialog == null) {
+            dialog = new ProgressDialog(con);
+        }
+        dialog.setMessage("Validating Vendor HU...");
+        dialog.setCancelable(false);
+        dialog.show();
+
+        vendorHu_et.setEnabled(false);
+
+        String rfc = Vars.ZWM_VND_HU_VAL_RFC;
+        String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
+        url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
+
+        final JSONObject params = new JSONObject();
+        try {
+            params.put("bapiname", rfc);
+            params.put("IM_HU", vendorHu);
+        } catch (JSONException e) {
+            vendorHuRequestInProgress = false;
+            if (dialog != null) {
+                dialog.dismiss();
+                dialog = null;
+            }
+            vendorHu_et.setEnabled(true);
+            box.getErrBox(e);
+            return;
+        }
+
+        Log.d(TAG, "ZWM_VND_HU_VAL_RFC payload -> " + params);
+        JsonObjectRequest mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject responsebody) {
+                        vendorHuRequestInProgress = false;
+                        if (dialog != null) {
+                            dialog.dismiss();
+                            dialog = null;
+                        }
+                        Log.d(TAG, "ZWM_VND_HU_VAL_RFC response -> " + responsebody);
+                        if (responsebody == null || responsebody.toString().equals("{}")) {
+                            vendorHu_et.setEnabled(true);
+                            vendorHu_et.setText("");
+                            vendorHu_et.requestFocus();
+                            box.getBox("Err", "No response from Server");
+                            return;
+                        }
+                        try {
+                            if (responsebody.has("EX_RETURN") && responsebody.get("EX_RETURN") instanceof JSONObject) {
+                                JSONObject returnobj = responsebody.getJSONObject("EX_RETURN");
+                                String type = returnobj.optString("TYPE", "");
+                                if ("E".equalsIgnoreCase(type)) {
+                                    UIFuncs.errorSound(con);
+                                    vendorHu_et.setEnabled(true);
+                                    vendorHu_et.setText("");
+                                    vendorHu_et.requestFocus();
+                                    box.getBox("Err", returnobj.optString("MESSAGE", "Vendor HU validation failed"));
+                                    return;
+                                }
+                            }
+                            // Success: keep Vendor HU, move to Crate
+                            vendorHu_et.setText(vendorHu);
+                            vendorHu_et.setEnabled(false);
+                            crate_et.setEnabled(true);
+                            crate_et.requestFocus();
+                        } catch (JSONException e) {
+                            vendorHu_et.setEnabled(true);
+                            box.getErrBox(e);
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        vendorHuRequestInProgress = false;
+                        if (dialog != null) {
+                            dialog.dismiss();
+                            dialog = null;
+                        }
+                        vendorHu_et.setEnabled(true);
+                        vendorHu_et.setText("");
+                        vendorHu_et.requestFocus();
+                        String err = "Network Error!";
+                        if (error instanceof TimeoutError || error instanceof NoConnectionError) {
+                            err = "Communication Error!";
+                        } else if (error instanceof AuthFailureError) {
+                            err = "Authentication Error!";
+                        } else if (error instanceof ServerError) {
+                            err = "Server Side Error!";
+                        } else if (error instanceof ParseError) {
+                            err = "Parse Error!";
+                        } else if (error != null && error.getMessage() != null) {
+                            err = error.getMessage();
+                        }
+                        box.getBox("Err", err);
+                    }
+                }) {
+            @Override
+            public String getBodyContentType() {
+                return "application/json";
+            }
+
+            @Override
+            public byte[] getBody() {
+                return params.toString().getBytes();
+            }
+        };
+        mJsonRequest.setRetryPolicy(new DefaultRetryPolicy(50000, 0, 1f));
+        ApplicationController.getInstance().getRequestQueue().add(mJsonRequest);
+    }
+
     private void validateCrate(){
         JSONObject args = new JSONObject();
         try {
@@ -807,12 +988,12 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
     void getCreateData(){
 
-        String rfc = "ZWM_VALIDATE_CRATE";
+        String rfc = Vars.ZWM_VALIDATE_CRATE_VND_HU;
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest = null;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
         url += "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
-        Log.d(TAG, "URL_>" + url);
+        Log.d(TAG, "ZWM_VALIDATE_CRATE_VND_HU URL -> " + url);
         final JSONObject params = new JSONObject();
 
         try {
@@ -831,7 +1012,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
             box.getErrBox(e);
         }
 
-        Log.d(TAG, "payload ->" + params.toString());
+        Log.d(TAG, "ZWM_VALIDATE_CRATE_VND_HU payload -> " + params.toString());
         mRequestQueue = ApplicationController.getInstance().getRequestQueue();
         mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
@@ -841,7 +1022,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                     dialog.dismiss();
                     dialog = null;
                 }
-                Log.d(TAG, "response ->" + responsebody);
+                Log.d(TAG, "ZWM_VALIDATE_CRATE_VND_HU response -> " + responsebody);
 
                 if (responsebody == null) {
                     AlertBox box = new AlertBox(getContext());
@@ -868,6 +1049,8 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                                         String curBin = responsebody.getString("EX_LGPLA");
                                         curBin_et.setText(curBin);
                                         StorageType = EX_LGTYP;
+                                        // After crate validate success ? enable and focus Article
+                                        article_no_et.setEnabled(true);
                                         article_no_et.requestFocus();
 
                                         return;
@@ -908,7 +1091,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
         mRequestQueue.add(mJsonRequest);
         Log.d(TAG, "jsonRequest getUrl ->" + mJsonRequest.getUrl());
         Log.d(TAG, "jsonRequest getBodyContentType->" + mJsonRequest.getBodyContentType());
-        Log.d(TAG, "jsonRequest getBody->" + mJsonRequest.getBody().toString());
+        Log.d(TAG, "jsonRequest getBody->" + new String(mJsonRequest.getBody()));
         Log.d(TAG, "jsonRequest getMethod->" + mJsonRequest.getMethod());
         try {
             Log.d(TAG, "jsonRequest getHeaders->" + mJsonRequest.getHeaders());
@@ -979,7 +1162,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
 
     void saveData(String po,String inv,String bill_no,String ge){
 
-        String rfc = "ZWM_PO_SCAN_DATA_SAVE";
+        String rfc = Vars.ZWM_PO_SCAN_DATA_SAVE_VND_HU;
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest = null;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
@@ -988,6 +1171,10 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
         final JSONObject params = new JSONObject();
 
         try {
+            String vendorHu = "";
+            if (vendorHu_et != null && vendorHu_et.getText() != null) {
+                vendorHu = vendorHu_et.getText().toString().toUpperCase(Locale.ROOT).trim();
+            }
             params.put("bapiname", rfc);
             params.put("IM_BILL", bill_no);
             params.put("IM_EBELN", po);
@@ -996,6 +1183,7 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
             params.put("IM_LGNUM", "");
             params.put("IM_USER", USER);
             params.put("IM_XBLNR", inv);
+            params.put("IM_VND_HU", vendorHu); // blank if Vendor HU not scanned
             params.put("IT_DATA", jsonArray);
 
 
@@ -1058,6 +1246,8 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                                         box.getBox("", returnobj.getString("MESSAGE"), new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
+                                                vendorHu_et.setText("");
+                                                vendorHu_et.setEnabled(true);
                                                 crate_et.setText("");
                                                 curBin_et.setText("");
                                                 article_no_et.setText("");
@@ -1067,9 +1257,9 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                                                 tsq_et.setText("");
                                                 tsq_et.setText("");
                                                 lastScan.setText("");
-                                                // start with new crate
+                                                // start with a new Vendor HU, then crate
                                                 crate_et.setEnabled(true);
-                                                crate_et.requestFocus();
+                                                vendorHu_et.requestFocus();
 
                                                 // need to refresth the data so that user can work on another crate
                                                 getPoData(po,inv,ge,bill_no,bol);
@@ -1404,8 +1594,10 @@ public class ValidateCrate_Process_Fragment extends Fragment implements View.OnC
                                         if (request == REQUEST_GET_CRATE_DATA) {
                                             curBin_et.setText(crate_et.getText().toString().toUpperCase(Locale.ROOT).trim());
                                             crate_et.setText("");
-                                            crate_et.requestFocus();
                                             setFieldsData(responsebody);
+                                            // After ZFMS_CRATE_GET_DATA success ? focus Article
+                                            article_no_et.setEnabled(true);
+                                            article_no_et.requestFocus();
                                         }
                                     }
                                 }

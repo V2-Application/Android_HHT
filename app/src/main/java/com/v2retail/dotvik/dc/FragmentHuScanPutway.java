@@ -22,6 +22,7 @@ import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
 import com.v2retail.ApplicationController;
@@ -32,6 +33,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.android.volley.Request;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Screen 01 — Unloading: HU Scanning & Putway to Palette
@@ -365,61 +371,134 @@ public class FragmentHuScanPutway extends Fragment {
             return;
         }
 
-        showProgress("Saving...");
-        // ZVND_UNLOAD_SAVE_RFC: IM_USER + IM_PARMS (ZTT_UNLOAD_SAVE / ZSTR_UNLOAD_SAVE)
-        // → EX_RETURN (BAPIRET2)
-        JSONObject p = new JSONObject();
-        try {
-            p.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
-            p.put("IM_USER", USER);
-
-            JSONObject row = new JSONObject();
-            row.put("PLANT", WERKS);
-            row.put("VEHICLE", vehicle);
-            row.put("EXT_HU", validatedHu);
-            row.put("PALETTE", palette);
-            row.put("PO_NO", poNo != null ? poNo : "");
-            row.put("BILL_NO", billNo != null ? billNo : "");
-            row.put("HU_WT", huWeight);
-
-            JSONArray imParms = new JSONArray();
-            imParms.put(row);
-            p.put("IM_PARMS", imParms);
-        } catch (JSONException e) {
-            dismissProgress();
-            showStatus("Could not build save request.", false);
+        final String plant = clip(firstNonEmpty(textOf(etDcSite), WERKS), 4);
+        final String extHu = clip(firstNonEmpty(textOf(etHuNumber), validatedHu, textOf(etHu)), 20);
+        final String pallet = clip(firstNonEmpty(textOf(etPalletDisplay), palette), 10);
+        final String po = clip(firstNonEmpty(textOf(etPo), poNo), 10);
+        final String bill = clip(firstNonEmpty(textOf(etInv), billNo), 16);
+        final String weight = formatHuWeight(huWeight);
+        if (plant.isEmpty() || extHu.isEmpty() || pallet.isEmpty() || weight.isEmpty()) {
+            showStatus("Plant, HU, pallet, and weight are required.", false);
             etPalette.setEnabled(true);
             etPalette.requestFocus();
             return;
         }
 
-        rfc(Vars.ZVND_UNLOAD_SAVE_RFC, p, new Cb() {
-            @Override public void ok(JSONObject r) {
-                JSONObject ret = r.optJSONObject("EX_RETURN");
-                String type = ret != null ? ret.optString("TYPE", "") : "";
-                if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                    String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
-                    if (!msg.isEmpty()) {
-                        showBottomToast(msg);
+        showProgress("Saving...");
+        // ZVND_UNLOAD_SAVE_RFC: IM_USER + IM_PARMS (import table ZTT_UNLOAD_SAVE).
+        // A JSON array is not bound on this gateway, so SAP returns
+        // "Fill IM_PARMS first". Indexed form fields fill row 0.
+        final Map<String, String> saveParams = new HashMap<String, String>();
+        saveParams.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
+        saveParams.put("IM_USER", USER.trim());
+        saveParams.put("IM_PARMS[0].PLANT", plant);
+        saveParams.put("IM_PARMS[0].VEHICLE", clip(vehicle, 10));
+        saveParams.put("IM_PARMS[0].EXT_HU", extHu);
+        saveParams.put("IM_PARMS[0].PALETTE", pallet);
+        saveParams.put("IM_PARMS[0].PO_NO", po);
+        saveParams.put("IM_PARMS[0].BILL_NO", bill);
+        saveParams.put("IM_PARMS[0].HU_WT", weight);
+
+        String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
+        String saveUrl = base + "/noacljsonrfcadaptor?bapiname="
+                + Vars.ZVND_UNLOAD_SAVE_RFC + "&aclclientid=android";
+        Log.d(TAG, "Save url -> " + saveUrl);
+        Log.d(TAG, "Save params -> " + saveParams);
+
+        StringRequest req = new StringRequest(Request.Method.POST, saveUrl,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String body) {
+                        dismissProgress();
+                        Log.d(TAG, "RFC response -> " + Vars.ZVND_UNLOAD_SAVE_RFC + ": " + body);
+                        try {
+                            JSONObject r = new JSONObject(body != null ? body : "{}");
+                            JSONObject ret = r.optJSONObject("EX_RETURN");
+                            String type = ret != null ? ret.optString("TYPE", "") : "";
+                            if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
+                                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
+                                if (!msg.isEmpty()) {
+                                    showBottomToast(msg);
+                                }
+                                resetFields();
+                            } else {
+                                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
+                                if (msg.isEmpty()) {
+                                    msg = "Could not save data.";
+                                }
+                                showStatus("Save Error: " + msg, false);
+                                etPalette.setEnabled(true);
+                                etPalette.requestFocus();
+                            }
+                        } catch (JSONException e) {
+                            showStatus("Parse error while saving.", false);
+                            etPalette.setEnabled(true);
+                            etPalette.requestFocus();
+                        }
                     }
-                    resetFields();
-                } else {
-                    String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
-                    if (msg.isEmpty()) {
-                        msg = "Could not save data.";
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError e) {
+                        dismissProgress();
+                        showStatus("Network: " + (e.getMessage() != null ? e.getMessage() : "Network error"), false);
+                        etPalette.setEnabled(true);
+                        etPalette.requestFocus();
                     }
-                    showStatus("Save Error: " + msg, false);
-                    etPalette.setEnabled(true);
-                    etPalette.requestFocus();
-                }
+                }) {
+            @Override
+            protected Map<String, String> getParams() {
+                return saveParams;
             }
 
-            @Override public void err(String e) {
-                showStatus("Network: " + e, false);
-                etPalette.setEnabled(true);
-                etPalette.requestFocus();
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
             }
-        });
+        };
+        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
+        ApplicationController.getInstance().getRequestQueue().add(req);
+    }
+
+    private static String textOf(EditText field) {
+        if (field == null || field.getText() == null) {
+            return "";
+        }
+        return field.getText().toString().trim();
+    }
+
+    private static String firstNonEmpty(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value.trim();
+            }
+        }
+        return "";
+    }
+
+    /** ZSTR_UNLOAD_SAVE component lengths: CHAR fields are clipped so one long value cannot drop the row. */
+    private static String clip(String value, int max) {
+        String v = value == null ? "" : value.trim();
+        if (v.length() <= max) {
+            return v;
+        }
+        return v.substring(0, max);
+    }
+
+    /** HU_WT is QUAN 15(3). */
+    private static String formatHuWeight(String raw) {
+        String t = raw == null ? "" : raw.trim().replace(',', '.');
+        if (t.isEmpty()) {
+            return "";
+        }
+        try {
+            return new BigDecimal(t).setScale(3, RoundingMode.HALF_UP).toPlainString();
+        } catch (NumberFormatException e) {
+            return "";
+        }
     }
 
     private void resetFields() {

@@ -453,6 +453,22 @@ public class Vars {
     /** PUT01 — save HU scan after validate (IM_USER, IT_DATA → Status). */
     public static String ZVND_PUT01_SAVE_DATA_RFC = "ZVND_PUT01_SAVE_DATA_RFC";
 
+    // ── DC Inbound: HU Print & Putway to Pallet ──────────────────────────────────
+    /** HU Print & Putway — validate pallet (IM_USER, IM_PLANT, IM_PALL → EX_RETURN). */
+    public static String ZWM_VND_PAL_VALD = "ZWM_VND_PAL_VALD";
+    /** HU Print & Putway — validate PO and return boxes (IM_PO → EX_DATA ZTT_PO_HU, EX_RETURN). */
+    public static String ZWM_VND_HU_PO_VLDT = "ZWM_VND_HU_PO_VLDT";
+    /** HU Print & Putway — print HU for a box (IM_PO, IM_BOX → IM_HU, EX_RETURN). */
+    public static String ZWM_VND_HU_PRINT = "ZWM_VND_HU_PRINT";
+
+    // ── DC Inbound: PUT01 HU ART Wise Scanning ───────────────────────────────────
+    /** PUT01 ART — validate Vendor HU (IM_HU → EX_RETURN BAPIRET2). */
+    public static String ZWM_VND_HU_VAL_RFC = "ZWM_VND_HU_VAL_RFC";
+    /** PUT01 ART — validate crate with Vendor HU (same params as ZWM_VALIDATE_CRATE). */
+    public static String ZWM_VALIDATE_CRATE_VND_HU = "ZWM_VALIDATE_CRATE_VND_HU";
+    /** PUT01 ART — save scan data with Vendor HU (IM_VND_HU + PO fields → EX_RETURN). */
+    public static String ZWM_PO_SCAN_DATA_SAVE_VND_HU = "ZWM_PO_SCAN_DATA_SAVE_VND_HU";
+
     // ── Store Inbound: HU Wise Gate Entry ────────────────────────────────────────
     /** HU Wise Gate Entry — validate invoice before HU scan (IM_WERKS, IM_VBELN → EX_RETURN). */
     public static String ZWM_HU_WISE_INVOICE_VAL = "ZWM_HU_WISE_INVOICE_VAL";

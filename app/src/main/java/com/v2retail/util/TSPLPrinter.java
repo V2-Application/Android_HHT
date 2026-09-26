@@ -576,7 +576,7 @@ public class TSPLPrinter {
 
     /**
      * Store GRT Process — print HU label after save.
-     * Layout: S. SITE, D. HUB, D. SITE, QTY, DATE (left), centered Code128 + HU.
+     * Layout: S. SITE, V. HUB, D. SITE, QTY, DATE (left), centered Code128 + HU.
      */
     public boolean sendStoreGrtPrintCommand(String printerName,
                                             String huNo,
@@ -586,11 +586,12 @@ public class TSPLPrinter {
                                             String destHub,
                                             String destName,
                                             String qty,
-                                            String dateTime) {
+                                            String dateTime,
+                                            boolean printDestHub) {
         try {
             if (isOrResolvesToPP310(printerName)) {
                 return sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildStoreGrtLabel(
-                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime));
+                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime, printDestHub));
             }
             if (!locateStoreGrtPrinter(printerName)) {
                 Log.e("TSPLPrinter", "Store GRT: printer not found: " + printerName);
@@ -598,7 +599,7 @@ public class TSPLPrinter {
             }
             if (PP310Printer.isPP310Name(this.printerName)) {
                 return sendPP310Command(this.printerName, PP310Printer.buildStoreGrtLabel(
-                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime));
+                        huNo, sourceCode, sourceName, destPlant, destHub, destName, qty, dateTime, printDestHub));
             }
             connectToBluetoothPrinter();
             if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
@@ -607,7 +608,7 @@ public class TSPLPrinter {
             }
 
             String tspl = buildStoreGrtLabel(huNo, sourceCode, sourceName,
-                    destPlant, destHub, destName, qty, dateTime);
+                    destPlant, destHub, destName, qty, dateTime, printDestHub);
             OutputStream out = bluetoothSocket.getOutputStream();
             PrintWriter w = new PrintWriter(out, true);
             w.write(tspl);
@@ -641,7 +642,7 @@ public class TSPLPrinter {
     private String buildStoreGrtLabel(String huNo,
                                       String sourceCode, String sourceName,
                                       String destPlant, String destHub, String destName,
-                                      String qty, String dateTime) {
+                                      String qty, String dateTime, boolean printDestHub) {
         String rawHu = huNo != null ? huNo.trim() : "";
         String printHu = removeLeadingZeros(rawHu);
         if (printHu.isEmpty() && !rawHu.isEmpty()) {
@@ -654,9 +655,9 @@ public class TSPLPrinter {
         String hub = destHub != null ? destHub.trim() : "";
         String name = destName != null ? destName.trim() : "";
 
-        // Mockup: S. SITE: HD22 (ES_S_NAME), D. HUB: xx, D. SITE: DH27 (D_NAME), QTY : n, DATE:dd.mm...
+        // Mockup: S. SITE: HD22 (ES_S_NAME), V. HUB: xx, D. SITE: DH27 (D_NAME), QTY : n, DATE:dd.mm...
         String lineSrcSite = formatCodeWithName("S. SITE: ", srcCode, srcName);
-        String lineDHub = "D. HUB: " + (hub.isEmpty() ? "-" : hub);
+        String lineDHub = "V. HUB: " + (hub.isEmpty() ? "-" : hub);
         String lineDSite = formatCodeWithName("D. SITE: ", plant, name);
         String lineQty = "QTY : " + (qty != null && !qty.isEmpty() ? qty : "0");
         String lineDate = "DATE:" + (dateTime != null ? dateTime.trim() : "");
@@ -670,12 +671,20 @@ public class TSPLPrinter {
 
         int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
         int textX = 20;
-        int ySrcSite = 25;
-        int yDHub = 55;
-        int yDSite = 85;
-        int yQty = 115;
-        int yDate = 145;
-        int barcodeY = 175;
+        int lineGap = 30;
+        int y = 25;
+        int ySrcSite = y;
+        y += lineGap;
+        int yDHub = y;
+        if (printDestHub) {
+            y += lineGap;
+        }
+        int yDSite = y;
+        y += lineGap;
+        int yQty = y;
+        y += lineGap;
+        int yDate = y;
+        int barcodeY = y + lineGap;
         int barcodeHeight = 90;
         int narrow = 4;
         int wide = 8;
@@ -683,19 +692,30 @@ public class TSPLPrinter {
         final int humanReadableCenter = 2;
         final int barcodeAlignCenter = 2;
 
-        return "SIZE 70 mm, 40 mm\n" +
-                "GAP 3 mm, 0 mm\n" +
-                "DIRECTION 0\n" +
-                "CLS\n" +
-                "TEXT " + textX + ", " + ySrcSite + ", \"3\", 0, 1, 1, \"" + lineSrcSite + "\"\n" +
-                "TEXT " + textX + ", " + yDHub + ", \"3\", 0, 1, 1, \"" + lineDHub + "\"\n" +
-                "TEXT " + textX + ", " + yDSite + ", \"3\", 0, 1, 1, \"" + lineDSite + "\"\n" +
-                "TEXT " + textX + ", " + yQty + ", \"3\", 0, 1, 1, \"" + lineQty + "\"\n" +
-                "TEXT " + textX + ", " + yDate + ", \"3\", 0, 1, 1, \"" + lineDate + "\"\n" +
-                "BARCODE " + barcodeCenterX + ", " + barcodeY + ", \"128\", " + barcodeHeight + ", " +
-                humanReadableCenter + ", 0, " + narrow + ", " + wide + ", " + barcodeAlignCenter +
-                ", \"" + printHu + "\"\n" +
-                "PRINT 1, 1\n";
+        StringBuilder tspl = new StringBuilder();
+        tspl.append("SIZE 70 mm, 40 mm\n")
+                .append("GAP 3 mm, 0 mm\n")
+                .append("DIRECTION 0\n")
+                .append("CLS\n")
+                .append("TEXT ").append(textX).append(", ").append(ySrcSite)
+                .append(", \"3\", 0, 1, 1, \"").append(lineSrcSite).append("\"\n");
+        if (printDestHub) {
+            tspl.append("TEXT ").append(textX).append(", ").append(yDHub)
+                    .append(", \"3\", 0, 1, 1, \"").append(lineDHub).append("\"\n");
+        }
+        tspl.append("TEXT ").append(textX).append(", ").append(yDSite)
+                .append(", \"3\", 0, 1, 1, \"").append(lineDSite).append("\"\n")
+                .append("TEXT ").append(textX).append(", ").append(yQty)
+                .append(", \"3\", 0, 1, 1, \"").append(lineQty).append("\"\n")
+                .append("TEXT ").append(textX).append(", ").append(yDate)
+                .append(", \"3\", 0, 1, 1, \"").append(lineDate).append("\"\n")
+                .append("BARCODE ").append(barcodeCenterX).append(", ").append(barcodeY)
+                .append(", \"128\", ").append(barcodeHeight).append(", ")
+                .append(humanReadableCenter).append(", 0, ").append(narrow).append(", ")
+                .append(wide).append(", ").append(barcodeAlignCenter)
+                .append(", \"").append(printHu).append("\"\n")
+                .append("PRINT 1, 1\n");
+        return tspl.toString();
     }
 
     /**
@@ -826,6 +846,143 @@ public class TSPLPrinter {
             }
         }
         return "";
+    }
+
+    /**
+     * HU Print label: "Box No" and "HUB" (the HU from ZWM_VND_HU_PRINT), barcode of the HUB.
+     */
+    public boolean sendBoxHubPrintCommand(String printerName, String boxNo, String hubHu) {
+        try {
+            String box = boxNo == null ? "" : boxNo.trim();
+            String hub = hubHu == null ? "" : hubHu.trim();
+            if (box.isEmpty() && hub.isEmpty()) {
+                return false;
+            }
+            if (isOrResolvesToPP310(printerName)) {
+                return sendPP310Command(resolvedPrinterName(printerName),
+                        PP310Printer.buildBoxHubLabel(box, hub));
+            }
+            if (!locateStoreGrtPrinter(printerName)) {
+                Log.e("TSPLPrinter", "Box/HUB Print: printer not found: " + printerName);
+                return false;
+            }
+            if (PP310Printer.isPP310Name(this.printerName)) {
+                return sendPP310Command(this.printerName, PP310Printer.buildBoxHubLabel(box, hub));
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                Log.e("TSPLPrinter", "Box/HUB Print: Bluetooth not connected");
+                return false;
+            }
+            OutputStream out = bluetoothSocket.getOutputStream();
+            PrintWriter w = new PrintWriter(out, true);
+            w.write(buildBoxHubLabel(box, hub));
+            w.flush();
+            w.close();
+            out.close();
+            bluetoothSocket.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String buildBoxHubLabel(String boxNo, String hubHu) {
+        String box = cleanPrint(boxNo);
+        String hub = cleanPrint(hubHu);
+        String barcode = hub.isEmpty() ? box : hub;
+        int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
+        int modules = 11 * Math.max(barcode.length(), 1) + 35;
+        int narrow = 2;
+        if (modules * narrow > 520) {
+            narrow = 1;
+        }
+        int wide = narrow * 2;
+        int barcodeCenterX = labelWidthInDots / 2;
+        int textX = Math.max(10, (labelWidthInDots - barcode.length() * 16) / 2);
+        return "SIZE 70 mm, 40 mm\n" +
+                "GAP 3 mm, 0 mm\n" +
+                "DIRECTION 0\n" +
+                "CLS\n" +
+                "TEXT 20, 16, \"3\", 0, 1, 1, \"Box No: " + box + "\"\n" +
+                "TEXT 20, 48, \"3\", 0, 1, 1, \"HUB: " + (hub.isEmpty() ? "-" : hub) + "\"\n" +
+                "BARCODE " + barcodeCenterX + ", 90, \"128\", 120, 0, 0, " +
+                narrow + ", " + wide + ", 2, \"" + barcode + "\"\n" +
+                "TEXT " + textX + ", 230, \"3\", 0, 1, 1, \"" + barcode + "\"\n" +
+                "PRINT 1, 1\n";
+    }
+
+    private static String cleanPrint(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("\\", "").replace("\"", "").trim();
+    }
+
+    /**
+     * BIN Print label: Code128 of the bin with the bin number centered under the bars.
+     */
+    public boolean sendBinPrintCommand(String printerName, String binNo) {
+        try {
+            String bin = binNo == null ? "" : binNo.trim();
+            if (bin.isEmpty()) {
+                return false;
+            }
+            if (isOrResolvesToPP310(printerName)) {
+                return sendPP310Command(resolvedPrinterName(printerName), PP310Printer.buildBinLabel(bin));
+            }
+            if (!locateStoreGrtPrinter(printerName)) {
+                Log.e("TSPLPrinter", "BIN Print: printer not found: " + printerName);
+                return false;
+            }
+            if (PP310Printer.isPP310Name(this.printerName)) {
+                return sendPP310Command(this.printerName, PP310Printer.buildBinLabel(bin));
+            }
+            connectToBluetoothPrinter();
+            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
+                Log.e("TSPLPrinter", "BIN Print: Bluetooth not connected");
+                return false;
+            }
+            OutputStream out = bluetoothSocket.getOutputStream();
+            PrintWriter w = new PrintWriter(out, true);
+            w.write(buildBinLabel(bin));
+            w.flush();
+            w.close();
+            out.close();
+            bluetoothSocket.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String buildBinLabel(String binNo) {
+        String bin = binNo.replace("\\", "").replace("\"", "").trim();
+        int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
+        int modules = 11 * Math.max(bin.length(), 1) + 35;
+        int narrow = 3;
+        if (modules * narrow > 500) {
+            narrow = 2;
+        }
+        if (modules * narrow > 520) {
+            narrow = 1;
+        }
+        int wide = narrow * 2;
+        int barcodeCenterX = labelWidthInDots / 2;
+        int charWidth = 24;
+        int textWidth = bin.length() * charWidth;
+        int textX = Math.max(10, (labelWidthInDots - textWidth) / 2);
+
+        return "SIZE 70 mm, 40 mm\n" +
+                "GAP 3 mm, 0 mm\n" +
+                "DIRECTION 0\n" +
+                "CLS\n" +
+                "BARCODE " + barcodeCenterX + ", 90, \"128\", 140, 0, 0, " +
+                narrow + ", " + wide + ", 2, \"" + bin + "\"\n" +
+                "TEXT " + textX + ", 250, \"4\", 0, 1, 1, \"" + bin + "\"\n" +
+                "PRINT 1, 1\n";
     }
 
     /** e.g. 00000000001006599160 → 1006599160 */

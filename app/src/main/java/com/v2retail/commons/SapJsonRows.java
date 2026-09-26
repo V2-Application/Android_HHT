@@ -133,7 +133,10 @@ public final class SapJsonRows {
             return false;
         }
         String u = key.toUpperCase(Locale.ROOT);
-        return u.startsWith("ET_") || u.startsWith("IT_") || u.startsWith("ES_");
+        return u.startsWith("ET_")
+                || u.startsWith("IT_")
+                || u.startsWith("ES_")
+                || u.startsWith("EX_");
     }
 
     private static boolean isKnownDescriptionValue(String val) {

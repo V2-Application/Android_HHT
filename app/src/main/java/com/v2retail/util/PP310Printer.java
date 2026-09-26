@@ -149,7 +149,7 @@ public final class PP310Printer {
     public static String buildStoreGrtLabel(String huNo,
                                            String sourceCode, String sourceName,
                                            String destPlant, String destHub, String destName,
-                                           String qty, String dateTime) {
+                                           String qty, String dateTime, boolean printDestHub) {
         String rawHu = huNo != null ? huNo.trim() : "";
         String printHu = removeLeadingZeros(rawHu);
         if (printHu.isEmpty() && !rawHu.isEmpty()) {
@@ -157,7 +157,7 @@ public final class PP310Printer {
         }
 
         String lineSrcSite = formatCodeWithName("S. SITE: ", nvl(sourceCode).trim(), nvl(sourceName).trim());
-        String lineDHub = "D. HUB: " + (nvl(destHub).trim().isEmpty() ? "-" : destHub.trim());
+        String lineDHub = "V. HUB: " + (nvl(destHub).trim().isEmpty() ? "-" : destHub.trim());
         String lineDSite = formatCodeWithName("D. SITE: ", nvl(destPlant).trim(), nvl(destName).trim());
         String lineQty = "QTY : " + (qty != null && !qty.isEmpty() ? qty : "0");
         String lineDate = "DATE:" + (dateTime != null ? dateTime.trim() : "");
@@ -169,15 +169,47 @@ public final class PP310Printer {
         lineDate = truncate(clean(lineDate), 32);
         printHu = clean(printHu);
 
+        int lineGap = 30;
+        int y = 25;
         StringBuilder sb = startLabel("1");
-        text(sb, 20, 25, lineSrcSite);
-        text(sb, 20, 55, lineDHub);
-        text(sb, 20, 85, lineDSite);
-        text(sb, 20, 115, lineQty);
-        text(sb, 20, 145, lineDate);
+        text(sb, 20, y, lineSrcSite);
+        y += lineGap;
+        if (printDestHub) {
+            text(sb, 20, y, lineDHub);
+            y += lineGap;
+        }
+        text(sb, 20, y, lineDSite);
+        y += lineGap;
+        text(sb, 20, y, lineQty);
+        y += lineGap;
+        text(sb, 20, y, lineDate);
+        int barcodeY = y + lineGap;
         int barcodeX = Math.max(40, (LABEL_WIDTH_DOTS / 2) - 180);
-        barcode128(sb, barcodeX, 175, 90, printHu);
-        centerText(sb, 275, printHu);
+        barcode128(sb, barcodeX, barcodeY, 90, printHu);
+        centerText(sb, barcodeY + 100, printHu);
+        return endLabel(sb);
+    }
+
+    /** Box No text plus HUB (returned HU) barcode. */
+    public static String buildBoxHubLabel(String boxNo, String hubHu) {
+        String box = clean(boxNo == null ? "" : boxNo.trim());
+        String hub = clean(hubHu == null ? "" : hubHu.trim());
+        String barcode = hub.isEmpty() ? box : hub;
+        StringBuilder sb = startLabel("1");
+        text(sb, 20, 16, "Box No: " + box);
+        text(sb, 20, 48, "HUB: " + (hub.isEmpty() ? "-" : hub));
+        int barcodeX = Math.max(20, (LABEL_WIDTH_DOTS / 2) - Math.min(220, Math.max(barcode.length(), 1) * 14));
+        barcode128(sb, barcodeX, 90, 120, barcode);
+        centerText(sb, 230, barcode);
+        return endLabel(sb);
+    }
+
+    public static String buildBinLabel(String binNo) {
+        String bin = clean(binNo == null ? "" : binNo.trim());
+        StringBuilder sb = startLabel("1");
+        int barcodeX = Math.max(20, (LABEL_WIDTH_DOTS / 2) - Math.min(220, Math.max(bin.length(), 1) * 14));
+        barcode128(sb, barcodeX, 90, 140, bin);
+        centerText(sb, 250, bin);
         return endLabel(sb);
     }
 

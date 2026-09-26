@@ -42,6 +42,8 @@ public class Process_Selection_Activity extends AppCompatActivity
         InwardFragment.OnFragmentInteractionListener,
         Stock_In_Out_Fragment.OnFragmentInteractionListener,
         ValidateCrate_Process_Fragment.OnFragmentInteractionListener,
+        FragmentPut01HuArtWiseScanning.OnFragmentInteractionListener,
+        FragmentPut01HuArtWiseValidateCrate.OnFragmentInteractionListener,
         TO_Creation_Fragment.OnFragmentInteractionListener,
         OutWardFragment.OnFragmentInteractionListener,
         Scan_Packing_Material_Fragment.OnFragmentInteractionListener,
@@ -95,7 +97,11 @@ public class Process_Selection_Activity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        addDashbaord();
+        // Screen lock on HHT restarts this activity. Restoring an existing
+        // back stack keeps Crate Scan / Put01 open instead of returning to the dashboard.
+        if (savedInstanceState == null) {
+            addDashbaord();
+        }
 
     }
 

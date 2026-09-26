@@ -79,7 +79,9 @@ public class Ecomm_Process_Selection extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        addDashbaord();
+        if (savedInstanceState == null) {
+            addDashbaord();
+        }
 
     }
 

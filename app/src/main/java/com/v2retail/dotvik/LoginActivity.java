@@ -477,27 +477,35 @@ public class LoginActivity extends AppCompatActivity {
     private void routeUser(String group, String werks, SharedPreferencesData data) {
         String destination;
         data.write("LOC", isDC_user(group) ? "DC" : "Store");
+        Intent destinationIntent;
         if (isDC_user(group)) {
             destination = "Process_Selection_Activity";
-            startActivity(new android.content.Intent(LoginActivity.this,
-                com.v2retail.dotvik.dc.Process_Selection_Activity.class));
+            destinationIntent = new Intent(LoginActivity.this,
+                com.v2retail.dotvik.dc.Process_Selection_Activity.class);
         } else if (isEcomm_user(werks)) {
             destination = "Ecomm_Process_Selection";
-            startActivity(new android.content.Intent(LoginActivity.this,
-                com.v2retail.dotvik.ecomm.Ecomm_Process_Selection.class));
+            destinationIntent = new Intent(LoginActivity.this,
+                com.v2retail.dotvik.ecomm.Ecomm_Process_Selection.class);
         } else if (isHub_user(group)) {
             destination = "HubProcessSelectionActivity";
-            startActivity(new android.content.Intent(LoginActivity.this,
-                com.v2retail.dotvik.hub.HubProcessSelectionActivity.class));
+            destinationIntent = new Intent(LoginActivity.this,
+                com.v2retail.dotvik.hub.HubProcessSelectionActivity.class);
         } else {
             destination = "Home_Activity";
-            startActivity(new android.content.Intent(LoginActivity.this,
-                com.v2retail.dotvik.store.Home_Activity.class));
+            destinationIntent = new Intent(LoginActivity.this,
+                com.v2retail.dotvik.store.Home_Activity.class);
         }
         Log.d(TAG, "login route -> EX_GROUP=[" + group + "] WERKS=[" + werks + "] destination=[" + destination + "]");
-        // finish() cleanly closes LoginActivity so the dashboard comes to foreground.
-        // moveTaskToBack() was incorrectly pushing the whole task to background,
-        // causing Android to surface the Downloads folder on login.
+        openProgram(destinationIntent);
+    }
+
+    /**
+     * Leave login as the only closed screen. The program activity becomes the task root,
+     * so locking the HHT resumes Crate Scan / Put01 instead of the login or server screen.
+     */
+    private void openProgram(Intent intent) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
         finish();
     }
 
@@ -580,7 +588,6 @@ public class LoginActivity extends AppCompatActivity {
                                     }
                                     else{
                                         if (request == REQUEST_LOGIN) {
-                                            moveTaskToBack(true);
                                             String group = responsebody.getString("EX_GROUP");
                                             String werks = responsebody.getString("EX_WERKS");
                                             Log.d(TAG, "login RFC response -> success EX_GROUP=[" + group + "] EX_WERKS=[" + werks + "]");
@@ -593,26 +600,24 @@ public class LoginActivity extends AppCompatActivity {
                                             data.write("WERKS", werks == null ? "" : werks.trim());
                                             data.write("USERNAME", mUserName.getText().toString().trim());
                                             data.write("PASSWORD", mPasswordView.getText().toString().trim());
+                                            clear();
                                             String destination;
+                                            Intent intent;
                                             if(isDC_user(group)) {
                                                 destination = "Process_Selection_Activity";
-                                                startActivity(new Intent(LoginActivity.this, Process_Selection_Activity.class));
+                                                intent = new Intent(LoginActivity.this, Process_Selection_Activity.class);
                                             } else if(isEcomm_user(werks)) {
                                                 destination = "Ecomm_Process_Selection";
-                                                startActivity(new Intent(LoginActivity.this, Ecomm_Process_Selection.class));
+                                                intent = new Intent(LoginActivity.this, Ecomm_Process_Selection.class);
+                                            } else if(isHub_user(group)){
+                                                destination = "HubProcessSelectionActivity";
+                                                intent = new Intent(LoginActivity.this, HubProcessSelectionActivity.class);
                                             } else {
-                                                Intent intent = null;
-                                                if(isHub_user(group)){
-                                                    destination = "HubProcessSelectionActivity";
-                                                    intent = new Intent(LoginActivity.this, HubProcessSelectionActivity.class);
-                                                }else{
-                                                    destination = "Home_Activity";
-                                                    intent = new Intent(LoginActivity.this, Home_Activity.class);
-                                                }
-                                                startActivity(intent);
+                                                destination = "Home_Activity";
+                                                intent = new Intent(LoginActivity.this, Home_Activity.class);
                                             }
                                             Log.d(TAG, "login route -> EX_GROUP=[" + group + "] WERKS=[" + werks + "] destination=[" + destination + "]");
-                                            clear();
+                                            openProgram(intent);
                                         }
                                         return;
                                     }

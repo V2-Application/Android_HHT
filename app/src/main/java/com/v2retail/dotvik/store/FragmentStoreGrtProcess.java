@@ -19,6 +19,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -127,6 +128,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     RadioGroup radioScanModeGroup;
     RadioButton radioScanModeAll, radioScanModeSize;
     EditText txtExternalHu, txtFdesPlant, txtArticle, txtScanQty;
+    CheckBox chkPrintDHub;
     Button btnCancel, btnReset, btnSubmit;
 
     String selectedSource = SOURCE_0001;
@@ -263,6 +265,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         txtFdesPlant = rootView.findViewById(R.id.store_grt_fdes_plant);
         txtArticle = rootView.findViewById(R.id.store_grt_article);
         txtScanQty = rootView.findViewById(R.id.store_grt_scan_qty);
+        chkPrintDHub = rootView.findViewById(R.id.store_grt_print_d_hub);
 
         btnCancel = rootView.findViewById(R.id.store_grt_btn_cancel);
         btnReset = rootView.findViewById(R.id.store_grt_btn_reset);
@@ -1177,10 +1180,11 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         final String name = destName;
         final String qtyVal = qty;
         final String dt = dateTime;
+        final boolean printDestHub = chkPrintDHub != null && chkPrintDHub.isChecked();
         new Thread(() -> {
             TSPLPrinter printer = new TSPLPrinter(con, Vars.STORE_GRT_PROCESS);
             boolean printed = printer.sendStoreGrtPrintCommand(
-                    printerName, hu, srcCode, srcName, dest, hub, name, qtyVal, dt);
+                    printerName, hu, srcCode, srcName, dest, hub, name, qtyVal, dt, printDestHub);
             if (!printed) {
                 Log.w(TAG, "Store GRT label print failed for HU: " + hu);
             } else {

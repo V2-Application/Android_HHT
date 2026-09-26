@@ -83,6 +83,15 @@
             android:textColor="#fff"
             android:background="#e71821" />
 
+        <Button
+            android:id="@+id/inventory_menu_bin_print"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="BIN Print"
+            android:textColor="#fff"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>

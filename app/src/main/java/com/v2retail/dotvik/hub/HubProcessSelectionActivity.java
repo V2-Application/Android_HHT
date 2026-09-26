@@ -59,7 +59,9 @@ public class HubProcessSelectionActivity extends AppCompatActivity implements
         setActionBarTitle("HUB Process");
         NavigationView navigationView = findViewById(R.id.nav_hub_view);
         navigationView.setNavigationItemSelectedListener(this);
-        addDashbaord();
+        if (savedInstanceState == null) {
+            addDashbaord();
+        }
     }
 
     @Override

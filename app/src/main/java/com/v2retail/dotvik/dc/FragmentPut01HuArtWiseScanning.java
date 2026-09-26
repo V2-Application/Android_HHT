@@ -71,18 +71,18 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link Stock_In_Out_Fragment.OnFragmentInteractionListener} interface
+ * {@link FragmentPut01HuArtWiseScanning.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link Stock_In_Out_Fragment#newInstance} factory method to
+ * Use the {@link FragmentPut01HuArtWiseScanning#newInstance} factory method to
  * create an instance of this fragment.
  */
 /**
  * @author Narayanan
  * @version 11.73
  * {@code Author: Narayanan, Revision: 2, Modified: 24th Aug 2024}
- * Changes: Capturing MIX_ALLOWED and storing the value into EtPoDataModel.MXALOW before passing it to Validate Crate Process
+ * PUT01 HU ART WISE SCANNING � separate copy of Crate Scan (same RFCs/logic). Changes: Capturing MIX_ALLOWED and storing the value into EtPoDataModel.MXALOW before passing it to Validate Crate Process
  */
-public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListener {
+public class FragmentPut01HuArtWiseScanning extends Fragment implements View.OnClickListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final int REQUEST_SCREEN = 1023;
@@ -103,7 +103,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
     // TODO: Rename and change types of parameters
     private ArrayList<String> hhu_qty_param;
     ArrayList<Integer> rows_index = new ArrayList<>();
-    private String TAG = Stock_In_Out_Fragment.class.getName();
+    private String TAG = FragmentPut01HuArtWiseScanning.class.getName();
 
     Tables tables = new Tables();
     Context con;
@@ -128,7 +128,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
     List<EtPoDataModel> etPoDataModels;
     private OnFragmentInteractionListener mListener;
     private int mode;
-    public Stock_In_Out_Fragment() {
+    public FragmentPut01HuArtWiseScanning() {
         // Required empty public constructor
     }
 
@@ -136,7 +136,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
     public void onResume() {
         super.onResume();
         ((Process_Selection_Activity) getActivity())
-                .setActionBarTitle("Crate Scan");
+                .setActionBarTitle("PUT01 - HU ART WISE SCANNING");
     }
 
     /**
@@ -147,9 +147,13 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
      * @param param2 Parameter 2.
      * @return A new instance of fragment OutWardFragment.
      */
+    public static FragmentPut01HuArtWiseScanning newInstance() {
+        return new FragmentPut01HuArtWiseScanning();
+    }
+
     // TODO: Rename and change types and number of parameters
-    public static Stock_In_Out_Fragment newInstance(String param1, String param2) {
-        Stock_In_Out_Fragment fragment = new Stock_In_Out_Fragment();
+    public static FragmentPut01HuArtWiseScanning newInstance(String param1, String param2) {
+        FragmentPut01HuArtWiseScanning fragment = new FragmentPut01HuArtWiseScanning();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
@@ -503,7 +507,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
                 po_et.setText("");
                 scanner = "po";
                 if(CameraCheck.isCameraAvailable(con))
-                    IntentIntegrator.forSupportFragment(Stock_In_Out_Fragment.this).setBeepEnabled(true).setOrientationLocked(true).setTimeout(10000).initiateScan();
+                    IntentIntegrator.forSupportFragment(FragmentPut01HuArtWiseScanning.this).setBeepEnabled(true).setOrientationLocked(true).setTimeout(10000).initiateScan();
                 break;
 
             case R.id.reset:
@@ -773,7 +777,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
                                         args.putString("bol_et",bol_et.getText().toString());
                                         args.putInt("screen",mode);
 
-                                        Fragment fragment = new ValidateCrate_Process_Fragment();
+                                        Fragment fragment = new FragmentPut01HuArtWiseValidateCrate();
                                         fragment.setArguments(args);
                                         if (fragment != null) {
                                             clear();
@@ -999,7 +1003,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
                                         }
 
                                         // bno_et.requestFocus();
-                                        Stock_In_Out_Fragment.this.ge_et.requestFocus();
+                                        FragmentPut01HuArtWiseScanning.this.ge_et.requestFocus();
                                         //bno_et.setText(inv);
                                         //bol_et.setText(inv);
                                         return;
@@ -1294,7 +1298,7 @@ public class Stock_In_Out_Fragment extends Fragment implements View.OnClickListe
         args.putSerializable("ean", dtEAN);
 
 
-        Fragment fragment = new ValidateCrate_Process_Fragment();
+        Fragment fragment = new FragmentPut01HuArtWiseValidateCrate();
         fragment.setArguments(args);
         if (fragment != null) {
             clear();

@@ -113,7 +113,9 @@ public class Home_Activity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         try {
-            addDashbaord();
+            if (savedInstanceState == null) {
+                addDashbaord();
+            }
         } catch (Exception e) {
             box.getErrBox(e);
         }

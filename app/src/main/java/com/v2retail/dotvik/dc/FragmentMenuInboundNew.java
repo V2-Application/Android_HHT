@@ -33,10 +33,12 @@ public class FragmentMenuInboundNew extends Fragment implements View.OnClickList
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_menu_inbound_new, container, false);
+        view.findViewById(R.id.btn_hu_print_putway_pallet).setOnClickListener(this);
         view.findViewById(R.id.btn_hu_scan_putway).setOnClickListener(this);
         view.findViewById(R.id.btn_hu_putaway_to_bin).setOnClickListener(this);
         view.findViewById(R.id.btn_hu_picking_bin).setOnClickListener(this);
         view.findViewById(R.id.btn_put01_hu_scan).setOnClickListener(this);
+        view.findViewById(R.id.btn_put01_hu_art_scan).setOnClickListener(this);
         view.findViewById(R.id.btn_vnd_box_put_bin).setOnClickListener(this);
         return view;
     }
@@ -45,7 +47,9 @@ public class FragmentMenuInboundNew extends Fragment implements View.OnClickList
     public void onClick(View v) {
         Fragment f = null;
         int id = v.getId();
-        if (id == R.id.btn_hu_scan_putway) {
+        if (id == R.id.btn_hu_print_putway_pallet) {
+            f = FragmentHuPrintPutwayPallet.newInstance();
+        } else if (id == R.id.btn_hu_scan_putway) {
             f = FragmentHuScanPutway.newInstance();
         } else if (id == R.id.btn_hu_putaway_to_bin) {
             f = FragmentInboundPutwayToBin.newInstance();
@@ -53,6 +57,8 @@ public class FragmentMenuInboundNew extends Fragment implements View.OnClickList
             f = FragmentHuPickingFromBin.newInstance();
         } else if (id == R.id.btn_put01_hu_scan) {
             f = FragmentPut01HuWiseScanning.newInstance();
+        } else if (id == R.id.btn_put01_hu_art_scan) {
+            f = FragmentPut01HuArtWiseScanning.newInstance();
         } else if (id == R.id.btn_vnd_box_put_bin) {
             f = FragmentVndBoxPutBin.newInstance();
         }

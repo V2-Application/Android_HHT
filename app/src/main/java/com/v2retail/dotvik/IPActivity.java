@@ -565,7 +565,7 @@ public class IPActivity extends AppCompatActivity implements View.OnClickListene
                             SharedPreferencesData data = new SharedPreferencesData(IPActivity.this);
                             data.write("URL", URL + "/ValueXMW");
                             startActivity(new Intent(IPActivity.this, LoginActivity.class));
-                            //  finish();
+                            finish();
                         }
                     }
                 },
