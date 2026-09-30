@@ -2,6 +2,7 @@ package com.v2retail.dotvik.dc;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -25,7 +26,6 @@ import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
 import com.v2retail.ApplicationController;
 import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.UIFuncs;
@@ -44,12 +44,10 @@ import org.json.JSONObject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -151,6 +149,21 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
                 acceptHu(etScanHu.getText().toString());
             }
         });
+        etBillNo.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean enter = event != null
+                        && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_DOWN;
+                if (actionId == EditorInfo.IME_ACTION_NEXT
+                        || actionId == EditorInfo.IME_ACTION_DONE
+                        || enter) {
+                    focus(etWeight);
+                    return true;
+                }
+                return false;
+            }
+        });
 
         boxItems.clear();
         boxItems.add(BOX_SELECT);
@@ -212,84 +225,55 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
         requestInProgress = true;
         showProgress("Validating PO...");
 
-        // This gateway does not bind JSON table params reliably (same as IM_PARMS save).
-        // Use form-urlencoded so TABLES EX_DATA is returned with EX_RETURN.
-        final Map<String, String> form = new HashMap<String, String>();
-        form.put("bapiname", Vars.ZWM_VND_HU_PO_VLDT);
-        form.put("IM_PO", po);
-
-        String rfcUrl = GatewayUrls.noAclJsonRfcUrl(url, Vars.ZWM_VND_HU_PO_VLDT);
-        if (rfcUrl.isEmpty()) {
+        // IM_PO is a scalar import (TYPE ZEXT_HU). The JSON RFC adaptor binds
+        // scalar imports from the JSON body. A form field is not mapped, so SAP
+        // receives IM_PO initial. EX_DATA is an export table and comes back in the JSON.
+        JSONObject params = new JSONObject();
+        try {
+            params.put("bapiname", Vars.ZWM_VND_HU_PO_VLDT);
+            params.put("IM_PO", po);
+        } catch (JSONException e) {
             requestInProgress = false;
             dismissProgress();
-            box.getBox("Alert", "Server URL missing. Please log in again.");
+            box.getBox("Alert", "Could not build PO request.");
             return;
         }
-        Log.d(TAG, "RFC request -> " + Vars.ZWM_VND_HU_PO_VLDT + " " + form);
-        StringRequest req = new StringRequest(Request.Method.POST, rfcUrl,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String body) {
-                        requestInProgress = false;
-                        dismissProgress();
-                        Log.d(TAG, "RFC response -> " + Vars.ZWM_VND_HU_PO_VLDT + ": " + body);
-                        JSONObject response;
-                        try {
-                            response = new JSONObject(body != null ? body : "{}");
-                            SapJsonRows.sanitizeResponse(response);
-                        } catch (JSONException e) {
-                            resetBoxDropdown();
-                            setFieldText(etPo, "");
-                            box.getBox("Alert", "Parse error while validating PO.");
-                            etPo.requestFocus();
-                            return;
-                        }
 
-                        if (!isSapSuccess(response)) {
-                            resetBoxDropdown();
-                            setFieldText(etPo, "");
-                            box.getBox("Alert", sapMessage(response, "PO not valid."));
-                            etPo.requestFocus();
-                            return;
-                        }
-
-                        List<String> boxes = boxNumbersFrom(exData(response));
-                        if (boxes.isEmpty()) {
-                            resetBoxDropdown();
-                            setFieldText(etPo, "");
-                            Log.e(TAG, "PO OK but no BOX_NO in EX_DATA -> " + response);
-                            box.getBox("Alert", "No box found for this PO.");
-                            etPo.requestFocus();
-                            return;
-                        }
-
-                        setBoxNumbers(boxes);
-                        focus(etScanPallet);
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        requestInProgress = false;
-                        dismissProgress();
-                        resetBoxDropdown();
-                        setFieldText(etPo, "");
-                        box.getBox("Alert", error.getMessage() != null ? error.getMessage() : "Network error");
-                        etPo.requestFocus();
-                    }
-                }) {
+        callRfc(Vars.ZWM_VND_HU_PO_VLDT, params, new RfcCb() {
             @Override
-            protected Map<String, String> getParams() {
-                return form;
+            public void ok(JSONObject response) {
+                requestInProgress = false;
+                if (!isSapSuccess(response)) {
+                    resetBoxDropdown();
+                    setFieldText(etPo, "");
+                    box.getBox("Alert", sapMessage(response, ""));
+                    etPo.requestFocus();
+                    return;
+                }
+
+                List<String> boxes = boxNumbersFrom(exData(response));
+                if (boxes.isEmpty()) {
+                    resetBoxDropdown();
+                    setFieldText(etPo, "");
+                    Log.e(TAG, "PO OK but no BOX_NO in EX_DATA -> " + response);
+                    box.getBox("Alert", sapMessage(response, ""));
+                    etPo.requestFocus();
+                    return;
+                }
+
+                setBoxNumbers(boxes);
+                focus(etScanPallet);
             }
 
             @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
+            public void err(String message) {
+                requestInProgress = false;
+                resetBoxDropdown();
+                setFieldText(etPo, "");
+                box.getBox("Alert", message != null ? message : "Network error");
+                etPo.requestFocus();
             }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        });
     }
 
     /** BOX_NO values from EX_DATA (ZTT_PO_HU / ZSTR_PO_HU). */
@@ -406,6 +390,7 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
                 lastExtHu = hub;
                 etHuNo.setText(hub);
                 setFieldText(etScanHu, "");
+                focus(etScanHu);
                 printLabel(boxNo, hub);
             }
 
@@ -449,6 +434,7 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
                         }
                         if (ok) {
                             Toast.makeText(con, "Printed " + boxNo, Toast.LENGTH_SHORT).show();
+                            focus(etScanHu);
                         } else {
                             box.getBox("Print Failed",
                                     "Could not print. Check the printer is on and in range.");
@@ -866,7 +852,7 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
         });
     }
 
-    /** When Scan HUNo matches HU.NO, clear Box No, HU.NO, and Scan HUNo. */
+    /** Scan HUNo must match the printed HU.NO; then the cursor moves to Bill No. */
     private void acceptHu(String raw) {
         String scanned = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
         if (scanned.isEmpty()) {
@@ -886,10 +872,8 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
             return;
         }
         lastExtHu = shown;
-        selectBox(0);
-        etHuNo.setText("");
-        setFieldText(etScanHu, "");
-        etScanHu.requestFocus();
+        setFieldText(etScanHu, scanned);
+        focus(etBillNo);
     }
 
     private static boolean sameHu(String left, String right) {
@@ -950,74 +934,58 @@ public class FragmentHuPrintPutwayPallet extends Fragment {
             weight = "0.000";
         }
 
-        requestInProgress = true;
-        showProgress("Saving...");
-        // IM_PARMS is an import table (ZTT_UNLOAD_SAVE). Indexed form fields fill row 0.
-        // A JSON array is left empty and SAP returns "Fill IM_PARMS first".
-        final Map<String, String> saveParams = new HashMap<String, String>();
-        saveParams.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
-        saveParams.put("IM_USER", user);
-        saveParams.put("IM_PARMS[0].PLANT", clip(plant, 4));
-        saveParams.put("IM_PARMS[0].VEHICLE", clip(text(etVehicle), 10));
-        saveParams.put("IM_PARMS[0].EXT_HU", clip(extHu, 20));
-        saveParams.put("IM_PARMS[0].PALETTE", clip(text(etPallet), 10));
-        saveParams.put("IM_PARMS[0].PO_NO", clip(text(etPo), 10));
-        saveParams.put("IM_PARMS[0].BILL_NO", clip(text(etBillNo), 16));
-        saveParams.put("IM_PARMS[0].HU_WT", weight);
+        JSONObject params = new JSONObject();
+        try {
+            JSONObject row = new JSONObject();
+            row.put("PLANT", clip(plant, 4));
+            row.put("VEHICLE", clip(text(etVehicle), 10));
+            row.put("EXT_HU", clip(extHu, 20));
+            row.put("PALETTE", clip(text(etPallet), 10));
+            row.put("PO_NO", clip(text(etPo), 10));
+            row.put("BILL_NO", clip(text(etBillNo), 16));
+            row.put("HU_WT", weight);
+            JSONArray imParms = new JSONArray();
+            imParms.put(row);
 
-        String rfcUrl = GatewayUrls.noAclJsonRfcUrl(url, Vars.ZVND_UNLOAD_SAVE_RFC);
-        if (rfcUrl.isEmpty()) {
-            requestInProgress = false;
-            dismissProgress();
-            box.getBox("Alert", "Server URL missing. Please log in again.");
+            params.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
+            params.put("IM_USER", user);
+            params.put("IM_PARMS", imParms);
+        } catch (JSONException e) {
+            box.getBox("Alert", "Could not build save request.");
             return;
         }
-        Log.d(TAG, "Save params -> " + saveParams);
-        StringRequest req = new StringRequest(Request.Method.POST, rfcUrl,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String body) {
-                        requestInProgress = false;
-                        dismissProgress();
-                        Log.d(TAG, "RFC response -> " + Vars.ZVND_UNLOAD_SAVE_RFC + ": " + body);
-                        JSONObject response;
-                        try {
-                            response = new JSONObject(body != null ? body : "{}");
-                        } catch (JSONException e) {
-                            box.getBox("Alert", "Parse error while saving.");
-                            return;
-                        }
-                        if (!isSapSuccess(response)) {
-                            box.getBox("Alert", sapMessage(response, "Could not save data."));
-                            return;
-                        }
-                        String msg = sapMessage(response, "Saved");
-                        clearAfterSave();
-                        lastExtHu = "";
-                        Toast.makeText(con, msg, Toast.LENGTH_SHORT).show();
-                        etScanPallet.requestFocus();
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        requestInProgress = false;
-                        dismissProgress();
-                        box.getBox("Alert", error.getMessage() != null ? error.getMessage() : "Network error");
-                    }
-                }) {
+
+        requestInProgress = true;
+        showProgress("Saving...");
+        callRfc(Vars.ZVND_UNLOAD_SAVE_RFC, params, new RfcCb() {
             @Override
-            protected Map<String, String> getParams() {
-                return saveParams;
+            public void ok(JSONObject response) {
+                requestInProgress = false;
+                if (!isSapSuccess(response)) {
+                    box.getBox("Alert", sapMessage(response, "Could not save data."),
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    clearAfterSave();
+                                    lastExtHu = "";
+                                    focus(etScanPallet);
+                                }
+                            });
+                    return;
+                }
+                String msg = sapMessage(response, "Saved");
+                clearAfterSave();
+                lastExtHu = "";
+                Toast.makeText(con, msg, Toast.LENGTH_SHORT).show();
+                etScanPallet.requestFocus();
             }
 
             @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
+            public void err(String message) {
+                requestInProgress = false;
+                box.getBox("Alert", message != null ? message : "Network error");
             }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        });
     }
 
     private static String clip(String value, int max) {

@@ -893,11 +893,7 @@ public class TSPLPrinter {
         String hub = cleanPrint(hubHu);
         String barcode = hub.isEmpty() ? box : hub;
         int labelWidthInDots = (int) Math.round((70 / 25.4) * 203);
-        int modules = 11 * Math.max(barcode.length(), 1) + 35;
-        int narrow = 2;
-        if (modules * narrow > 520) {
-            narrow = 1;
-        }
+        int narrow = PP310Printer.fitCode128Narrow(barcode, labelWidthInDots);
         int wide = narrow * 2;
         int barcodeCenterX = labelWidthInDots / 2;
         int textX = Math.max(10, (labelWidthInDots - barcode.length() * 16) / 2);
@@ -905,11 +901,11 @@ public class TSPLPrinter {
                 "GAP 3 mm, 0 mm\n" +
                 "DIRECTION 0\n" +
                 "CLS\n" +
-                "TEXT 20, 16, \"3\", 0, 1, 1, \"Box No: " + box + "\"\n" +
-                "TEXT 20, 48, \"3\", 0, 1, 1, \"HUB: " + (hub.isEmpty() ? "-" : hub) + "\"\n" +
-                "BARCODE " + barcodeCenterX + ", 90, \"128\", 120, 0, 0, " +
+                "TEXT 20, 46, \"3\", 0, 1, 1, \"Box No: " + box + "\"\n" +
+                "TEXT 20, 78, \"3\", 0, 1, 1, \"HUB: " + (hub.isEmpty() ? "-" : hub) + "\"\n" +
+                "BARCODE " + barcodeCenterX + ", 120, \"128\", 120, 0, 0, " +
                 narrow + ", " + wide + ", 2, \"" + barcode + "\"\n" +
-                "TEXT " + textX + ", 230, \"3\", 0, 1, 1, \"" + barcode + "\"\n" +
+                "TEXT " + textX + ", 260, \"3\", 0, 1, 1, \"" + barcode + "\"\n" +
                 "PRINT 1, 1\n";
     }
 

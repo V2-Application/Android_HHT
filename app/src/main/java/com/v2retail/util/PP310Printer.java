@@ -196,12 +196,36 @@ public final class PP310Printer {
         String hub = clean(hubHu == null ? "" : hubHu.trim());
         String barcode = hub.isEmpty() ? box : hub;
         StringBuilder sb = startLabel("1");
-        text(sb, 20, 16, "Box No: " + box);
-        text(sb, 20, 48, "HUB: " + (hub.isEmpty() ? "-" : hub));
-        int barcodeX = Math.max(20, (LABEL_WIDTH_DOTS / 2) - Math.min(220, Math.max(barcode.length(), 1) * 14));
-        barcode128(sb, barcodeX, 90, 120, barcode);
-        centerText(sb, 230, barcode);
+        text(sb, 20, 46, "Box No: " + box);
+        text(sb, 20, 78, "HUB: " + (hub.isEmpty() ? "-" : hub));
+        int narrow = fitCode128Narrow(barcode, LABEL_WIDTH_DOTS);
+        int width = code128Modules(barcode) * narrow;
+        int barcodeX = Math.max(0, (LABEL_WIDTH_DOTS - width) / 2);
+        barcode128(sb, narrow, barcodeX, 120, 120, barcode);
+        centerText(sb, 260, barcode);
         return endLabel(sb);
+    }
+
+    /**
+     * Code 128 width in modules. Printers pick subset C for all-digit data,
+     * which packs two digits per symbol.
+     */
+    static int code128Modules(String data) {
+        String value = data == null ? "" : data;
+        int n = Math.max(value.length(), 1);
+        int symbols;
+        if (value.matches("\\d+")) {
+            symbols = n % 2 == 0 ? n / 2 : n / 2 + 2;
+        } else {
+            symbols = n;
+        }
+        return 11 * symbols + 35;
+    }
+
+    /** Widest module that fits the label with a 10-module quiet zone on each side. */
+    static int fitCode128Narrow(String data, int labelWidthDots) {
+        int narrow = labelWidthDots / (code128Modules(data) + 20);
+        return Math.max(1, Math.min(narrow, 10));
     }
 
     public static String buildBinLabel(String binNo) {
@@ -286,8 +310,13 @@ public final class PP310Printer {
     }
 
     private static void barcode128(StringBuilder sb, int x, int y, int height, String data) {
+        barcode128(sb, 2, x, y, height, data);
+    }
+
+    private static void barcode128(StringBuilder sb, int narrow, int x, int y, int height, String data) {
         sb.append("BT OFF").append(CRLF);
-        sb.append("BARCODE 128 2 2 ").append(height).append(" ").append(x).append(" ").append(y)
+        sb.append("BARCODE 128 ").append(narrow).append(" 2 ").append(height).append(" ")
+                .append(x).append(" ").append(y)
                 .append(" ").append(data == null ? "" : data).append(CRLF);
     }
 

@@ -22,7 +22,6 @@ import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.Vars;
 import com.v2retail.ApplicationController;
@@ -36,8 +35,6 @@ import com.android.volley.Request;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Screen 01 — Unloading: HU Scanning & Putway to Palette
@@ -384,80 +381,52 @@ public class FragmentHuScanPutway extends Fragment {
             return;
         }
 
+        JSONObject params = new JSONObject();
+        try {
+            JSONObject row = new JSONObject();
+            row.put("PLANT", plant);
+            row.put("VEHICLE", clip(vehicle, 10));
+            row.put("EXT_HU", extHu);
+            row.put("PALETTE", pallet);
+            row.put("PO_NO", po);
+            row.put("BILL_NO", bill);
+            row.put("HU_WT", weight);
+            JSONArray imParms = new JSONArray();
+            imParms.put(row);
+
+            params.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
+            params.put("IM_USER", USER.trim());
+            params.put("IM_PARMS", imParms);
+        } catch (JSONException e) {
+            showStatus("Could not build save request.", false);
+            etPalette.setEnabled(true);
+            etPalette.requestFocus();
+            return;
+        }
+
         showProgress("Saving...");
-        // ZVND_UNLOAD_SAVE_RFC: IM_USER + IM_PARMS (import table ZTT_UNLOAD_SAVE).
-        // A JSON array is not bound on this gateway, so SAP returns
-        // "Fill IM_PARMS first". Indexed form fields fill row 0.
-        final Map<String, String> saveParams = new HashMap<String, String>();
-        saveParams.put("bapiname", Vars.ZVND_UNLOAD_SAVE_RFC);
-        saveParams.put("IM_USER", USER.trim());
-        saveParams.put("IM_PARMS[0].PLANT", plant);
-        saveParams.put("IM_PARMS[0].VEHICLE", clip(vehicle, 10));
-        saveParams.put("IM_PARMS[0].EXT_HU", extHu);
-        saveParams.put("IM_PARMS[0].PALETTE", pallet);
-        saveParams.put("IM_PARMS[0].PO_NO", po);
-        saveParams.put("IM_PARMS[0].BILL_NO", bill);
-        saveParams.put("IM_PARMS[0].HU_WT", weight);
-
-        String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
-        String saveUrl = base + "/noacljsonrfcadaptor?bapiname="
-                + Vars.ZVND_UNLOAD_SAVE_RFC + "&aclclientid=android";
-        Log.d(TAG, "Save url -> " + saveUrl);
-        Log.d(TAG, "Save params -> " + saveParams);
-
-        StringRequest req = new StringRequest(Request.Method.POST, saveUrl,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String body) {
-                        dismissProgress();
-                        Log.d(TAG, "RFC response -> " + Vars.ZVND_UNLOAD_SAVE_RFC + ": " + body);
-                        try {
-                            JSONObject r = new JSONObject(body != null ? body : "{}");
-                            JSONObject ret = r.optJSONObject("EX_RETURN");
-                            String type = ret != null ? ret.optString("TYPE", "") : "";
-                            if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
-                                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
-                                if (!msg.isEmpty()) {
-                                    showBottomToast(msg);
-                                }
-                                resetFields();
-                            } else {
-                                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
-                                if (msg.isEmpty()) {
-                                    msg = "Could not save data.";
-                                }
-                                showStatus("Save Error: " + msg, false);
-                                etPalette.setEnabled(true);
-                                etPalette.requestFocus();
-                            }
-                        } catch (JSONException e) {
-                            showStatus("Parse error while saving.", false);
-                            etPalette.setEnabled(true);
-                            etPalette.requestFocus();
-                        }
+        rfc(Vars.ZVND_UNLOAD_SAVE_RFC, params, new Cb() {
+            @Override public void ok(JSONObject r) {
+                JSONObject ret = r.optJSONObject("EX_RETURN");
+                String type = ret != null ? ret.optString("TYPE", "") : "";
+                String msg = ret != null ? ret.optString("MESSAGE", "").trim() : "";
+                if ("S".equalsIgnoreCase(type) || type.isEmpty()) {
+                    if (!msg.isEmpty()) {
+                        showBottomToast(msg);
                     }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError e) {
-                        dismissProgress();
-                        showStatus("Network: " + (e.getMessage() != null ? e.getMessage() : "Network error"), false);
-                        etPalette.setEnabled(true);
-                        etPalette.requestFocus();
-                    }
-                }) {
-            @Override
-            protected Map<String, String> getParams() {
-                return saveParams;
+                    resetFields();
+                } else {
+                    showStatus("Save Error: " + (msg.isEmpty() ? "Could not save data." : msg), false);
+                    etPalette.setEnabled(true);
+                    etPalette.requestFocus();
+                }
             }
-
-            @Override
-            public String getBodyContentType() {
-                return "application/x-www-form-urlencoded; charset=UTF-8";
+            @Override public void err(String e) {
+                showStatus("Network: " + e, false);
+                etPalette.setEnabled(true);
+                etPalette.requestFocus();
             }
-        };
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1f));
-        ApplicationController.getInstance().getRequestQueue().add(req);
+        });
     }
 
     private static String textOf(EditText field) {
@@ -537,9 +506,8 @@ public class FragmentHuScanPutway extends Fragment {
     private void rfc(String name, JSONObject params, final Cb cb) {
         String base = URL.contains("/ValueXMW") ? URL.replace("/ValueXMW", "") : URL;
         String url = base + "/noacljsonrfcadaptor?bapiname=" + name + "&aclclientid=android";
-        Log.d(TAG, "RFC request -> " + name);
+        Log.d(TAG, "RFC request -> " + name + " " + params);
         Log.d(TAG, "RFC url -> " + url);
-        Log.d(TAG, "RFC payload -> " + params);
         JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, url, params,
             new Response.Listener<JSONObject>() {
                 @Override public void onResponse(JSONObject r) {
