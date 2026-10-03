@@ -123,6 +123,15 @@
                 android:textColor="#fff" />
 
             <Button
+                android:id="@+id/store_grt_pick"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:background="#e71821"
+                android:text="Store GRT Pick"
+                android:textColor="#fff" />
+
+            <Button
                 android:id="@+id/store_grt_process"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

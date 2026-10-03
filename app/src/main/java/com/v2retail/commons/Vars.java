@@ -165,6 +165,12 @@ public class Vars {
     public static String ZWM_ST_GRT_PICKLIST_RFC = "ZWM_ST_GRT_PICKLIST_RFC";
     /** Store GRT Process — load picklist article/EAN data (ET_DATA, ET_EAN_DATA). */
     public static String ZWM_ST_GRT_GET_PICKLIST_DATA = "ZWM_ST_GRT_GET_PICKLIST_DATA";
+    /**
+     * Store GRT Pick — post a matched article scan.
+     * Import table IT_SCAN (ZWM_IT_GRT_SCAN / ZWM_GRT_SCAN_STR):
+     * PICKLIST_NO, SOURCE_SITE, LGORT, MATNR, EAN11, PICK_QTY. Export ET_RETURN.
+     */
+    public static String ZWM_RFC_GRT_STORE_SCAN = "ZWM_RFC_GRT_STORE_SCAN";
     /** Store GRT Process — validate scanned external HU (IM_PLANT, IM_USER, IM_HU → EX_RETURN). */
     public static String ZWM_ST_GRT_EXHU_VALIDATION = "ZWM_ST_GRT_EXHU_VALIDATION";
     /** Store GRT Process — save HU creation (IM_WERKS, IM_LGORT_SRC, IM_WERKS_DES, IM_USER, IM_PACK_MAT, IM_CATEGORY, IT_DATA). */

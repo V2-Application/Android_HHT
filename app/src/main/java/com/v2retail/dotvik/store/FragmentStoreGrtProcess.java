@@ -1386,6 +1386,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return "E".equals(parsed.errorType) || "A".equals(parsed.errorType);
     }
 
+    static PicklistDataParseResult parseGetPicklistData(byte[] body, String werks) throws IOException {
+        return parsePicklistDataBytes(body, werks);
+    }
+
     private static PicklistDataParseResult parsePicklistDataBytes(byte[] body, String werks) throws IOException {
         long started = SystemClock.elapsedRealtime();
         PicklistDataParseResult result = new PicklistDataParseResult();
