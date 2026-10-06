@@ -322,12 +322,18 @@ public class FragmentHUToPallet extends Fragment implements View.OnClickListener
         try{
             JSONArray arrItSave = response.getJSONArray("IT_SAVE");
             int length = arrItSave.length();
-            for(int i=1; i < length; i++){
-                PalletHU palletHU = new Gson().fromJson(arrItSave.get(i).toString(), PalletHU.class);
+            int dataRowCount = 0;
+            for(int i = 0; i < length; i++){
+                JSONObject row = arrItSave.optJSONObject(i);
+                if(row == null || isHeaderRow(row)){
+                    continue;
+                }
+                PalletHU palletHU = new Gson().fromJson(row.toString(), PalletHU.class);
                 palletHU.setHu(UIFuncs.removeLeadingZeros(palletHU.getHu()));
                 palletHUS.add(palletHU);
+                dataRowCount++;
             }
-            if(length > 1){
+            if(dataRowCount > 0){
                 double sqty = 1;
                 totalQty = totalQty + sqty;
                 txt_sqty.setText(Util.formatDouble(sqty));
@@ -341,6 +347,12 @@ public class FragmentHUToPallet extends Fragment implements View.OnClickListener
         }
         txt_scan_hu.setText("");
         UIFuncs.enableInput(con, txt_scan_hu);
+    }
+
+    private boolean isHeaderRow(JSONObject row){
+        return "HU".equalsIgnoreCase(row.optString("HU", "").trim())
+                || "PALATE".equalsIgnoreCase(row.optString("PALATE", "").trim())
+                || "QTY".equalsIgnoreCase(row.optString("QTY", "").trim());
     }
 
     private void saveData(){

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.SystemClock;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import android.text.Editable;
@@ -22,8 +21,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -39,12 +36,10 @@ import com.android.volley.Response;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.v2retail.ApplicationController;
-import com.v2retail.commons.GatewayUrls;
 import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
@@ -71,12 +66,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Store GRT Process screen.
@@ -85,22 +77,18 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
     private static final String TAG = FragmentStoreGrtProcess.class.getName();
 
-    private static final String SOURCE_0001 = "0001";
-    private static final String SOURCE_0006 = "0006";
-
-    private static final String SCAN_MODE_ALL = "ALL";
-    private static final String SCAN_MODE_SIZE = "SIZE";
-
     private static final String PICKLIST_HINT = "Select Picklist No.";
     private static final String PACKING_HINT = "Select Packing Material";
 
     private static final String LGNUM = "V2R";
+    private static final String SOURCE_0001 = "0001";
+    private static final String SOURCE_0006 = "0006";
 
-    private static final int REQUEST_GET_PICKLIST = 2001;
-    private static final int REQUEST_GET_PICKLIST_DATA = 2002;
+    private static final int REQUEST_GET_PICK_DATA = 2002;
     private static final int REQUEST_GET_PACKING = 2003;
     private static final int REQUEST_VALIDATE_EXHU = 2004;
     private static final int REQUEST_SAVE = 2005;
+    private static final int REQUEST_GRT_ST_SAVE = 2006;
     private static final String VOLLEY_TAG = "FragmentStoreGrtProcess";
 
     View rootView;
@@ -109,11 +97,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     ProgressDialog dialog;
     int activeRequests = 0;
     FragmentManager fm;
-    ExecutorService picklistParseExecutor;
     volatile boolean viewDestroyed = false;
     volatile boolean suppressPicklistSelection = false;
-    volatile int picklistDataLoadSeq = 0;
-    Request<?> inFlightPicklistDataRequest;
+    boolean pickDataLoading = false;
     boolean packingMaterialsLoaded = false;
     ArrayAdapter<String> picklistSpinnerAdapter;
     ArrayAdapter<String> packingSpinnerAdapter;
@@ -124,19 +110,17 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     String tvsPrinter = "";
 
     LinearLayout source0001, source0006;
+    /** Selected GRT source storage location; picklists and articles are filtered to this LGORT. */
+    String selectedSource = SOURCE_0001;
+    /** Last ZWM_ST_GRT_PICK_DATA response, re-bound when the source S.Loc changes. */
+    JSONObject lastPickDataResponse;
     Spinner spinnerPicklistNo, spinnerPackingMaterial;
-    RadioGroup radioScanModeGroup;
-    RadioButton radioScanModeAll, radioScanModeSize;
-    EditText txtExternalHu, txtFdesPlant, txtArticle, txtScanQty;
+    EditText txtPickQty, txtPackQty, txtExternalHu, txtFdesPlant, txtArticle, txtScanQty;
     CheckBox chkPrintDHub;
     Button btnCancel, btnReset, btnSubmit;
 
-    String selectedSource = SOURCE_0001;
-    String selectedScanMode = SCAN_MODE_ALL;
-
-    // picklistNo -> (category key -> pending qty)
-    Map<String, Map<String, Double>> picklistCategoryPend = new HashMap<>();
-    List<PicklistPendEntry> picklistPendEntries = new ArrayList<>();
+    // picklistNo -> MAJ_CAT (IM_CATEGORY on save)
+    Map<String, String> picklistMajCat = new HashMap<>();
     // picklistNo -> F_DES_SITE (destination plant, IM_WERKS_DES)
     Map<String, String> picklistDesSite = new HashMap<>();
     // picklistNo -> D_HUB (destination PTL hub)
@@ -145,28 +129,32 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     Map<String, String> picklistDesName = new HashMap<>();
     /** Source site name from RFC export ES_S_NAME (NAME1). */
     String sourceSiteName = "";
-    // category key (MAJ_CAT or SIZE1 per scan mode) -> scanned qty so far
-    Map<String, Double> scannedQtyByCategory = new HashMap<>();
     // packing material records (index aligns with spinner items, minus the hint at position 0)
     List<ETPACKMAT> packMaterialRecords = new ArrayList<>();
-    String lastScannedCategory = "";
     Map<String, ScannedGrtLine> scannedLines = new HashMap<>();
-    /** MATNR → picklist article row from ET_DATA. */
-    Map<String, PicklistArticleLine> picklistArticlesByMatnr = new HashMap<>();
-    /** EAN11 or MATNR scan key → EAN row from ET_EAN_DATA. */
-    Map<String, EanRecord> eanByScanCode = new HashMap<>();
-    /** Destination plant from EX_RDC after picklist data load. */
-    String picklistRdcPlant = "";
-    /** Cached article/EAN data per picklist to avoid repeat SAP calls. */
-    final Map<String, PicklistDataParseResult> picklistDataCache = new HashMap<>();
+    /** picklistNo → picked articles from ZWM_ST_GRT_PICK_DATA (IM_DATA) for the source site. */
+    Map<String, PicklistPickData> pickDataByPicklist = new LinkedHashMap<>();
+    /** MATNR / EAN11 scan key → picked article row of the selected picklist. */
+    Map<String, PickedArticleLine> pickedByScanCode = new HashMap<>();
     /** True after ZWM_ST_GRT_EXHU_VALIDATION succeeds for the current External HU scan. */
     boolean externalHuValidated = false;
+    /** HU and message from ZWM_ST_GRT_HU_CREATION_SAVE, shown after ZWM_GRT_ST_SAVE completes. */
+    String savedHuNo = "";
+    String savedHuMessage = "";
 
-    private static class PicklistPendEntry {
-        String picklistNo;
-        String majCat;
-        String size1;
-        double pend;
+    private static class PickedArticleLine {
+        String lgort;
+        String matnr;
+        String ean11;
+        double pickQty;
+        double packQty;
+    }
+
+    private static class PicklistPickData {
+        final Map<String, PickedArticleLine> byScanCode = new HashMap<>();
+        int articleCount;
+        double pickQty;
+        double packQty;
     }
 
     static class PicklistArticleLine {
@@ -187,13 +175,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private static class ScannedGrtLine {
-        String category;
         String matnr;
         String ean11;
-        String matkl;
-        String size1;
-        String floor;
-        String bgt;
+        String lgort;
         double scanQty;
     }
 
@@ -207,16 +191,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         int httpStatus;
         int responseBytes;
         long networkMs;
-    }
-
-    private static class PicklistNumbersParseResult {
-        List<PicklistPendEntry> pendEntries = new ArrayList<>();
-        Map<String, Map<String, Double>> categoryPend = new HashMap<>();
-        Map<String, String> desSite = new HashMap<>();
-        Map<String, String> desHub = new HashMap<>();
-        Map<String, String> desName = new HashMap<>();
-        List<String> picklistNos = new ArrayList<>();
-        String sourceSiteName = "";
     }
 
     public FragmentStoreGrtProcess() {
@@ -255,12 +229,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
         source0001 = rootView.findViewById(R.id.store_grt_source_0001);
         source0006 = rootView.findViewById(R.id.store_grt_source_0006);
-
         spinnerPicklistNo = rootView.findViewById(R.id.store_grt_picklist_no);
         spinnerPackingMaterial = rootView.findViewById(R.id.store_grt_packing_material);
-        radioScanModeGroup = rootView.findViewById(R.id.store_grt_scan_mode_group);
-        radioScanModeAll = rootView.findViewById(R.id.store_grt_scan_mode_all);
-        radioScanModeSize = rootView.findViewById(R.id.store_grt_scan_mode_size);
+        txtPickQty = rootView.findViewById(R.id.store_grt_pick_qty);
+        txtPackQty = rootView.findViewById(R.id.store_grt_pack_qty);
         txtExternalHu = rootView.findViewById(R.id.store_grt_external_hu);
         txtFdesPlant = rootView.findViewById(R.id.store_grt_fdes_plant);
         txtArticle = rootView.findViewById(R.id.store_grt_article);
@@ -277,18 +249,16 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         btnReset.setOnClickListener(this);
         btnSubmit.setOnClickListener(this);
 
+        updateSourceCards();
         setupDropdowns();
         addPicklistSelectionListener();
-        addScanModeListener();
         addInputEvents();
-        selectSource(SOURCE_0001);
         clear();
 
         viewDestroyed = false;
         packingMaterialsLoaded = false;
-        picklistParseExecutor = Executors.newSingleThreadExecutor();
 
-        loadPicklistNumbers();
+        loadPickData();
 
         return rootView;
     }
@@ -299,17 +269,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (spinnerPicklistNo != null) {
             spinnerPicklistNo.setOnItemSelectedListener(null);
         }
-        inFlightPicklistDataRequest = null;
+        pickDataLoading = false;
         ApplicationController.getInstance().cancelPendingRequests(VOLLEY_TAG);
         dismissDialogSafely();
-        if (picklistParseExecutor != null) {
-            picklistParseExecutor.shutdownNow();
-            picklistParseExecutor = null;
-        }
-        picklistDataCache.clear();
-        picklistPendEntries.clear();
-        picklistArticlesByMatnr.clear();
-        eanByScanCode.clear();
+        pickedByScanCode = new HashMap<>();
+        pickDataByPicklist = new LinkedHashMap<>();
+        lastPickDataResponse = null;
         super.onDestroyView();
     }
 
@@ -317,10 +282,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.store_grt_source_0001:
-                selectSource(SOURCE_0001);
+                onSourceClicked(SOURCE_0001);
                 break;
             case R.id.store_grt_source_0006:
-                selectSource(SOURCE_0006);
+                onSourceClicked(SOURCE_0006);
                 break;
             case R.id.store_grt_btn_cancel:
                 box.confirmBack(fm, con);
@@ -338,9 +303,30 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
     }
 
-    private void selectSource(String source) {
+    private void onSourceClicked(String source) {
+        if (source.equals(selectedSource)) {
+            return;
+        }
+        if (!scannedLines.isEmpty()) {
+            box.getBox("Confirm", "Scanned articles will be cleared. Change GRT source to S.Loc "
+                    + source + "?", (dialogInterface, i) -> applySource(source), (dialogInterface, i) -> {
+            });
+            return;
+        }
+        applySource(source);
+    }
+
+    private void applySource(String source) {
         selectedSource = source;
-        boolean is0001 = SOURCE_0001.equals(source);
+        updateSourceCards();
+        clear();
+        if (lastPickDataResponse != null) {
+            bindPickData(lastPickDataResponse);
+        }
+    }
+
+    private void updateSourceCards() {
+        boolean is0001 = SOURCE_0001.equals(selectedSource);
         source0001.setBackgroundResource(is0001
                 ? R.drawable.bg_grt_source_selected
                 : R.drawable.bg_grt_source_unselected);
@@ -408,78 +394,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         spinner.setAdapter(adapter);
     }
 
-    private void addScanModeListener() {
-        radioScanModeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                String previousMode = selectedScanMode;
-                if (checkedId == R.id.store_grt_scan_mode_size) {
-                    selectedScanMode = SCAN_MODE_SIZE;
-                } else {
-                    selectedScanMode = SCAN_MODE_ALL;
-                }
-                if (!previousMode.equals(selectedScanMode)) {
-                    clearForScanModeChange();
-                }
-            }
-        });
-    }
-
-    /** Full screen reset when ALL/SIZE changes; keeps the newly selected scan mode. */
-    private void clearForScanModeChange() {
-        if (spinnerPicklistNo.getAdapter() != null && spinnerPicklistNo.getAdapter().getCount() > 0) {
-            setPicklistSpinnerSelection(0);
-        }
-        if (spinnerPackingMaterial.getAdapter() != null && spinnerPackingMaterial.getAdapter().getCount() > 0) {
-            spinnerPackingMaterial.setSelection(0);
-        }
-        resetPicklistScanState();
-        externalHuValidated = false;
-        txtExternalHu.setText("");
-        txtFdesPlant.setText("");
-        txtArticle.setText("");
-        txtScanQty.setText("0");
-        rebuildPicklistCategoryPend();
-        txtExternalHu.requestFocus();
-        UIFuncs.enableInput(con, txtExternalHu);
-    }
-
-    /** SIZE mode: SIZE1 when present, else MAJ_CAT. ALL mode: always MAJ_CAT. */
-    private String resolveCategoryKey(String majCat, String size1) {
-        if (SCAN_MODE_SIZE.equals(selectedScanMode)) {
-            if (size1 != null && !size1.trim().isEmpty()) {
-                return size1.trim();
-            }
-        }
-        return majCat != null ? majCat.trim() : "";
-    }
-
-    private void putPicklistCategoryPend(Map<String, Double> catMap, String catKey, double pend) {
-        String key = catKey.toUpperCase();
-        if (SCAN_MODE_SIZE.equals(selectedScanMode)) {
-            Double existing = catMap.get(key);
-            catMap.put(key, existing != null ? existing + pend : pend);
-        } else {
-            catMap.put(key, pend);
-        }
-    }
-
-    private void rebuildPicklistCategoryPend() {
-        picklistCategoryPend = new HashMap<>();
-        for (PicklistPendEntry entry : picklistPendEntries) {
-            String catKey = resolveCategoryKey(entry.majCat, entry.size1);
-            if (catKey.isEmpty()) {
-                continue;
-            }
-            Map<String, Double> catMap = picklistCategoryPend.get(entry.picklistNo);
-            if (catMap == null) {
-                catMap = new HashMap<>();
-                picklistCategoryPend.put(entry.picklistNo, catMap);
-            }
-            putPicklistCategoryPend(catMap, catKey, entry.pend);
-        }
-    }
-
     private void addPicklistSelectionListener() {
         spinnerPicklistNo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -489,19 +403,48 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 }
                 resetPicklistScanState();
                 applyPlantForSelectedPicklist();
-                String picklist = getSelectedPicklist();
-                if (!picklist.isEmpty()) {
-                    loadPicklistData(picklist);
-                    txtExternalHu.requestFocus();
-                    UIFuncs.enableInput(con, txtExternalHu);
-                }
+                applyPickDataForSelectedPicklist();
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 txtFdesPlant.setText("");
+                showPickPackQty(null);
             }
         });
+    }
+
+    private void applyPickDataForSelectedPicklist() {
+        String picklist = getSelectedPicklist();
+        if (picklist.isEmpty()) {
+            showPickPackQty(null);
+            return;
+        }
+        PicklistPickData pickData = pickDataByPicklist.get(picklist);
+        showPickPackQty(pickData);
+        if (pickData == null || pickData.articleCount == 0) {
+            UIFuncs.errorSound(con);
+            box.getBox("No Data", "No picked articles found for picklist " + picklist + ".");
+            return;
+        }
+        if (pickData.pickQty <= pickData.packQty) {
+            UIFuncs.errorSound(con);
+            box.getBox("Validation", "Picklist " + picklist + " is already packed.\nPick QTY ("
+                    + Util.formatDouble(pickData.pickQty) + ") must be greater than Pack QTY ("
+                    + Util.formatDouble(pickData.packQty) + ").");
+            setPicklistSpinnerSelection(0);
+            txtFdesPlant.setText("");
+            showPickPackQty(null);
+            return;
+        }
+        pickedByScanCode = pickData.byScanCode;
+        txtExternalHu.requestFocus();
+        UIFuncs.enableInput(con, txtExternalHu);
+    }
+
+    private void showPickPackQty(PicklistPickData pickData) {
+        txtPickQty.setText(pickData != null ? Util.formatDouble(pickData.pickQty) : "");
+        txtPackQty.setText(pickData != null ? Util.formatDouble(pickData.packQty) : "");
     }
 
     private void applyPlantForSelectedPicklist() {
@@ -510,21 +453,13 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             txtFdesPlant.setText("");
             return;
         }
-        if (picklistRdcPlant != null && !picklistRdcPlant.isEmpty()) {
-            txtFdesPlant.setText(picklistRdcPlant);
-            return;
-        }
         String fDesSite = picklistDesSite.get(picklist);
         txtFdesPlant.setText(fDesSite != null ? fDesSite : "");
     }
 
     private void resetPicklistScanState() {
-        picklistArticlesByMatnr = new HashMap<>();
-        eanByScanCode = new HashMap<>();
-        picklistRdcPlant = "";
-        scannedQtyByCategory = new HashMap<>();
+        pickedByScanCode = new HashMap<>();
         scannedLines = new HashMap<>();
-        lastScannedCategory = "";
         externalHuValidated = false;
         txtScanQty.setText("0");
         txtArticle.setText("");
@@ -560,13 +495,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         externalHuValidated = false;
         txtExternalHu.setText("");
         txtFdesPlant.setText("");
+        showPickPackQty(null);
         txtArticle.setText("");
         txtScanQty.setText("0");
-        selectedScanMode = SCAN_MODE_ALL;
-        if (radioScanModeAll != null) {
-            radioScanModeAll.setChecked(true);
-        }
-        rebuildPicklistCategoryPend();
     }
 
     private void addInputEvents() {
@@ -666,120 +597,77 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             resetArticleInput();
             return;
         }
-        if (picklistArticlesByMatnr.isEmpty()) {
+        if (pickedByScanCode.isEmpty()) {
             UIFuncs.errorSound(con);
-            if (inFlightPicklistDataRequest != null) {
-                box.getBox("Please wait", "Picklist data is still loading. Scan article after loading completes.");
+            if (pickDataLoading) {
+                box.getBox("Please wait", "Picked data is still loading. Scan article after loading completes.");
             } else {
-                box.getBox("Err", "Picklist data not loaded. Reselect picklist and try again.");
+                box.getBox("Err", "No picked data for this picklist. Reselect picklist and try again.");
             }
             resetArticleInput();
             return;
         }
 
-        Log.d(TAG, "Article local cache lookup scan=" + article
-                + " eanKeys=" + eanByScanCode.size()
-                + " articles=" + picklistArticlesByMatnr.size());
-        EanRecord eanRec = resolveEanRecord(article);
-        if (eanRec == null || eanRec.matnr == null || eanRec.matnr.isEmpty()) {
-            Log.w(TAG, "Article local cache miss scan=" + article);
+        PickedArticleLine picked = findPickedLine(article);
+        if (picked == null) {
+            Log.w(TAG, "Article not in picked data scan=" + article);
             UIFuncs.errorSound(con);
-            box.getBox("Err", "Article not allowed for this picklist.");
-            resetArticleInput();
-            return;
-        }
-        Log.d(TAG, "Article local cache hit scan=" + article
-                + " matnr=" + eanRec.matnr
-                + " ean11=" + eanRec.ean11
-                + " umrez=" + eanRec.umrez);
-
-        PicklistArticleLine articleLine = findArticleLine(eanRec.matnr);
-        if (articleLine == null) {
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "Article not found in picklist data.");
+            box.getBox("Err", "Article not picked against this picklist.");
             resetArticleInput();
             return;
         }
 
-        String category = resolveCategoryKey(articleLine.majCat, articleLine.size1);
-        if (category.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "Could not determine the article category.");
-            resetArticleInput();
-            return;
-        }
-
-        Map<String, Double> catMap = picklistCategoryPend.get(picklist);
-        Double pend = (catMap != null) ? catMap.get(category.toUpperCase()) : null;
-        if (pend == null) {
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "No pending quantity found for category " + category
-                    + " in picklist " + picklist + ".");
-            resetArticleInput();
-            return;
-        }
-
-        double umrez = eanRec.umrez > 0 ? eanRec.umrez : 1;
-        double categoryScanned = getCategoryScannedQty(category);
-        double proposedCategoryQty = categoryScanned + umrez;
-        if (proposedCategoryQty > pend) {
-            UIFuncs.errorSound(con);
-            box.getBox("Limit Reached", "Scanned quantity cannot exceed pending quantity ("
-                    + Util.formatDouble(pend) + ") for category " + category + ".");
-            resetArticleInput();
-            return;
-        }
-
-        String matnrKey = articleLine.matnr.toUpperCase();
+        String matnrKey = picked.matnr.toUpperCase();
         ScannedGrtLine line = scannedLines.get(matnrKey);
+        String huLgort = currentScanLgort();
+        if (line == null && !huLgort.isEmpty() && !huLgort.equalsIgnoreCase(picked.lgort)) {
+            UIFuncs.errorSound(con);
+            box.getBox("Err", "Article is picked from storage location " + picked.lgort
+                    + ". Current HU has articles from " + huLgort + ".");
+            resetArticleInput();
+            return;
+        }
+
+        double alreadyScanned = line != null ? line.scanQty : 0;
+        double available = picked.pickQty - picked.packQty;
+        double proposedQty = alreadyScanned + 1;
+        if (proposedQty > available) {
+            UIFuncs.errorSound(con);
+            box.getBox("Limit Reached", "Scanned quantity cannot exceed Pick QTY - Pack QTY ("
+                    + Util.formatDouble(picked.pickQty) + " - " + Util.formatDouble(picked.packQty)
+                    + " = " + Util.formatDouble(Math.max(available, 0)) + ") for article "
+                    + UIFuncs.removeLeadingZeros(picked.matnr) + ".");
+            resetArticleInput();
+            return;
+        }
+
         if (line == null) {
             line = new ScannedGrtLine();
-            line.matnr = articleLine.matnr;
-            line.category = category;
-            line.ean11 = eanRec.ean11;
-            line.matkl = articleLine.matkl;
-            line.size1 = articleLine.size1;
-            line.floor = articleLine.floor;
-            line.bgt = articleLine.bgt;
+            line.matnr = picked.matnr;
+            line.ean11 = picked.ean11;
+            line.lgort = picked.lgort;
             line.scanQty = 0;
         }
-        line.scanQty += umrez;
+        line.scanQty = proposedQty;
         scannedLines.put(matnrKey, line);
 
-        scannedQtyByCategory.put(category.toUpperCase(), proposedCategoryQty);
-        lastScannedCategory = category;
-
-        bindArticleScan(articleLine, eanRec, proposedCategoryQty);
+        txtScanQty.setText(Util.formatDouble(getTotalScanQty()));
+        Log.d(TAG, "Article scan matnr=" + picked.matnr + " lgort=" + picked.lgort
+                + " qty=" + proposedQty + " available=" + available);
         resetArticleInput();
     }
 
-    private void bindArticleScan(PicklistArticleLine articleLine, EanRecord eanRec, double scanQty) {
-        if (articleLine != null && articleLine.matnr != null && !articleLine.matnr.isEmpty()) {
-            txtArticle.setText(UIFuncs.removeLeadingZeros(articleLine.matnr));
-        } else if (eanRec != null && eanRec.ean11 != null && !eanRec.ean11.isEmpty()) {
-            txtArticle.setText(eanRec.ean11);
-        }
-        txtScanQty.setText(Util.formatDouble(scanQty));
-        Log.d(TAG, "Article local cache bind matnr=" + (articleLine != null ? articleLine.matnr : "")
-                + " ean11=" + (eanRec != null ? eanRec.ean11 : "")
-                + " qty=" + scanQty
-                + " cat=" + (articleLine != null ? resolveCategoryKey(articleLine.majCat, articleLine.size1) : ""));
-    }
-
-    private double getCategoryScannedQty(String category) {
-        if (category == null || category.isEmpty()) {
-            return 0;
-        }
-        double total = 0;
+    /** LGORT of articles already scanned into the current HU, or empty when none yet. */
+    private String currentScanLgort() {
         for (ScannedGrtLine line : scannedLines.values()) {
-            if (line.category != null && line.category.equalsIgnoreCase(category)) {
-                total += line.scanQty;
+            if (line.lgort != null && !line.lgort.isEmpty()) {
+                return line.lgort;
             }
         }
-        return total;
+        return "";
     }
 
-    private EanRecord resolveEanRecord(String scan) {
+    private PickedArticleLine findPickedLine(String scan) {
         if (scan == null) {
             return null;
         }
@@ -787,45 +675,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (upper.isEmpty()) {
             return null;
         }
-        EanRecord hit = eanByScanCode.get(upper);
+        PickedArticleLine hit = pickedByScanCode.get(upper);
         if (hit != null) {
             return hit;
         }
         String noZeros = UIFuncs.removeLeadingZeros(upper);
-        if (!noZeros.isEmpty()) {
-            hit = eanByScanCode.get(noZeros.toUpperCase());
-            if (hit != null) {
-                return hit;
-            }
-        }
-        PicklistArticleLine line = findArticleLine(upper);
-        if (line == null) {
-            return null;
-        }
-        EanRecord fallback = new EanRecord();
-        fallback.matnr = line.matnr;
-        fallback.ean11 = "";
-        fallback.umrez = 1;
-        return fallback;
-    }
-
-    private PicklistArticleLine findArticleLine(String matnrOrScan) {
-        if (matnrOrScan == null || matnrOrScan.isEmpty()) {
-            return null;
-        }
-        String upper = matnrOrScan.trim().toUpperCase();
-        PicklistArticleLine direct = picklistArticlesByMatnr.get(upper);
-        if (direct != null) {
-            return direct;
-        }
-        String noZeros = UIFuncs.removeLeadingZeros(upper);
-        if (!noZeros.isEmpty()) {
-            direct = picklistArticlesByMatnr.get(noZeros.toUpperCase());
-            if (direct != null) {
-                return direct;
-            }
-        }
-        return null;
+        return noZeros.isEmpty() ? null : pickedByScanCode.get(noZeros.toUpperCase());
     }
 
     private static void indexEanRecord(Map<String, EanRecord> target, EanRecord record) {
@@ -870,17 +725,9 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
 
-        String werksDes = picklistRdcPlant;
-        if (werksDes == null || werksDes.isEmpty()) {
-            werksDes = picklistDesSite.get(picklist);
-        }
+        String werksDes = picklistDesSite.get(picklist);
         if (werksDes == null || werksDes.isEmpty()) {
             werksDes = UIFuncs.toUpperTrim(txtFdesPlant);
-        }
-        if (werksDes.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Validation", "Please select Picklist with destination plant.");
-            return;
         }
 
         if (!externalHuValidated || UIFuncs.toUpperTrim(txtExternalHu).isEmpty()) {
@@ -897,22 +744,19 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
 
-        String category = lastScannedCategory;
-        if (category.isEmpty()) {
-            for (ScannedGrtLine line : scannedLines.values()) {
-                if (line.category != null && !line.category.isEmpty()) {
-                    category = line.category;
-                    break;
-                }
-            }
+        String category = picklistMajCat.get(picklist);
+        if (category == null) {
+            category = "";
         }
-        if (category.isEmpty()) {
+
+        String lgortSrc = currentScanLgort();
+        if (lgortSrc.isEmpty()) {
             UIFuncs.errorSound(con);
-            box.getBox("Validation", "No category found for scanned articles.");
+            box.getBox("Validation", "No storage location found for scanned articles.");
             return;
         }
 
-        JSONArray arrItData = buildItData();
+        JSONArray arrItData = buildItData(category);
         if (arrItData == null || arrItData.length() == 0) {
             UIFuncs.errorSound(con);
             box.getBox("Validation", "No scan data to submit.");
@@ -923,11 +767,11 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         try {
             args.put("bapiname", Vars.ZWM_ST_GRT_HU_CREATION_SAVE);
             args.put("IM_WERKS", WERKS);
-            args.put("IM_LGORT_SRC", selectedSource);
+            args.put("IM_LGORT_SRC", lgortSrc);
             args.put("IM_WERKS_DES", werksDes);
             args.put("IM_USER", USER);
             args.put("IM_PACK_MAT", packMat);
-            args.put("IM_CATEGORY", category);
+            args.put("IM_CATEGORY", picklist);
             args.put("IT_DATA", arrItData);
             showProcessingAndSubmit(Vars.ZWM_ST_GRT_HU_CREATION_SAVE, REQUEST_SAVE, args);
         } catch (JSONException e) {
@@ -938,7 +782,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }
     }
 
-    private JSONArray buildItData() {
+    private JSONArray buildItData(String category) {
         try {
             JSONArray arrItData = new JSONArray();
             String huNo = UIFuncs.toUpperTrim(txtExternalHu);
@@ -952,7 +796,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 itDataJson.put("SCAN_QTY", line.scanQty);
                 itDataJson.put("WM_NO", "");
                 itDataJson.put("PLANT", WERKS);
-                itDataJson.put("STOR_LOC", selectedSource);
+                itDataJson.put("STOR_LOC", line.lgort != null ? line.lgort : "");
                 itDataJson.put("BATCH", "");
                 itDataJson.put("CRATE", "");
                 itDataJson.put("BIN", "");
@@ -964,12 +808,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                 itDataJson.put("PICK_QTY", "");
                 itDataJson.put("HU_NO", huNo);
                 itDataJson.put("BARCODE", line.ean11 != null ? line.ean11 : "");
-                itDataJson.put("MATKL", line.matkl != null ? line.matkl : "");
-                itDataJson.put("WGBEZ", line.size1 != null ? line.size1 : "");
+                itDataJson.put("MATKL", "");
+                itDataJson.put("WGBEZ", "");
                 itDataJson.put("SONUM", "");
                 itDataJson.put("DELNUM", "");
                 itDataJson.put("POSNR", "");
-                itDataJson.put("GNATURE", line.category != null ? line.category : "");
+                itDataJson.put("GNATURE", category);
                 arrItData.put(itDataJson);
             }
             return arrItData;
@@ -977,6 +821,27 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             box.getErrBox(e);
             return null;
         }
+    }
+
+    private JSONObject buildGrtStSaveArgs(String sapHu) throws JSONException {
+        String picklist = getSelectedPicklist();
+        JSONArray imData = new JSONArray();
+        for (ScannedGrtLine line : scannedLines.values()) {
+            if (line.scanQty <= 0 || line.matnr == null || line.matnr.isEmpty()) {
+                continue;
+            }
+            JSONObject row = new JSONObject();
+            row.put("PICKLIST_NO", picklist);
+            row.put("LGORT", line.lgort != null ? line.lgort : "");
+            row.put("MATNR", line.matnr);
+            row.put("PACK_QTY", line.scanQty);
+            row.put("SAP_HU", sapHu);
+            imData.put(row);
+        }
+        JSONObject args = new JSONObject();
+        args.put("bapiname", Vars.ZWM_GRT_ST_SAVE);
+        args.put("IM_DATA", imData);
+        return args;
     }
 
     private void validateExternalHu(String hu) {
@@ -1153,10 +1018,7 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
             return;
         }
         String picklist = getSelectedPicklist();
-        String destPlant = picklistRdcPlant;
-        if (destPlant == null || destPlant.isEmpty()) {
-            destPlant = picklistDesSite.get(picklist);
-        }
+        String destPlant = picklistDesSite.get(picklist);
         if (destPlant == null) {
             destPlant = UIFuncs.toUpperTrim(txtFdesPlant);
         }
@@ -1193,197 +1055,120 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         }).start();
     }
 
-    private void loadPicklistNumbers() {
+    private void loadPickData() {
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_ST_GRT_PICKLIST_RFC);
+            args.put("bapiname", Vars.ZWM_ST_GRT_PICK_DATA);
+            args.put("IM_PICK", "");
             args.put("SOURCE_SITE", WERKS);
-            showProcessingAndSubmit(Vars.ZWM_ST_GRT_PICKLIST_RFC, REQUEST_GET_PICKLIST, args);
+            pickDataLoading = true;
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_PICK_DATA, REQUEST_GET_PICK_DATA, args);
         } catch (JSONException e) {
-            e.printStackTrace();
+            pickDataLoading = false;
             UIFuncs.errorSound(con);
-            dismissDialog();
             box.getErrBox(e);
         }
     }
 
-    private void loadPicklistData(String picklistNo) {
-        if (picklistNo == null || picklistNo.isEmpty()) {
-            return;
-        }
-        PicklistDataParseResult cached = picklistDataCache.get(picklistNo);
-        if (cached != null) {
-            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA memory cache hit picklist=" + picklistNo
-                    + " articles=" + cached.articlesByMatnr.size()
-                    + " eans=" + cached.eanByScanCode.size());
-            applyPicklistDataResult(picklistNo, cached);
-            return;
-        }
-        if (viewDestroyed || !isAdded()) {
-            return;
-        }
-        final int loadSeq = ++picklistDataLoadSeq;
-        final String plant = WERKS;
-        final Context appCtx = con != null ? con.getApplicationContext() : null;
-        showLoadingDialog();
-        if (picklistParseExecutor == null || picklistParseExecutor.isShutdown() || appCtx == null) {
-            startPicklistDataRfc(picklistNo, loadSeq);
-            return;
-        }
-        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA check local cache picklist=" + picklistNo
-                + " plant=" + plant + " seq=" + loadSeq);
-        picklistParseExecutor.execute(() -> {
-            PicklistDataParseResult disk = StoreGrtPicklistLocalCache.load(appCtx, plant, picklistNo);
-            FragmentActivity activity = getActivity();
-            if (activity == null) {
-                return;
+    /** Groups IM_DATA rows by PICKLIST_NO, binds the picklist dropdown and caches pick/pack qty per article. */
+    private void bindPickData(JSONObject response) {
+        lastPickDataResponse = response;
+        Map<String, PicklistPickData> byPicklist = new LinkedHashMap<>();
+        Map<String, Map<String, PickedArticleLine>> articlesByPicklist = new HashMap<>();
+        Map<String, String> majCat = new HashMap<>();
+        Map<String, String> desSite = new HashMap<>();
+        Map<String, String> desHub = new HashMap<>();
+        Map<String, String> desName = new HashMap<>();
+        JSONArray arr = response.optJSONArray("IM_DATA");
+        if (arr != null) {
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject row = arr.optJSONObject(i);
+                if (row == null || isHeaderRow(row)) {
+                    continue;
+                }
+                String picklistNo = row.optString("PICKLIST_NO", "").trim();
+                String matnr = row.optString("MATNR", "").trim();
+                if (picklistNo.isEmpty() || matnr.isEmpty() || "MATNR".equalsIgnoreCase(matnr)) {
+                    continue;
+                }
+                String lgort = row.optString("LGORT", "").trim();
+                if (!lgort.isEmpty() && !lgort.equals(selectedSource)) {
+                    continue;
+                }
+                PicklistPickData pickData = byPicklist.get(picklistNo);
+                if (pickData == null) {
+                    pickData = new PicklistPickData();
+                    byPicklist.put(picklistNo, pickData);
+                    articlesByPicklist.put(picklistNo, new HashMap<>());
+                }
+                Map<String, PickedArticleLine> byMatnr = articlesByPicklist.get(picklistNo);
+                String key = matnr.toUpperCase();
+                PickedArticleLine line = byMatnr.get(key);
+                if (line == null) {
+                    line = new PickedArticleLine();
+                    line.matnr = matnr;
+                    line.lgort = lgort.isEmpty() ? selectedSource : lgort;
+                    line.ean11 = "";
+                    byMatnr.put(key, line);
+                    putScanKey(pickData.byScanCode, matnr, line);
+                    pickData.articleCount++;
+                }
+                double pickQty = Util.convertStringToDouble(row.optString("PICK_QTY", "0"));
+                double packQty = Util.convertStringToDouble(row.optString("PACK_QTY", "0"));
+                line.pickQty += pickQty;
+                line.packQty += packQty;
+                pickData.pickQty += pickQty;
+                pickData.packQty += packQty;
+                String ean11 = row.optString("EAN11", "").trim();
+                if (!ean11.isEmpty()) {
+                    putScanKey(pickData.byScanCode, ean11, line);
+                    if (line.ean11.isEmpty()) {
+                        line.ean11 = ean11;
+                    }
+                }
+                putIfPresent(majCat, picklistNo, row.optString("MAJ_CAT", ""));
+                putIfPresent(desSite, picklistNo, row.optString("F_DES_SITE", ""));
+                putIfPresent(desHub, picklistNo, row.optString("D_HUB", ""));
+                putIfPresent(desName, picklistNo, row.optString("D_NAME", ""));
             }
-            activity.runOnUiThread(() -> {
-                if (viewDestroyed || !isAdded() || loadSeq != picklistDataLoadSeq) {
-                    finishRequest();
-                    return;
-                }
-                if (disk != null && !disk.articlesByMatnr.isEmpty()) {
-                    picklistDataCache.put(picklistNo, disk);
-                    Log.i(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA local cache hit picklist=" + picklistNo
-                            + " articles=" + disk.articlesByMatnr.size()
-                            + " eans=" + disk.eanByScanCode.size());
-                    applyPicklistDataResult(picklistNo, disk);
-                    finishRequest();
-                    return;
-                }
-                Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA local cache miss, calling RFC picklist="
-                        + picklistNo);
-                startPicklistDataRfc(picklistNo, loadSeq);
-            });
-        });
-    }
+        }
+        pickDataByPicklist = byPicklist;
+        picklistMajCat = majCat;
+        picklistDesSite = desSite;
+        picklistDesHub = desHub;
+        picklistDesName = desName;
+        String sourceName = readSapNameExport(response, "ES_S_NAME");
+        if (!sourceName.isEmpty()) {
+            sourceSiteName = sourceName;
+        }
 
-    private void startPicklistDataRfc(String picklistNo, int loadSeq) {
-        JSONObject args = new JSONObject();
-        try {
-            args.put("bapiname", Vars.ZWM_ST_GRT_GET_PICKLIST_DATA);
-            args.put("IM_PLANT", WERKS);
-            args.put("IM_USER", USER);
-            args.put("IM_PICKLIST", picklistNo);
-            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA load start picklist=" + picklistNo
-                    + " plant=" + WERKS + " user=" + USER + " seq=" + loadSeq);
-            submitPicklistDataRequest(Vars.ZWM_ST_GRT_GET_PICKLIST_DATA, args, loadSeq);
-        } catch (JSONException e) {
-            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA args error", e);
-            e.printStackTrace();
+        List<String> items = new ArrayList<>();
+        items.add(PICKLIST_HINT);
+        items.addAll(byPicklist.keySet());
+        updatePicklistSpinnerItems(items);
+        resetPicklistScanState();
+        txtFdesPlant.setText("");
+        showPickPackQty(null);
+        Log.d(TAG, "ZWM_ST_GRT_PICK_DATA done source=" + selectedSource + " picklists=" + byPicklist.size());
+        if (byPicklist.isEmpty()) {
             UIFuncs.errorSound(con);
-            finishRequest();
-            box.getErrBox(e);
+            box.getBox("No Data", "No picklist found for S.Loc " + selectedSource + ".");
         }
     }
 
-    private void cancelInFlightPicklistDataRequest() {
-        if (inFlightPicklistDataRequest == null) {
-            return;
+    private static void putIfPresent(Map<String, String> target, String key, String value) {
+        String trimmed = value != null ? value.trim() : "";
+        if (!trimmed.isEmpty() && !"null".equalsIgnoreCase(trimmed) && !target.containsKey(key)) {
+            target.put(key, trimmed);
         }
-        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA cancel previous in-flight request");
-        inFlightPicklistDataRequest.cancel();
-        inFlightPicklistDataRequest = null;
-        finishRequest();
     }
 
-    /**
-     * Stream-parse ZWM_ST_GRT_GET_PICKLIST_DATA on a background thread.
-     * Do not build a JSONObject tree: ET_DATA / ET_EAN_DATA can be tens of MB and
-     * org.json + SapJsonRows sanitization blocked Volley and the UI for a long time.
-     */
-    private void bindPicklistDataBytes(final byte[] body, final int loadSeq, final int httpStatus,
-                                       final long networkMs) {
-        if (viewDestroyed || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
-            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA skip parse viewDestroyed/executor down seq=" + loadSeq);
-            finishRequest();
-            return;
+    private static void putScanKey(Map<String, PickedArticleLine> target, String code, PickedArticleLine line) {
+        target.put(code.toUpperCase(), line);
+        String noZeros = UIFuncs.removeLeadingZeros(code);
+        if (!noZeros.isEmpty()) {
+            target.put(noZeros.toUpperCase(), line);
         }
-        if (loadSeq != picklistDataLoadSeq) {
-            Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA skip stale response seq=" + loadSeq
-                    + " current=" + picklistDataLoadSeq);
-            finishRequest();
-            return;
-        }
-        if (body == null || body.length == 0) {
-            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA empty body http=" + httpStatus
-                    + " networkMs=" + networkMs);
-            UIFuncs.errorSound(con);
-            box.getBox("Err", "No response from Server");
-            finishRequest();
-            return;
-        }
-        Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse start bytes=" + body.length
-                + " http=" + httpStatus + " networkMs=" + networkMs + " seq=" + loadSeq);
-        final String werks = WERKS;
-        picklistParseExecutor.execute(() -> {
-            PicklistDataParseResult parsed = null;
-            Exception parseError = null;
-            try {
-                if (loadSeq == picklistDataLoadSeq) {
-                    parsed = parsePicklistDataBytes(body, werks);
-                    parsed.httpStatus = httpStatus;
-                    parsed.responseBytes = body.length;
-                    parsed.networkMs = networkMs;
-                }
-            } catch (Exception ex) {
-                parseError = ex;
-                Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse error seq=" + loadSeq, ex);
-            }
-            final PicklistDataParseResult result = parsed;
-            final Exception error = parseError;
-            FragmentActivity activity = getActivity();
-            if (activity == null) {
-                Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA parse done but activity null seq=" + loadSeq);
-                return;
-            }
-            activity.runOnUiThread(() -> {
-                if (viewDestroyed || !isAdded()) {
-                    finishRequest();
-                    return;
-                }
-                if (loadSeq != picklistDataLoadSeq) {
-                    Log.d(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA drop stale parse seq=" + loadSeq
-                            + " current=" + picklistDataLoadSeq);
-                    finishRequest();
-                    return;
-                }
-                if (error != null) {
-                    finishRequest();
-                    box.getErrBox(error);
-                    return;
-                }
-                String picklist = getSelectedPicklist();
-                if (!picklist.isEmpty() && result != null && result.articlesByMatnr.size() > 0
-                        && !isPicklistDataError(result)) {
-                    picklistDataCache.put(picklist, result);
-                    persistPicklistDataCache(picklist, result);
-                }
-                if (result != null) {
-                    Log.i(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA done picklist=" + picklist
-                            + " http=" + result.httpStatus
-                            + " bytes=" + result.responseBytes
-                            + " networkMs=" + result.networkMs
-                            + " parseMs=" + result.parseMs
-                            + " totalMs=" + (result.networkMs + result.parseMs)
-                            + " articles=" + result.articlesByMatnr.size()
-                            + " eans=" + result.eanByScanCode.size()
-                            + " rdc=" + result.rdcPlant
-                            + " type=" + result.errorType
-                            + " msg=" + result.errorMessage);
-                }
-                applyPicklistDataResult(picklist, result);
-                finishRequest();
-            });
-        });
-    }
-
-    private static boolean isPicklistDataError(PicklistDataParseResult parsed) {
-        if (parsed == null) {
-            return false;
-        }
-        return "E".equals(parsed.errorType) || "A".equals(parsed.errorType);
     }
 
     static PicklistDataParseResult parseGetPicklistData(byte[] body, String werks) throws IOException {
@@ -1660,181 +1445,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         return reader.nextString();
     }
 
-    private void applyPicklistDataResult(String picklistNo, PicklistDataParseResult parsed) {
-        if (parsed == null) {
-            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA apply skipped parsed=null picklist=" + picklistNo);
-            return;
-        }
-        if (isPicklistDataError(parsed)) {
-            Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA SAP error TYPE=" + parsed.errorType
-                    + " MESSAGE=" + parsed.errorMessage + " picklist=" + picklistNo);
-            UIFuncs.errorSound(con);
-            box.getBox("Err", parsed.errorMessage == null || parsed.errorMessage.isEmpty()
-                    ? "No picklist article data returned."
-                    : parsed.errorMessage);
-            return;
-        }
-        picklistArticlesByMatnr = parsed.articlesByMatnr;
-        eanByScanCode = parsed.eanByScanCode;
-        if (parsed.rdcPlant != null && !parsed.rdcPlant.isEmpty()) {
-            picklistRdcPlant = parsed.rdcPlant;
-            applyPlantForSelectedPicklist();
-        }
-        if (picklistArticlesByMatnr.isEmpty()) {
-            Log.w(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA no article rows picklist=" + picklistNo);
-            UIFuncs.errorSound(con);
-            box.getBox("No Data", "No picklist article data returned.");
-        }
-    }
-
-    private void persistPicklistDataCache(String picklistNo, PicklistDataParseResult parsed) {
-        if (parsed == null || picklistNo == null || picklistNo.isEmpty()) {
-            return;
-        }
-        final Context appCtx = con != null ? con.getApplicationContext() : null;
-        final String plant = WERKS;
-        if (appCtx == null || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
-            return;
-        }
-        picklistParseExecutor.execute(() -> StoreGrtPicklistLocalCache.save(appCtx, plant, picklistNo, parsed));
-    }
-
-    private void bindPicklistNumbers(JSONObject response) {
-        if (viewDestroyed || picklistParseExecutor == null || picklistParseExecutor.isShutdown()) {
-            finishRequest();
-            ensurePackingMaterialsLoaded();
-            return;
-        }
-        try {
-            final String sourceName = readSapNameExport(response, "ES_S_NAME");
-            final JSONArray arr = response.optJSONArray("ET_PICKLIST_NO");
-            final String scanMode = selectedScanMode;
-            picklistParseExecutor.execute(() -> {
-                PicklistNumbersParseResult parsed = parsePicklistNumbersArray(arr, sourceName, scanMode);
-                FragmentActivity activity = getActivity();
-                if (activity == null || viewDestroyed) {
-                    return;
-                }
-                activity.runOnUiThread(() -> {
-                    if (viewDestroyed || !isAdded()) {
-                        finishRequest();
-                        return;
-                    }
-                    applyPicklistNumbersResult(parsed);
-                    finishRequest();
-                    ensurePackingMaterialsLoaded();
-                });
-            });
-        } catch (Exception exce) {
-            finishRequest();
-            box.getErrBox(exce);
-            ensurePackingMaterialsLoaded();
-        }
-    }
-
-    private PicklistNumbersParseResult parsePicklistNumbersArray(JSONArray arr,
-                                                                 String sourceName,
-                                                                 String scanMode) {
-        PicklistNumbersParseResult result = new PicklistNumbersParseResult();
-        result.sourceSiteName = sourceName != null ? sourceName : "";
-        Set<String> picklistNoSet = new LinkedHashSet<>();
-        if (arr == null) {
-            return result;
-        }
-        for (int i = 1; i < arr.length(); i++) {
-            JSONObject row = arr.optJSONObject(i);
-            if (row == null || isHeaderRow(row)) {
-                continue;
-            }
-            String picklistNo = row.optString("PICKLIST_NO", "").trim();
-            if (picklistNo.isEmpty()) {
-                continue;
-            }
-            picklistNoSet.add(picklistNo);
-
-            String fDesSite = row.optString("F_DES_SITE", "").trim();
-            if (!fDesSite.isEmpty()) {
-                result.desSite.put(picklistNo, fDesSite);
-            }
-            String dHub = row.optString("D_HUB", "").trim();
-            if (!dHub.isEmpty()) {
-                result.desHub.put(picklistNo, dHub);
-            }
-            String dName = row.optString("D_NAME", "").trim();
-            if (!dName.isEmpty()) {
-                result.desName.put(picklistNo, dName);
-            }
-
-            String majCat = row.optString("MAJ_CAT", "").trim();
-            String size1 = row.optString("SIZE1", "").trim();
-            String pendQty = row.optString("PEND_QTY", row.optString("PEND", "0"));
-            double pend = Util.convertStringToDouble(pendQty);
-            PicklistPendEntry entry = new PicklistPendEntry();
-            entry.picklistNo = picklistNo;
-            entry.majCat = majCat;
-            entry.size1 = size1;
-            entry.pend = pend;
-            result.pendEntries.add(entry);
-            String catKey = resolveCategoryKeyForMode(scanMode, majCat, size1);
-            if (!catKey.isEmpty()) {
-                Map<String, Double> catMap = result.categoryPend.get(picklistNo);
-                if (catMap == null) {
-                    catMap = new HashMap<>();
-                    result.categoryPend.put(picklistNo, catMap);
-                }
-                putPicklistCategoryPendForMode(scanMode, catMap, catKey, pend);
-            }
-        }
-        result.picklistNos.addAll(picklistNoSet);
-        return result;
-    }
-
-    private static String resolveCategoryKeyForMode(String scanMode, String majCat, String size1) {
-        if (SCAN_MODE_SIZE.equals(scanMode)) {
-            if (size1 != null && !size1.trim().isEmpty()) {
-                return size1.trim();
-            }
-        }
-        return majCat != null ? majCat.trim() : "";
-    }
-
-    private static void putPicklistCategoryPendForMode(String scanMode,
-                                                       Map<String, Double> catMap,
-                                                       String catKey,
-                                                       double pend) {
-        String key = catKey.toUpperCase();
-        if (SCAN_MODE_SIZE.equals(scanMode)) {
-            Double existing = catMap.get(key);
-            catMap.put(key, existing != null ? existing + pend : pend);
-        } else {
-            catMap.put(key, pend);
-        }
-    }
-
-    private void applyPicklistNumbersResult(PicklistNumbersParseResult parsed) {
-        if (parsed == null) {
-            return;
-        }
-        picklistPendEntries = parsed.pendEntries;
-        picklistCategoryPend = parsed.categoryPend;
-        picklistDesSite = parsed.desSite;
-        picklistDesHub = parsed.desHub;
-        picklistDesName = parsed.desName;
-        sourceSiteName = parsed.sourceSiteName;
-
-        List<String> items = new ArrayList<>();
-        items.add(PICKLIST_HINT);
-        items.addAll(parsed.picklistNos);
-        updatePicklistSpinnerItems(items);
-        applyPlantForSelectedPicklist();
-        Log.d(TAG, "ZWM_ST_GRT_PICKLIST_RFC done count=" + parsed.picklistNos.size()
-                + " sourceName=" + sourceSiteName);
-
-        if (parsed.picklistNos.isEmpty()) {
-            box.getBox("No Data", "No picklist found for this site.");
-        }
-    }
-
     private void loadPackingMaterials() {
         JSONObject args = new JSONObject();
         try {
@@ -1898,7 +1508,25 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         if (row == null) {
             return true;
         }
-        return "PICKLIST_NO".equalsIgnoreCase(row.optString("PICKLIST_NO", "").trim());
+        if ("PICKLIST_NO".equalsIgnoreCase(row.optString("PICKLIST_NO", "").trim())) {
+            return true;
+        }
+        // Template row may carry field labels ("Pick List No.", "Quantity") instead of technical names.
+        return !isNumericOrEmpty(row.optString("PICK_QTY", ""))
+                || !isNumericOrEmpty(row.optString("PACK_QTY", ""));
+    }
+
+    private static boolean isNumericOrEmpty(String value) {
+        String trimmed = value != null ? value.trim() : "";
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+        try {
+            Double.parseDouble(trimmed);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     /** Picklist/packing/save use EX_RETURN (object or table). */
@@ -1966,16 +1594,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     public void showProcessingAndSubmit(String rfc, int request, JSONObject args) {
-        showProcessingAndSubmit(rfc, request, args, 0);
-    }
-
-    public void showProcessingAndSubmit(String rfc, int request, JSONObject args, int loadSeq) {
         if (viewDestroyed || !isAdded()) {
             return;
         }
         showLoadingDialog();
         try {
-            submitRequest(rfc, request, args, loadSeq);
+            submitRequest(rfc, request, args);
         } catch (Exception e) {
             finishRequest();
             box.getErrBox(e);
@@ -1996,15 +1620,6 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
     }
 
     private void submitRequest(String rfc, int request, JSONObject args) {
-        submitRequest(rfc, request, args, 0);
-    }
-
-    private void submitRequest(String rfc, int request, JSONObject args, final int loadSeq) {
-        if (request == REQUEST_GET_PICKLIST_DATA) {
-            submitPicklistDataRequest(rfc, args, loadSeq);
-            return;
-        }
-
         final RequestQueue mRequestQueue;
         JsonObjectRequest mJsonRequest;
         String url = this.URL.substring(0, this.URL.lastIndexOf("/"));
@@ -2017,8 +1632,10 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject responsebody) {
-                boolean dismissLoading = true;
                 Log.d(TAG, "RFC response -> " + rfc + " body=" + responsebody);
+                if (request == REQUEST_GET_PICK_DATA) {
+                    pickDataLoading = false;
+                }
 
                 if (viewDestroyed || !isAdded()) {
                     finishRequest();
@@ -2037,16 +1654,21 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
 
                         if (returnobj != null && "E".equals(returnobj.optString("TYPE"))) {
                             UIFuncs.errorSound(con);
-                            box.getBox("Err", returnobj.optString("MESSAGE"));
+                            if (request == REQUEST_GRT_ST_SAVE) {
+                                box.getBox("Err", "HU " + savedHuNo
+                                        + " created, but picklist update failed: "
+                                        + returnobj.optString("MESSAGE"));
+                            } else {
+                                box.getBox("Err", returnobj.optString("MESSAGE"));
+                            }
                             if (request == REQUEST_VALIDATE_EXHU) {
                                 resetExternalHuInput();
                             }
                         } else if (request == REQUEST_VALIDATE_EXHU) {
                             externalHuValidated = true;
                             focusArticleField();
-                        } else if (request == REQUEST_GET_PICKLIST) {
-                            bindPicklistNumbers(responsebody);
-                            dismissLoading = false;
+                        } else if (request == REQUEST_GET_PICK_DATA) {
+                            bindPickData(responsebody);
                         } else if (request == REQUEST_GET_PACKING) {
                             bindPackingMaterials(responsebody);
                         } else if (request == REQUEST_SAVE) {
@@ -2054,11 +1676,20 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                                     ? returnobj.optString("MESSAGE", "Saved successfully.")
                                     : "Saved successfully.";
                             String huNo = extractHuFromSaveResponse(responsebody, returnobj);
-                            if (!huNo.isEmpty()) {
+                            if (huNo.isEmpty()) {
+                                box.getBox("Success", successMsg
+                                        + "\nSAP HU not returned, picklist not updated.");
+                                clear();
+                            } else {
                                 printGrtHuLabel(huNo);
+                                JSONObject grtStArgs = buildGrtStSaveArgs(huNo);
+                                clear();
+                                savedHuNo = huNo;
+                                savedHuMessage = successMsg;
+                                showProcessingAndSubmit(Vars.ZWM_GRT_ST_SAVE, REQUEST_GRT_ST_SAVE, grtStArgs);
                             }
-                            box.getBox("Success", successMsg);
-                            clear();
+                        } else if (request == REQUEST_GRT_ST_SAVE) {
+                            box.getBox("Success", savedHuMessage);
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -2066,9 +1697,12 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
                     }
                 }
 
-                if (dismissLoading) {
-                    finishRequest();
+                if (request == REQUEST_GET_PICK_DATA) {
+                    ensurePackingMaterialsLoaded();
+                } else if (request == REQUEST_GRT_ST_SAVE) {
+                    loadPickData();
                 }
+                finishRequest();
             }
         }, volleyErrorListener()) {
             @Override
@@ -2092,85 +1726,11 @@ public class FragmentStoreGrtProcess extends Fragment implements View.OnClickLis
         mRequestQueue.add(mJsonRequest);
     }
 
-    private void submitPicklistDataRequest(final String rfc, JSONObject args, final int loadSeq) {
-        cancelInFlightPicklistDataRequest();
-        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
-        if (url == null || url.isEmpty()) {
-            String stored = URL != null ? URL : "";
-            int last = stored.lastIndexOf('/');
-            url = (last > 0 ? stored.substring(0, last) : stored)
-                    + "/noacljsonrfcadaptor?bapiname=" + rfc + "&aclclientid=android";
-        }
-        final byte[] bodyBytes = args.toString().getBytes(StandardCharsets.UTF_8);
-        final long startedAt = SystemClock.elapsedRealtime();
-        Log.d(TAG, "RFC request -> " + rfc + " url=" + url + " payload=" + args + " seq=" + loadSeq);
-        Request<byte[]> req = new Request<byte[]>(Request.Method.POST, url, picklistDataErrorListener()) {
-            int httpStatus;
-
-            @Override
-            public String getBodyContentType() {
-                return "application/json; charset=utf-8";
-            }
-
-            @Override
-            public byte[] getBody() {
-                return bodyBytes;
-            }
-
-            @Override
-            protected Response<byte[]> parseNetworkResponse(NetworkResponse response) {
-                httpStatus = response == null ? 0 : response.statusCode;
-                byte[] data = response == null || response.data == null ? new byte[0] : response.data;
-                Log.d(TAG, "RFC network -> " + rfc
-                        + " http=" + httpStatus
-                        + " bytes=" + data.length
-                        + " networkMs=" + (SystemClock.elapsedRealtime() - startedAt)
-                        + " seq=" + loadSeq);
-                return Response.success(data, HttpHeaderParser.parseCacheHeaders(response));
-            }
-
-            @Override
-            protected void deliverResponse(byte[] response) {
-                if (inFlightPicklistDataRequest == this) {
-                    inFlightPicklistDataRequest = null;
-                }
-                long networkMs = SystemClock.elapsedRealtime() - startedAt;
-                Log.d(TAG, "RFC response -> " + rfc
-                        + " http=" + httpStatus
-                        + " bytes=" + (response == null ? 0 : response.length)
-                        + " networkMs=" + networkMs
-                        + " seq=" + loadSeq);
-                bindPicklistDataBytes(response, loadSeq, httpStatus, networkMs);
-            }
-        };
-        req.setShouldCache(false);
-        req.setRetryPolicy(new DefaultRetryPolicy(90000, 0, 1.0f));
-        req.setTag(VOLLEY_TAG);
-        inFlightPicklistDataRequest = req;
-        ApplicationController.getInstance().getRequestQueue().add(req);
-    }
-
-    private Response.ErrorListener picklistDataErrorListener() {
-        return new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                inFlightPicklistDataRequest = null;
-                int status = error != null && error.networkResponse != null
-                        ? error.networkResponse.statusCode : 0;
-                int bytes = error != null && error.networkResponse != null
-                        && error.networkResponse.data != null
-                        ? error.networkResponse.data.length : 0;
-                Log.e(TAG, "ZWM_ST_GRT_GET_PICKLIST_DATA error http=" + status
-                        + " bytes=" + bytes + " err=" + error, error);
-                volleyErrorListener().onErrorResponse(error);
-            }
-        };
-    }
-
     Response.ErrorListener volleyErrorListener() {
         return new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                pickDataLoading = false;
                 if (viewDestroyed || !isAdded()) {
                     finishRequest();
                     return;

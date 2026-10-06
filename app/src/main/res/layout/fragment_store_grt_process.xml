@@ -16,12 +16,11 @@
             android:orientation="vertical"
             android:padding="10dp">
 
-            <!-- GRT SOURCE -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
-                android:text="GRT SOURCE"
+                android:text="GRT SOURCE (S.LOC)"
                 android:textColor="@color/textSecondary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -43,7 +42,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_grt_source_selected"
                     android:orientation="vertical"
-                    android:padding="6dp">
+                    android:padding="8dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -57,7 +56,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="1dp"
-                        android:text="Main warehouse"
+                        android:text="S.Loc 0001"
                         android:textColor="@color/textSecondary"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -70,7 +69,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_grt_source_unselected"
                     android:orientation="vertical"
-                    android:padding="6dp">
+                    android:padding="8dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -84,53 +83,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="1dp"
-                        android:text="Secondary warehouse"
+                        android:text="S.Loc 0006"
                         android:textColor="@color/textSecondary"
                         android:textSize="11sp" />
                 </LinearLayout>
-            </LinearLayout>
-
-              <!-- Scan Mode -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:weightSum="12">
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="5" />
-
-                <RadioGroup
-                    android:id="@+id/store_grt_scan_mode_group"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="7"
-                    android:orientation="horizontal">
-
-                    <RadioButton
-                        android:id="@+id/store_grt_scan_mode_all"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:minHeight="32dp"
-                        android:paddingEnd="16dp"
-                        android:text="ALL"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-
-                    <RadioButton
-                        android:id="@+id/store_grt_scan_mode_size"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minHeight="32dp"
-                        android:text="SIZE"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-                </RadioGroup>
             </LinearLayout>
 
             <!-- Picklist No. -->
@@ -163,6 +119,74 @@
                         android:paddingStart="6dp"
                         android:paddingEnd="6dp" />
                 </RelativeLayout>
+            </LinearLayout>
+
+            <!-- Pick QTY -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:text="Pick QTY"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_pick_qty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border_disabled_input"
+                    android:enabled="false"
+                    android:hint="auto-filled..."
+                    android:maxLines="1"
+                    android:minHeight="36dp"
+                    android:padding="6dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Pack QTY -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="12">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="5"
+                    android:text="Pack QTY"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
+
+                <EditText
+                    android:id="@+id/store_grt_pack_qty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="7"
+                    android:background="@drawable/border_disabled_input"
+                    android:enabled="false"
+                    android:hint="auto-filled..."
+                    android:maxLines="1"
+                    android:minHeight="36dp"
+                    android:padding="6dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <!-- Scan External HU -->

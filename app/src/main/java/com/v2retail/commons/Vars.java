@@ -166,6 +166,12 @@ public class Vars {
     /** Store GRT Process — load picklist article/EAN data (ET_DATA, ET_EAN_DATA). */
     public static String ZWM_ST_GRT_GET_PICKLIST_DATA = "ZWM_ST_GRT_GET_PICKLIST_DATA";
     /**
+     * Store GRT Process — picked articles against a picklist (IM_PICK, SOURCE_SITE → EX_RETURN).
+     * Table IM_DATA (ZWM_GRT_ST_PICK_TT / ZWM_GRT_ST_PICK_STR):
+     * PICKLIST_NO, SOURCE_SITE, LGORT, MATNR, EAN11, PICK_QTY, PACK_QTY.
+     */
+    public static String ZWM_ST_GRT_PICK_DATA = "ZWM_ST_GRT_PICK_DATA";
+    /**
      * Store GRT Pick — post a matched article scan.
      * Import table IT_SCAN (ZWM_IT_GRT_SCAN / ZWM_GRT_SCAN_STR):
      * PICKLIST_NO, SOURCE_SITE, LGORT, MATNR, EAN11, PICK_QTY. Export ET_RETURN.
@@ -175,6 +181,11 @@ public class Vars {
     public static String ZWM_ST_GRT_EXHU_VALIDATION = "ZWM_ST_GRT_EXHU_VALIDATION";
     /** Store GRT Process — save HU creation (IM_WERKS, IM_LGORT_SRC, IM_WERKS_DES, IM_USER, IM_PACK_MAT, IM_CATEGORY, IT_DATA). */
     public static String ZWM_ST_GRT_HU_CREATION_SAVE = "ZWM_ST_GRT_HU_CREATION_SAVE";
+    /**
+     * Store GRT Process — update picked articles with packed qty + SAP HU after HU creation.
+     * Import IM_DATA (ZWM_GRT_ST_TT / ZWM_GRT_ST_STR): PICKLIST_NO, LGORT, MATNR, PACK_QTY, SAP_HU. Export EX_RETURN.
+     */
+    public static String ZWM_GRT_ST_SAVE = "ZWM_GRT_ST_SAVE";
     public static String ZWM_STORE_GET_STOCK = "ZWM_STORE_GET_STOCK";
     /**
      * Store Stock Track — FM in SE37: ZWM_STORE_PUSHDATATOSAP_1STOCK.

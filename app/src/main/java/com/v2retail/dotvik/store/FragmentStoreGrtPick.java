@@ -92,7 +92,6 @@ public class FragmentStoreGrtPick extends Fragment implements View.OnClickListen
     private EditText txtScannedLocal;
     private Button btnBack;
     private Button btnReset;
-    private Button btnSave;
 
     private String selectedSource = SOURCE_0001;
     private String URL = "";
@@ -145,13 +144,11 @@ public class FragmentStoreGrtPick extends Fragment implements View.OnClickListen
         txtScannedLocal = rootView.findViewById(R.id.store_grt_pick_scanned_local);
         btnBack = rootView.findViewById(R.id.store_grt_pick_btn_back);
         btnReset = rootView.findViewById(R.id.store_grt_pick_btn_reset);
-        btnSave = rootView.findViewById(R.id.store_grt_pick_btn_save);
 
         source0001.setOnClickListener(this);
         source0006.setOnClickListener(this);
         btnBack.setOnClickListener(this);
         btnReset.setOnClickListener(this);
-        btnSave.setOnClickListener(this);
 
         setupPicklistSpinner();
         addPicklistSelectionListener();
@@ -651,8 +648,17 @@ public class FragmentStoreGrtPick extends Fragment implements View.OnClickListen
         }
     }
 
+    /**
+     * ET_PICKLIST_NO may start with a template row carrying either the technical name
+     * ("PICKLIST_NO") or the field label ("Pick List No.") instead of real data.
+     */
     private static boolean isHeaderRow(JSONObject row) {
-        return "PICKLIST_NO".equalsIgnoreCase(row.optString("PICKLIST_NO", "").trim());
+        String value = row.optString("PICKLIST_NO", "").trim();
+        if (value.isEmpty()) {
+            return false;
+        }
+        String normalized = value.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        return "PICKLISTNO".equals(normalized) || value.matches(".*\\s.*");
     }
 
     private static JSONObject getReturnObject(JSONObject response) throws JSONException {

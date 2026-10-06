@@ -1,5 +1,26 @@
 apply plugin: 'com.android.application'
 
+// Every build installed on devices must be signed with the same V2Retail key,
+// otherwise Android rejects updates and the old app has to be uninstalled first.
+// Keystore lookup order: KEYSTORE_PATH env var -> v2retail.keystore.path in local.properties -> <project>/keystore/V2Retail_keystore
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+def v2KeystoreFile = [
+        System.getenv("KEYSTORE_PATH"),
+        localProps.getProperty("v2retail.keystore.path"),
+        rootProject.file("keystore/V2Retail_keystore").absolutePath,
+        '/Users/maddy/Projects/V2Retail_at_456_keystore'
+].findAll { it }.collect { file(it) }.find { it.exists() }
+
+if (v2KeystoreFile == null) {
+    logger.warn("WARNING: V2Retail keystore not found. Builds will use the local debug key and " +
+            "cannot update an app installed from the official release APK. " +
+            "Set KEYSTORE_PATH or v2retail.keystore.path in local.properties.")
+}
+
 android {
     compileSdk 31
     defaultConfig {
@@ -32,8 +53,9 @@ android {
     }
     signingConfigs {
         release {
-            def ksPath = System.getenv("KEYSTORE_PATH") ?: '/Users/maddy/Projects/V2Retail_at_456_keystore'
-            storeFile file(ksPath)
+            if (v2KeystoreFile != null) {
+                storeFile v2KeystoreFile
+            }
             storePassword System.getenv("KEYSTORE_PASSWORD") ?: 'V2Retail@456'
             keyAlias System.getenv("KEY_ALIAS") ?: 'v2retail'
             keyPassword System.getenv("KEY_PASSWORD") ?: 'V2Retail@456'
@@ -44,6 +66,9 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (v2KeystoreFile != null) {
+                signingConfig signingConfigs.release
+            }
         }
         release {
             minifyEnabled false
