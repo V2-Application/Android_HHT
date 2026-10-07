@@ -14,7 +14,6 @@ import android.widget.Button;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.dotvik.dc.ptlnew.withpallate.FragmentPTLNewHUCloseAndPrint;
-import com.v2retail.dotvik.store.PaperLessDate;
 import com.v2retail.util.AlertBox;
 
 
@@ -36,7 +35,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
     private static final String ARG_PARAM2 = "param2";
     Button picking;
     Button hu_scan;
-    Button paperless_picking;
+    Button grt_pallet_hu_picking;
     Button dc_grt;
     Context con;
     AlertBox box;
@@ -106,7 +105,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         box = new AlertBox(con);
         picking = (Button) view.findViewById(R.id.picking);
         hu_scan = (Button) view.findViewById(R.id.Hu_Scan);
-        paperless_picking = (Button) view.findViewById(R.id.paperless_picking);
+        grt_pallet_hu_picking = view.findViewById(R.id.grt_pallet_hu_picking);
 
         dc_grt = (Button) view.findViewById(R.id.dc_grt);
         sample_stock_movement = (Button) view.findViewById(R.id.stock_movement);
@@ -121,7 +120,7 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
 
         picking.setOnClickListener(this);
         hu_scan.setOnClickListener(this);
-        paperless_picking.setOnClickListener(this);
+        grt_pallet_hu_picking.setOnClickListener(this);
         grt_hu_move.setOnClickListener(this);
         hu_weight.setOnClickListener(this);
         tvs_paperless_picking.setOnClickListener(this);
@@ -131,7 +130,6 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
         grt_hu_creation_print.setOnClickListener(this);
 
         disableAndGreyOut(picking);
-        disableAndGreyOut(paperless_picking);
         disableAndGreyOut(tvs_paperless_picking);
 
         return view;
@@ -175,8 +173,8 @@ public class OutWardFragment extends Fragment implements View.OnClickListener,
             case R.id.Hu_Scan:
                 fragment = new HU_Detail_Fragment();
                 break;
-            case R.id.paperless_picking:
-                fragment = PaperLessDate.newInstance(Vars.PAPER_LESS);
+            case R.id.grt_pallet_hu_picking:
+                fragment = FragmentGrtPalletHuPicking.newInstance();
                 break;
 
             case R.id.grt_hu_move:

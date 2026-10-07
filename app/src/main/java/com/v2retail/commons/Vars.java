@@ -222,6 +222,18 @@ public class Vars {
     public static String ZWM_GRT_HU_VALIDATE = "ZWM_GRT_HU_VALIDATE";
     /** Outward → GRT HU Creation Print — save (IM_USER, IM_EXIDV, IM_SWERKS, IM_DWERKS → EX_RETURN, EX_HU). */
     public static String ZWM_GRT_STORE_HU = "ZWM_GRT_STORE_HU";
+    /** Outward → GRT Pallet HU Picking — picklists (IM_USER, IM_PLANT, IM_DESKTOP → EX_RETURN, ET_PICKLIST). */
+    public static String ZWM_GRT_HU_GET_PICKIST = "ZWM_GRT_HU_GET_PICKIST";
+    /** Outward → GRT Pallet HU Picking — picklist details (IM_USER, IM_PLANT, IM_PICKLIST → EX_RETURN, ET_DATA). */
+    public static String ZWM_GRT_HU_PICK_DET = "ZWM_GRT_HU_PICK_DET";
+    /** Outward → GRT Pallet HU Picking — validate pallet (IM_USER, IM_PLANT, IM_PALETTE → EX_RETURN). */
+    public static String ZWM_GRT_HU_PAL_VAL = "ZWM_GRT_HU_PAL_VAL";
+    /** Outward → GRT Pallet HU Picking — validate bin (IM_USER, IM_PLANT, IM_BIN → EX_RETURN). */
+    public static String ZWM_GRT_HU_BIN_VAL = "ZWM_GRT_HU_BIN_VAL";
+    /** Outward → GRT Pallet HU Picking — validate HU (IM_USER, IM_PLANT, IM_HU → EX_RETURN). */
+    public static String ZWM_GRT_HU_VAL = "ZWM_GRT_HU_VAL";
+    /** Outward → GRT Pallet HU Picking — save HU (IM_USER, IM_HU, IM_PLANT → EX_RETURN). */
+    public static String ZWM_GRT_HU_SAVE = "ZWM_GRT_HU_SAVE";
 
     public static String ZWM_BIN_VALIDATION_PUT = "ZWM_BIN_VALIDATION_PUT";
     public static String ZWM_HU_VALIDATION_PUT = "ZWM_HU_VALIDATION_PUT";

@@ -199,9 +199,6 @@ public class DashBoard extends Fragment implements
             case R.id.Rf_idScanner:
                 fragment = new HU_RFID_Scan_Fragment();  //new
                 break;
-            case R.id.paperless_picking:
-                fragment = new PaperLessDate();  //new
-                break;
             case R.id.article_consumption:
                 fragment = new FragmentArticleConsumption();  //new
                 break;

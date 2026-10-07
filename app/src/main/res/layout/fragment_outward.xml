@@ -44,8 +44,8 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Paperless Picking "
-                android:id="@+id/paperless_picking"
+                android:text="GRT Pallet HU Picking"
+                android:id="@+id/grt_pallet_hu_picking"
                 android:layout_margin="5dp"
                 android:textColor="#fff"
                 android:background="#e71821" />
