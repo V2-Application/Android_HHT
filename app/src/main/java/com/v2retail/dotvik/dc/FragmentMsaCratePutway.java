@@ -525,6 +525,7 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
         }
         CrateQty knownCrate = crateCatalog.get(binKey(crate));
         if (knownCrate == null) {
+            txtQty.setText("");
             UIFuncs.errorSound(getContext());
             box.getBox("Alert", "Crate not found in the list.");
             clearCrateScan();
@@ -538,6 +539,11 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
         }
         txtQty.setText(knownCrate.qty);
         txtBin.requestFocus();
+    }
+
+    private void clearCrateScan() {
+        txtCrate.setText("");
+        txtCrate.requestFocus();
     }
 
     private void mapBinToCrate(String bin) {
@@ -554,23 +560,20 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
         String crate = text(txtCrate);
         if (TextUtils.isEmpty(crate)) {
             box.getBox("Alert", "Please scan Crate.");
-            clearBinScan(null);
-            clearCrateScan();
+            clearBinScan(txtCrate);
             return;
         }
         CrateQty knownCrate = crateCatalog.get(binKey(crate));
         if (knownCrate == null) {
             UIFuncs.errorSound(getContext());
             box.getBox("Alert", "Crate not found in the list.");
-            clearBinScan(null);
-            clearCrateScan();
+            clearBinScan(txtCrate);
             return;
         }
         if (indexOfCrate(crate) >= 0) {
             UIFuncs.errorSound(getContext());
             box.getBox("Alert", "Bin already assigned to this crate.");
-            clearBinScan(null);
-            clearCrateScan();
+            clearBinScan(txtBin);
             return;
         }
         String matchedBin = validBins.get(binKey(bin));
@@ -584,8 +587,7 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
         if (crateIndex < 0) {
             UIFuncs.errorSound(getContext());
             box.getBox("Alert", "Crate not found in the list.");
-            clearBinScan(null);
-            clearCrateScan();
+            clearBinScan(txtCrate);
             return;
         }
         int binIndex = indexOfBin(matchedBin);
@@ -629,12 +631,6 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
         if (focus != null) {
             focus.requestFocus();
         }
-    }
-
-    private void clearCrateScan() {
-        txtCrate.setText("");
-        txtQty.setText("");
-        txtCrate.requestFocus();
     }
 
     private void focusCrateScan() {
