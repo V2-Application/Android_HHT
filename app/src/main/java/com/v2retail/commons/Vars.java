@@ -38,6 +38,8 @@ public class Vars {
     public static final String BREADCRUMB_DISPLAY_INTERNAL = "Display > Internal";
     public static final String BREADCRUMB_IROD_TO_IROD = "IROD To IROD";
     public static final String PTL_NEW_MODULE_HU_CLOSE = "PTL_NEW_HU_CLOSE";
+    /** Optional HU print field; when set, "S-Plant" is printed on the HU label. */
+    public static final String HU_PRINT_S_PLANT = "S_PLANT";
 
     public static final Collection<String> PRODUCT_CODE_TYPES = list(CODE_128, CODE_39, EAN_8, EAN_13, CODE_93, QR_CODE);
 
@@ -153,6 +155,8 @@ public class Vars {
     public static String ZWM_STORE_HU_PRINT = "ZWM_STORE_HU_PRINT";
     /** RFC: swap old HU → new HU (FragmentHUSwapPrint). */
     public static String ZWM_HUSWAP = "ZWM_HUSWAP";
+    /** RFC: store / DC name (EV_NAME1) for a customer code (IV_KUNNR), used on the HU-swap label. */
+    public static String ZGET_CUSTOMER_NAME_RFC = "ZGET_CUSTOMER_NAME_RFC";
     /** Process key for TSPLPrinter HU-swap label layout. */
     public static String HU_SWAP_PROCESS = "HU_SWAP";
     /** Process key for TSPLPrinter Store GRT Process HU label layout. */
@@ -203,10 +207,36 @@ public class Vars {
 
     public static String ZWM_PALATE_VALIDATION = "ZWM_PALATE_VALIDATION";
     public static String ZWM_CRATE_VALIDATION = "ZWM_CRATE_VALIDATION";
+    /** GRC Done-Putway Pending — date lookup (IM_USER, IM_PLANT, IM_DATE → EX_RETURN, ET_DATA). */
+    public static String ZWM_CRATE_GET_RFC = "ZWM_CRATE_GET_RFC";
+    /** GRC Done-Putway Pending — scan MBLNR (IM_USER, IM_PLANT, IM_MBLNR → EX_RETURN, EX_NO_CRATE). */
+    public static String ZWM_CRATE_PEN_RFC = "ZWM_CRATE_PEN_RFC";
+    /** GRC Done-Putway Pending — empty bins (IM_USER, IM_PLANT → EX_RETURN, ET_DATA[SECTION, EMPTY_BIN]). */
+    public static String ZWM_CRATE_COUNT_RFC = "ZWM_CRATE_COUNT_RFC";
+    /** GRC Done-Putway Pending Next (IM_USER, IM_PLANT, IM_EBELN, IM_MBLNR → EX_RETURN, ET_DATA[CRATE, LGPLA, SCAN_QTY]). */
+    public static String ZWM_CRATE_GET_QTY_RFC = "ZWM_CRATE_GET_QTY_RFC";
+    /** MSA Crate Putway — MSA Scan Bin (IM_USER, IM_PLANT, IM_MSA_BIN → EX_RETURN, ET_DATA[LGPLA]). */
+    public static String ZWM_CRATE_MSA_BIN_VAL_RFC = "ZWM_CRATE_MSA_BIN_VAL_RFC";
+    /** MSA Crate Putway — save (IM_USER, IM_PLANT, IM_EBELN, IM_BIN, IM_CRATE → EX_RETURN). */
+    public static String ZWM_CRATE_PICKING_SAVE_RFC = "ZWM_CRATE_PICKING_SAVE_RFC";
     /** Crate Putway — scan crate validate (IM_USER, IM_PLANT, IM_CRATE) → EX_RETURN. */
     public static String ZWM_CRATE_STK_VALIDATE = "ZWM_CRATE_STK_VALIDATE";
     /** Crate Putway — scan bin validate (IM_USER, IM_PLANT, IM_BIN) → EX_RETURN. */
     public static String ZWM_BIN_STK_VALIDATE = "ZWM_BIN_STK_VALIDATE";
+    /** Store V11 to MSA Putaway — validate bin (IM_USER, IM_PLANT, IM_BIN → EX_RETURN). */
+    public static String ZWM_SAMPLE_BIN_VAL = "ZWM_SAMPLE_BIN_VAL";
+    /** Store V11 to MSA Putaway — validate crate (IM_USER, IM_PLANT, IM_CRATE → EX_RETURN). */
+    public static String ZWM_SAMPLE_CRATE_VAL = "ZWM_SAMPLE_CRATE_VAL";
+    /** Store V11 to MSA Putaway — validate article EAN (IM_USER, IM_EAN11 → EX_RETURN, EX_ART). */
+    public static String ZWM_SAMPLE_ART_VAL = "ZWM_SAMPLE_ART_VAL";
+    /** Store V11 to MSA Putaway — save (IM_USER, IM_PLANT, IM_BIN → EX_RETURN). */
+    public static String ZWM_SAPMLE_V11_H01_SAVE_RFC = "ZWM_SAPMLE_V11_H01_SAVE_RFC";
+    /** Store V11 to MSA Putaway — save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
+    public static String ZWM_SAPMLE_PUTWAY_V11_H01 = "ZWM_SAPMLE_PUTWAY_V11_H01";
+    /** HO Picking From MSA To (Smpl) — Putaway save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
+    public static String ZWM_SAPMLE_PICKING_H01_V11 = "ZWM_SAPMLE_PICKING_H01_V11";
+    /** RePutway save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
+    public static String ZWM_SAPMLE_RE_PUTWAY_V11_H01 = "ZWM_SAPMLE_RE_PUTWAY_V11_H01";
     /** Crate Putway — save crate to bin (IM_USER, IM_PLANT, IM_CRATE, IM_BIN) → EX_RETURN. */
     public static String ZWM_CRATE_STK_PUT_BIN_RFC = "ZWM_CRATE_STK_PUT_BIN_RFC";
     public static String ZWM_SAVE_PAL_CRATE = "ZWM_SAVE_PAL_CRATE";

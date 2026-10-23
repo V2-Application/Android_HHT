@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -45,6 +46,7 @@ import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.SharedPreferencesData;
+import com.v2retail.util.TSPLPrinter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,6 +64,7 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
     private static final int REQUEST_VALIDATE_BIN = 1804;
     private static final int REQUEST_VALIDATE_HU = 1805;
     private static final int REQUEST_SAVE_HU = 1806;
+    private static final int REQUEST_PRINT_HU = 1807;
     private static final String PICKLIST_PLACEHOLDER = "Select Picklist";
 
     View rootView;
@@ -75,7 +78,8 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
     String WERKS = "";
 
     Spinner dd_picklist;
-    EditText txt_bin, txt_pallet, txt_hu;
+    EditText txt_printer, txt_bin, txt_pallet, txt_hu, txt_hu_value;
+    String tvsprinter;
     RecyclerView rv_scanned;
     Button btn_reset, btn_save;
 
@@ -92,10 +96,12 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
     String loadedPicklist = "";
     String validatedBin = "";
     String validatedPallet = "";
-    String validatedHu = "";
-    /** Row taken out of the table when its HU was validated; put back if the save fails. */
-    JSONObject removedPickRow = null;
-    int removedPickRowIndex = -1;
+    /** Validated HUs waiting for Save; their rows are already out of the table. */
+    final List<String> pendingHus = new ArrayList<>();
+    /** EX_HU returned by each save in the current Save run, printed once saving stops. */
+    final List<String> savedHus = new ArrayList<>();
+    final List<String> failedPrintHus = new ArrayList<>();
+    int printIndex = 0;
 
     public FragmentGrtPalletHuPicking() {
     }
@@ -121,10 +127,13 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         USER = data.read("USER");
         WERKS = data.read("WERKS");
 
+        txt_printer = rootView.findViewById(R.id.txt_grt_pallet_hu_picking_printer);
         dd_picklist = rootView.findViewById(R.id.dd_grt_pallet_hu_picking_picklist);
         txt_bin = rootView.findViewById(R.id.txt_grt_pallet_hu_picking_bin);
         txt_pallet = rootView.findViewById(R.id.txt_grt_pallet_hu_picking_pallet);
         txt_hu = rootView.findViewById(R.id.txt_grt_pallet_hu_picking_hu);
+        txt_hu_value = rootView.findViewById(R.id.txt_grt_pallet_hu_picking_hu_value);
+        UIFuncs.disableInput(con, txt_hu_value);
         rv_scanned = rootView.findViewById(R.id.rv_grt_pallet_hu_picking);
         btn_reset = rootView.findViewById(R.id.btn_grt_pallet_hu_picking_reset);
         btn_save = rootView.findViewById(R.id.btn_grt_pallet_hu_picking_save);
@@ -150,10 +159,17 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         btn_reset.setOnClickListener(this);
         btn_save.setOnClickListener(this);
 
+        bindScanField(txt_printer, () -> {
+            String value = UIFuncs.toUpperTrim(txt_printer);
+            if (!value.isEmpty()) {
+                validatePrinter(value, false);
+            }
+        });
         bindScanField(txt_bin, this::validateBin);
         bindScanField(txt_pallet, this::validatePallet);
         bindScanField(txt_hu, this::validateHu);
 
+        loadSavedPrinter();
         loadPicklists();
 
         return rootView;
@@ -184,6 +200,35 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         dd_picklist.setSelection(0);
         txt_bin.requestFocus();
         loadPicklists();
+    }
+
+    private void loadSavedPrinter() {
+        String defaultPrinter = data.read(Vars.TVS_PRINTER);
+        if (defaultPrinter != null && !defaultPrinter.isEmpty()) {
+            txt_printer.setText(defaultPrinter);
+            validatePrinter(defaultPrinter, true);
+        }
+    }
+
+    private void validatePrinter(String printerName, boolean isSilentCheck) {
+        TSPLPrinter printerHelper = new TSPLPrinter(con);
+        if (!printerHelper.findBluetoothPrinterByScan(printerName)) {
+            if (!isSilentCheck) {
+                UIFuncs.errorSound(con);
+                box.getBox("Not Paired", "Scanned printer ( " + printerName + " ) is not paired with this device.");
+            }
+            tvsprinter = null;
+            txt_printer.setText("");
+            txt_printer.requestFocus();
+            return;
+        }
+        String resolved = printerHelper.getPrinterName();
+        if (resolved == null || resolved.isEmpty()) {
+            resolved = printerName;
+        }
+        data.write(Vars.TVS_PRINTER, resolved);
+        tvsprinter = resolved;
+        txt_printer.setText(resolved);
     }
 
     private void bindScanField(EditText field, Runnable onScan) {
@@ -253,7 +298,11 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
     private void onBinValidated() {
         validatedBin = UIFuncs.toUpperTrim(txt_bin);
         UIFuncs.disableInput(con, txt_bin);
-        txt_pallet.requestFocus();
+        if (validatedPallet.isEmpty()) {
+            txt_pallet.requestFocus();
+        } else {
+            txt_hu.requestFocus();
+        }
     }
 
     private void resetBinInput() {
@@ -274,13 +323,6 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
             UIFuncs.errorSound(con);
             box.getBox("Alert", "Please select Picklist");
             resetPalletInput();
-            return;
-        }
-        if (validatedBin.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Alert", "Please scan Bin No");
-            resetPalletInput();
-            txt_bin.requestFocus();
             return;
         }
         String plant = WERKS != null ? WERKS.trim().toUpperCase() : "";
@@ -325,18 +367,11 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
             resetHuInput();
             return;
         }
-        if (validatedBin.isEmpty()) {
+        if (validatedBin.isEmpty() && validatedPallet.isEmpty()) {
             UIFuncs.errorSound(con);
-            box.getBox("Alert", "Please scan Bin No");
+            box.getBox("Alert", "Please scan Bin No or Pallet");
             resetHuInput();
             txt_bin.requestFocus();
-            return;
-        }
-        if (validatedPallet.isEmpty()) {
-            UIFuncs.errorSound(con);
-            box.getBox("Alert", "Please scan Pallet");
-            resetHuInput();
-            txt_pallet.requestFocus();
             return;
         }
         if (findPickRowIndexByHu(hu) < 0) {
@@ -362,10 +397,23 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
     }
 
     private void onHuValidated() {
-        validatedHu = UIFuncs.toUpperTrim(txt_hu);
-        UIFuncs.disableInput(con, txt_hu);
-        UIFuncs.hideKeyboard(getActivity());
-        removePickRow(findPickRowIndexByHu(validatedHu));
+        String hu = UIFuncs.toUpperTrim(txt_hu);
+        removePickRow(findPickRowIndexByHu(hu));
+        pendingHus.add(hu);
+        updateSaveButton();
+        setValidatedHu(hu);
+        Toast.makeText(con, "HU " + hu + " scanned", Toast.LENGTH_SHORT).show();
+        resetHuInput();
+        txt_hu.requestFocus();
+    }
+
+    private void updateSaveButton() {
+        btn_save.setText(pendingHus.isEmpty() ? "Save" : "Save (" + pendingHus.size() + ")");
+    }
+
+    /** Puts the validated HU in the read-only HU box. */
+    private void setValidatedHu(String hu) {
+        txt_hu_value.setText(hu == null ? "" : hu);
     }
 
     /** Index of the ET_DATA row whose CRATE matches {@code hu} (leading zeros ignored), or -1. */
@@ -394,34 +442,25 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         if (index < 0 || index >= pickDetails.size()) {
             return;
         }
-        removedPickRow = pickDetails.remove(index);
-        removedPickRowIndex = index;
+        pickDetails.remove(index);
         scannedRows.remove(index);
         scannedAdapter.notifyDataSetChanged();
     }
 
-    private void restoreRemovedPickRow() {
-        if (removedPickRow == null) {
-            return;
-        }
-        int index = Math.max(0, Math.min(removedPickRowIndex, pickDetails.size()));
-        pickDetails.add(index, removedPickRow);
-        scannedRows.add(index, toTableRow(removedPickRow));
-        scannedAdapter.notifyDataSetChanged();
-        removedPickRow = null;
-        removedPickRowIndex = -1;
-    }
-
     private static String[] toTableRow(JSONObject row) {
         return new String[]{
-                row.optString("LGPLA", "").trim(),
-                row.optString("PALETTE", "").trim(),
-                row.optString("CRATE", "").trim()
+                cellValue(row, "LGPLA"),
+                cellValue(row, "PALETTE"),
+                cellValue(row, "CRATE")
         };
     }
 
+    /** Field value, or "" when missing or JSON null (optString would return "null"). */
+    private static String cellValue(JSONObject row, String key) {
+        return row.isNull(key) ? "" : row.optString(key, "").trim();
+    }
+
     private void resetHuInput() {
-        validatedHu = "";
         txt_hu.setText("");
         UIFuncs.enableInput(con, txt_hu);
     }
@@ -434,20 +473,25 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
             box.getBox("Alert", "Please select Picklist");
             return;
         }
-        if (validatedBin.isEmpty()) {
-            box.getBox("Alert", "Please scan Bin No");
-            txt_bin.requestFocus();
-            return;
-        }
-        if (validatedPallet.isEmpty()) {
-            box.getBox("Alert", "Please scan Pallet");
-            txt_pallet.requestFocus();
-            return;
-        }
-        String hu = UIFuncs.toUpperTrim(txt_hu);
-        if (validatedHu.isEmpty() || !validatedHu.equals(hu)) {
+        if (pendingHus.isEmpty()) {
             box.getBox("Alert", "Please scan HU");
             txt_hu.requestFocus();
+            return;
+        }
+        if (tvsprinter == null || tvsprinter.isEmpty()) {
+            box.getBox("Alert", "Please scan TVS printer");
+            txt_printer.requestFocus();
+            return;
+        }
+        savedHus.clear();
+        failedPrintHus.clear();
+        saveNextHu();
+    }
+
+    /** Saves {@link #pendingHus} one by one; printing starts once all are saved or one fails. */
+    private void saveNextHu() {
+        if (pendingHus.isEmpty()) {
+            startPrinting();
             return;
         }
         String plant = WERKS != null ? WERKS.trim().toUpperCase() : "";
@@ -456,38 +500,123 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         try {
             args.put("bapiname", Vars.ZWM_GRT_HU_SAVE);
             args.put("IM_USER", USER);
-            args.put("IM_HU", validatedHu);
+            args.put("IM_HU", pendingHus.get(0));
             args.put("IM_PLANT", plant);
             showProcessingAndSubmit(Vars.ZWM_GRT_HU_SAVE, REQUEST_SAVE_HU, args);
         } catch (JSONException e) {
             e.printStackTrace();
             UIFuncs.errorSound(con);
             box.getErrBox(e);
+            startPrinting();
         }
     }
 
     private void onSaveSuccess(JSONObject responsebody) {
-        String message = "HU " + validatedHu + " saved successfully";
-        JSONObject returnObj = extractReturn(responsebody);
-        if (returnObj != null && !returnObj.optString("MESSAGE", "").trim().isEmpty()) {
-            message = returnObj.optString("MESSAGE", "").trim();
+        String scannedHu = pendingHus.remove(0);
+        String exHu = responsebody.optString("EX_HU", "").trim();
+        savedHus.add(exHu.isEmpty() ? scannedHu : exHu);
+        updateSaveButton();
+        setValidatedHu(pendingHus.isEmpty() ? "" : pendingHus.get(pendingHus.size() - 1));
+        saveNextHu();
+    }
+
+    private void startPrinting() {
+        printIndex = 0;
+        printNextHu();
+    }
+
+    private void printNextHu() {
+        if (printIndex >= savedHus.size()) {
+            onPrintingFinished();
+            return;
         }
-        Toast.makeText(con, message, Toast.LENGTH_SHORT).show();
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZWM_PTL_TVS_HU_PRINT_2);
+            args.put("IM_USER", USER);
+            args.put("IM_EXIDV", savedHus.get(printIndex));
+            showProcessingAndSubmit(Vars.ZWM_PTL_TVS_HU_PRINT_2, REQUEST_PRINT_HU, args);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            onPrintFailed();
+        }
+    }
 
-        removedPickRow = null;
-        removedPickRowIndex = -1;
-        resetHuInput();
+    private void onPrintDataReceived(JSONObject responsebody) {
+        JSONObject huObj = extractHuData(responsebody);
+        if (huObj == null) {
+            onPrintFailed();
+            return;
+        }
+        try {
+            huObj.put(Vars.HU_PRINT_S_PLANT, WERKS != null ? WERKS.trim().toUpperCase() : "");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        TSPLPrinter printer = new TSPLPrinter(getContext(), Vars.PTL_NEW_MODULE_HU_CLOSE);
+        printer.sendPrintCommandToBluetoothPrinter(tvsprinter, huObj, "1");
+        printIndex++;
+        printNextHu();
+    }
 
-        if (pickDetails.isEmpty()) {
+    private void onPrintFailed() {
+        failedPrintHus.add(savedHus.get(printIndex));
+        printIndex++;
+        printNextHu();
+    }
+
+    private void onPrintingFinished() {
+        int printed = savedHus.size() - failedPrintHus.size();
+        if (!failedPrintHus.isEmpty()) {
+            UIFuncs.errorSound(con);
+            box.getBox("Alert", "Print data not received for HU: " + TextUtils.join(", ", failedPrintHus));
+        } else if (printed > 0) {
+            Toast.makeText(con, printed + " HU saved and sent to printer " + tvsprinter, Toast.LENGTH_SHORT).show();
+        }
+        savedHus.clear();
+        failedPrintHus.clear();
+        printIndex = 0;
+
+        if (pickDetails.isEmpty() && pendingHus.isEmpty()) {
             box.getBox("Success", "Picklist completed");
             clear();
+        } else {
+            txt_hu.requestFocus();
         }
+    }
+
+    private static JSONObject extractHuData(JSONObject responsebody) {
+        if (responsebody == null || !responsebody.has("EX_HUDATA") || responsebody.isNull("EX_HUDATA")) {
+            return null;
+        }
+        try {
+            Object raw = responsebody.get("EX_HUDATA");
+            if (raw instanceof JSONObject) {
+                JSONObject row = (JSONObject) raw;
+                return SapJsonRows.isMetadataRow(row) ? null : row;
+            }
+            if (raw instanceof JSONArray) {
+                JSONArray arr = (JSONArray) raw;
+                for (int i = SapJsonRows.startIndex(arr); i < arr.length(); i++) {
+                    JSONObject row = arr.optJSONObject(i);
+                    if (row != null && !SapJsonRows.isMetadataRow(row)) {
+                        return row;
+                    }
+                }
+            }
+        } catch (JSONException ignored) {
+        }
+        return null;
     }
 
     private void clearPickDetails() {
         loadedPicklist = "";
-        removedPickRow = null;
-        removedPickRowIndex = -1;
+        pendingHus.clear();
+        savedHus.clear();
+        failedPrintHus.clear();
+        printIndex = 0;
+        updateSaveButton();
+        setValidatedHu("");
         pickDetails.clear();
         scannedRows.clear();
         scannedAdapter.notifyDataSetChanged();
@@ -636,9 +765,9 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
             clearPickDetails();
             dd_picklist.setSelection(0);
         } else if (request == REQUEST_SAVE_HU) {
-            restoreRemovedPickRow();
-            resetHuInput();
-            txt_hu.requestFocus();
+            startPrinting();
+        } else if (request == REQUEST_PRINT_HU) {
+            onPrintFailed();
         } else if (request == REQUEST_VALIDATE_PALLET) {
             resetPalletInput();
             txt_pallet.requestFocus();
@@ -762,6 +891,8 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
                             onHuValidated();
                         } else if (request == REQUEST_SAVE_HU) {
                             onSaveSuccess(responsebody);
+                        } else if (request == REQUEST_PRINT_HU) {
+                            onPrintDataReceived(responsebody);
                         }
                     }
                 }, volleyErrorListener(request)) {
@@ -828,7 +959,7 @@ public class FragmentGrtPalletHuPicking extends Fragment implements View.OnClick
         };
     }
 
-    /** Each row is {binNo, pallet, hu}; Sr is derived from position. */
+    /** Each row is {bin, pallet, hu}; Sr is derived from position. */
     static class ScannedRowAdapter extends RecyclerView.Adapter<ScannedRowAdapter.RowHolder> {
 
         private final List<String[]> rows;

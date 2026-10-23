@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
@@ -38,11 +39,15 @@ import com.v2retail.commons.UIFuncs;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
+import com.v2retail.util.PlantNames;
 import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.TSPLPrinter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * HU Swap Print Process
@@ -61,6 +66,8 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
     ProgressDialog dialog;
     private static final String TAG = FragmentHUSwapPrint.class.getName();
     private static final int REQUEST_HU_SWAP = 5601;
+    /** EX_DATA codes whose store / DC name is printed on the label. */
+    private static final String[] NAME_CODE_FIELDS = {"NEW_DES", "VIA", "SOURCE", "OLD_DES"};
 
     String URL;
     String WERKS;
@@ -310,11 +317,6 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
     private void handleSwapSuccess(JSONObject exData, String oldHu) {
         try {
             String newHu   = exData.optString("EXIDV_NEW", "");
-            String vemng   = exData.optString("VEMNG_NEW", "");
-            String crOn    = exData.optString("HU_CR_ON",  "");
-            String crAt    = exData.optString("HU_CR_AT",  "");
-            String source  = exData.optString("SOURCE",    "");
-            String newDes  = exData.optString("NEW_DES",   "");
 
             if (newHu.isEmpty()) {
                 UIFuncs.errorSound(con);
@@ -324,9 +326,42 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
                 return;
             }
 
-            // Print label
+            Set<String> missing = new LinkedHashSet<>();
+            for (String field : NAME_CODE_FIELDS) {
+                String code = exData.optString(field, "").trim().toUpperCase();
+                if (!code.isEmpty() && !PlantNames.hasSapName(code)) missing.add(code);
+            }
+            if (missing.isEmpty()) {
+                printSwapLabel(exData, oldHu);
+                return;
+            }
+
+            dialog = new ProgressDialog(con);
+            dialog.setMessage("Fetching store names...");
+            dialog.setCancelable(false);
+            dialog.show();
+            int[] pending = {missing.size()};
+            for (String code : missing) {
+                fetchCustomerName(code, () -> {
+                    if (--pending[0] > 0 || !isAdded()) return;
+                    if (dialog != null) { dialog.dismiss(); dialog = null; }
+                    printSwapLabel(exData, oldHu);
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            UIFuncs.errorSound(con);
+            box.getErrBox(e);
+        }
+    }
+
+    private void printSwapLabel(JSONObject exData, String oldHu) {
+        try {
+            String newHu   = exData.optString("EXIDV_NEW", "");
+            String vemng   = exData.optString("VEMNG_NEW", "");
+
             TSPLPrinter printer = new TSPLPrinter(con, Vars.HU_SWAP_PROCESS);
-            printer.sendHuSwapPrintCommand(tvsPrinter, oldHu, newHu, vemng, crOn, crAt, source, newDes);
+            printer.sendHuSwapPrintCommand(tvsPrinter, oldHu, exData);
 
             // Update counter and UI
             scanCount++;
@@ -444,6 +479,39 @@ public class FragmentHUSwapPrint extends Fragment implements View.OnClickListene
         queue.add(req);
         Log.d(TAG, "RFC URL -> " + rfcUrl);
         Log.d(TAG, "Payload -> " + args);
+    }
+
+    /**
+     * ZGET_CUSTOMER_NAME_RFC: IV_KUNNR → EV_NAME1. Saves the name in {@link PlantNames};
+     * {@code done} runs on success or failure so the label still prints.
+     */
+    private void fetchCustomerName(String code, Runnable done) {
+        String rfcUrl = URL.substring(0, URL.lastIndexOf("/"))
+                + "/noacljsonrfcadaptor?bapiname=" + Vars.ZGET_CUSTOMER_NAME_RFC + "&aclclientid=android";
+        JSONObject args = new JSONObject();
+        try {
+            args.put("bapiname", Vars.ZGET_CUSTOMER_NAME_RFC);
+            args.put("IV_KUNNR", code);
+        } catch (JSONException e) {
+            done.run();
+            return;
+        }
+        JsonObjectRequest req = new SapJsonObjectRequest(Request.Method.POST, rfcUrl, args,
+                responsebody -> {
+                    Log.d(TAG, "name response " + code + " -> " + responsebody);
+                    String name = responsebody != null ? responsebody.optString("EV_NAME1", "").trim() : "";
+                    PlantNames.putSapName(code, name);
+                    done.run();
+                },
+                error -> {
+                    Log.w(TAG, "name lookup failed for " + code + ": " + error);
+                    done.run();
+                }) {
+            @Override public String getBodyContentType() { return "application/json"; }
+            @Override public byte[] getBody() { return args.toString().getBytes(); }
+        };
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        ApplicationController.getInstance().getRequestQueue().add(req);
     }
 
     private Response.ErrorListener volleyErrorListener() {

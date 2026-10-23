@@ -21,63 +21,25 @@
             android:background="#e71821"
             android:text="Crate Scan" />
 
-        <LinearLayout
+        <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:textAllCaps="false"
+            android:id="@+id/putaway_operations"
+            android:background="#e71821"
+            android:text="Putaway Operations" />
 
-            >
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Putway"
-                android:layout_weight="1"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:id="@+id/putway"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Ecom Putway"
-                android:layout_weight="1"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:textAllCaps="false"
-                android:id="@+id/ecom_putway"
-                android:background="#e71821" />
-
-        </LinearLayout>
-
-
-        <LinearLayout
+        <Button
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="GRC Putway"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:visibility="visible"
-                android:id="@+id/grc_putway"
-                android:layout_weight="1"
-                android:background="#e71821" />
-
-            <Button
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="Stored Stock"
-                android:textAllCaps="false"
-                android:layout_margin="5dp"
-                android:textColor="#fff"
-                android:layout_weight="1"
-                android:id="@+id/stored_stock"
-                android:background="#e71821" />
-
-
-        </LinearLayout>
+            android:layout_height="wrap_content"
+            android:text="Stored Stock"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/stored_stock"
+            android:background="#e71821" />
 
         <Button
             android:layout_width="match_parent"

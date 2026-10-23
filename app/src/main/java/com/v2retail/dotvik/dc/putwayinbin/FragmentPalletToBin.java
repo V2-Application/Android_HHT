@@ -296,7 +296,9 @@ public class FragmentPalletToBin extends Fragment implements View.OnClickListene
         txt_tqty.setText(Util.formatDouble(totalScannedQty));
         txt_bin.setText(UIFuncs.toUpperTrim(txt_scan_bin));
         txt_scan_bin.setText("");
-        UIFuncs.enableInput(con, txt_scan_bin);
+        UIFuncs.disableInput(con, txt_scan_bin);
+        txt_scan_pallet.setText("");
+        UIFuncs.enableInput(con, txt_scan_pallet);
         btn_save.setVisibility(View.VISIBLE);
         btn_reset.setVisibility(View.VISIBLE);
     }

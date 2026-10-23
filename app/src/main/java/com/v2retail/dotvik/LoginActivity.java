@@ -42,6 +42,7 @@ import com.v2retail.ApplicationController;
 import com.v2retail.commons.Vars;
 import com.v2retail.dotvik.dc.Process_Selection_Activity;
 import com.v2retail.dotvik.ecomm.Ecomm_Process_Selection;
+import com.v2retail.dotvik.ho.HoProcessSelectionActivity;
 import com.v2retail.dotvik.hub.HubProcessSelectionActivity;
 import com.v2retail.dotvik.store.Home_Activity;
 import com.v2retail.util.AlertBox;
@@ -490,6 +491,9 @@ public class LoginActivity extends AppCompatActivity {
             destination = "HubProcessSelectionActivity";
             destinationIntent = new Intent(LoginActivity.this,
                 com.v2retail.dotvik.hub.HubProcessSelectionActivity.class);
+        } else if (isHo_user(group)) {
+            destination = "HoProcessSelectionActivity";
+            destinationIntent = new Intent(LoginActivity.this, HoProcessSelectionActivity.class);
         } else {
             destination = "Home_Activity";
             destinationIntent = new Intent(LoginActivity.this,
@@ -612,6 +616,9 @@ public class LoginActivity extends AppCompatActivity {
                                             } else if(isHub_user(group)){
                                                 destination = "HubProcessSelectionActivity";
                                                 intent = new Intent(LoginActivity.this, HubProcessSelectionActivity.class);
+                                            } else if(isHo_user(group)){
+                                                destination = "HoProcessSelectionActivity";
+                                                intent = new Intent(LoginActivity.this, HoProcessSelectionActivity.class);
                                             } else {
                                                 destination = "Home_Activity";
                                                 intent = new Intent(LoginActivity.this, Home_Activity.class);
@@ -739,6 +746,13 @@ public class LoginActivity extends AppCompatActivity {
 
     boolean isHub_user(String hub) {
         if(hub != null && hub.trim().equalsIgnoreCase("HUB")) {
+            return true;
+        }
+        return false;
+    }
+
+    boolean isHo_user(String group) {
+        if(group != null && group.trim().equalsIgnoreCase("HO")) {
             return true;
         }
         return false;

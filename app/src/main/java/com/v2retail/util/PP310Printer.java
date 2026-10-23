@@ -75,9 +75,15 @@ public final class PP310Printer {
 
         StringBuilder sb = startLabel(copies);
         if (Vars.PTL_NEW_MODULE_HU_CLOSE.equalsIgnoreCase(process)) {
+            String sPlant = clean(jsonField(huObj, Vars.HU_PRINT_S_PLANT));
             rtlText(sb, qty, 12, y1, 40);
             text(sb, 20, y1, hub);
-            text(sb, 20, y2, werks + " " + warehouse);
+            if (sPlant.isEmpty()) {
+                text(sb, 20, y2, werks + " " + warehouse);
+            } else {
+                text(sb, 20, y2, truncate(werks + " " + warehouse, 24));
+                rtlText(sb, "S-Plant:- " + sPlant, 12, y2, 40);
+            }
             text(sb, 20, y3, hhtid);
             rtlText(sb, date, 12, y3, 80);
             text(sb, 20, y4, weight);
@@ -96,53 +102,24 @@ public final class PP310Printer {
         return endLabel(sb);
     }
 
-    public static String buildHuSwapLabel(String oldHu, String newHu,
-                                         String qty, String crDate,
-                                         String crTime, String source, String dest) {
-        String printHu = removeLeadingZeros(newHu);
-        String displayOldHu = removeLeadingZeros(oldHu);
-        String fmtDate = formatSwapDate(crDate);
-        String fmtTime = formatSwapTime(crTime, crDate);
-
-        String srcName = PlantNames.label(source);
-        String destName = PlantNames.label(dest);
-        final int f3Max = 23;
-        String destSwap = (destName.isEmpty() ? "HU SWAP" : destName + " SWAP");
-        if (destSwap.length() > f3Max) {
-            destSwap = destSwap.substring(0, f3Max);
-        }
-        String fromLine = "From: " + (srcName.isEmpty() ? nvl(source) : srcName);
-        String toLine = "To:   " + (destName.isEmpty() ? nvl(dest) : destName);
-        if (fromLine.length() > f3Max) {
-            fromLine = fromLine.substring(0, f3Max);
-        }
-        if (toLine.length() > f3Max) {
-            toLine = toLine.substring(0, f3Max);
-        }
-
-        printHu = clean(printHu);
-        displayOldHu = clean(displayOldHu);
-        destSwap = clean(destSwap);
-        fromLine = clean(fromLine);
-        toLine = clean(toLine);
-        qty = clean(qty);
+    static String buildHuSwapLabel(HuSwapLabel label) {
+        final int y1 = 8;
+        final int y2 = 40;
+        final int y3 = 72;
+        final int y4 = 104;
+        final int barcodeY = 140;
+        final int barcodeH = 90;
 
         StringBuilder sb = startLabel("1");
-        qrCode(sb, 8, 76, 8, printHu);
-        line(sb, 175, 5, 177, 315, 2);
-        sb.append("SETMAG 1 2").append(CRLF);
-        textFont(sb, 4, 180, 5, printHu);
-        sb.append("SETMAG 1 1").append(CRLF);
-        line(sb, 178, 74, 553, 75, 1);
-        text(sb, 180, 80, destSwap);
-        line(sb, 178, 113, 553, 114, 1);
-        text(sb, 180, 118, fromLine);
-        text(sb, 180, 150, toLine);
-        line(sb, 178, 183, 553, 184, 1);
-        textFont(sb, 0, 180, 188, fmtDate + "  " + fmtTime);
-        textFont(sb, 0, 180, 212, "Qty: " + qty);
-        line(sb, 178, 240, 553, 243, 3);
-        textFont(sb, 0, 180, 248, "Old: " + displayOldHu);
+        text(sb, 20, y1, label.newDesLine);
+        rtlText(sb, label.qtyText, 12, y2, 40);
+        text(sb, 20, y2, label.viaLine);
+        text(sb, 20, y3, label.rdcLine);
+        rtlText(sb, label.dateText, 12, y3, 80);
+        text(sb, 20, y4, label.oldDesLine);
+        rtlText(sb, label.tagText, 12, y4, 30);
+        barcode128(sb, 90, barcodeY, barcodeH, label.huNo);
+        centerText(sb, barcodeY + barcodeH + 16, label.huNo);
         return endLabel(sb);
     }
 
@@ -320,17 +297,6 @@ public final class PP310Printer {
                 .append(" ").append(data == null ? "" : data).append(CRLF);
     }
 
-    private static void qrCode(StringBuilder sb, int x, int y, int cell, String data) {
-        sb.append("B QR ").append(x).append(" ").append(y).append(" M 2 U ").append(cell).append(CRLF);
-        sb.append(data == null ? "" : data).append(CRLF);
-        sb.append("ENDQR").append(CRLF);
-    }
-
-    private static void line(StringBuilder sb, int x0, int y0, int x1, int y1, int thickness) {
-        sb.append("LINE ").append(x0).append(" ").append(y0).append(" ")
-                .append(x1).append(" ").append(y1).append(" ").append(thickness).append(CRLF);
-    }
-
     private static int copyCount(String copies) {
         try {
             int n = Integer.parseInt(copies.trim());
@@ -349,82 +315,6 @@ public final class PP310Printer {
             return d.substring(6, 8) + "-" + d.substring(4, 6) + "-" + d.substring(0, 4);
         }
         return d;
-    }
-
-    private static String formatSwapDate(String crDate) {
-        try {
-            if (crDate == null) {
-                return "";
-            }
-            String d = crDate.trim();
-            if (d.length() == 8 && d.matches("\\d{8}")) {
-                return d.substring(6, 8) + "." + d.substring(4, 6) + "." + d.substring(0, 4);
-            }
-            if (d.matches(".*\\d{4}.*")) {
-                java.util.regex.Matcher m = java.util.regex.Pattern
-                        .compile("(\\d{1,2})\\D+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\D+(\\d{4})|" +
-                                        "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\D+(\\d{1,2})\\D+(\\d{4})",
-                                java.util.regex.Pattern.CASE_INSENSITIVE).matcher(d);
-                String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-                if (m.find()) {
-                    String day;
-                    String mon;
-                    String yr;
-                    if (m.group(1) != null) {
-                        day = String.format("%02d", Integer.parseInt(m.group(1)));
-                        mon = m.group(2);
-                        yr = m.group(3);
-                    } else {
-                        mon = m.group(4);
-                        day = String.format("%02d", Integer.parseInt(m.group(5)));
-                        yr = m.group(6);
-                    }
-                    int mi = 1;
-                    for (int k = 0; k < months.length; k++) {
-                        if (months[k].equalsIgnoreCase(mon)) {
-                            mi = k + 1;
-                            break;
-                        }
-                    }
-                    return day + "." + String.format("%02d", mi) + "." + yr;
-                }
-                return d.length() > 10 ? d.substring(0, 10) : d;
-            }
-            return d.length() > 10 ? d.substring(0, 10) : d;
-        } catch (Exception ignore) {
-            return crDate != null ? crDate : "";
-        }
-    }
-
-    private static String formatSwapTime(String crTime, String crDate) {
-        String fmtTime = "";
-        try {
-            if (crTime != null) {
-                String t = crTime.trim();
-                if (t.length() == 6 && t.matches("\\d{6}")) {
-                    fmtTime = t.substring(0, 2) + ":" + t.substring(2, 4) + ":" + t.substring(4, 6);
-                } else if (t.matches("\\d{2}:\\d{2}:\\d{2}")) {
-                    fmtTime = t;
-                } else {
-                    java.util.regex.Matcher m = java.util.regex.Pattern
-                            .compile("(\\d{2}:\\d{2}:\\d{2})").matcher(t);
-                    if (m.find()) {
-                        fmtTime = m.group(1);
-                    }
-                }
-            }
-            if (fmtTime.isEmpty() && crDate != null) {
-                java.util.regex.Matcher m = java.util.regex.Pattern
-                        .compile("(\\d{2}:\\d{2}:\\d{2})").matcher(crDate);
-                if (m.find()) {
-                    fmtTime = m.group(1);
-                }
-            }
-        } catch (Exception ignore) {
-            fmtTime = crTime != null ? crTime : "";
-        }
-        return fmtTime;
     }
 
     private static String jsonField(JSONObject obj, String key) {

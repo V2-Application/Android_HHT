@@ -34,9 +34,8 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
     private static final String ARG_PARAM2 = "param2";
 
     Button create_scan;
-    Button grc_putway;
-    Button putway;
-    Button bin_consolidation, ecom_putway, stored_stock, grt_scanning03, grt_scanning01, grt_putway_hu_in_bin, hu_tag_ext, v01_hu_trf_print, rdc_to_rdc_hu_putway, crate_putway;
+    Button putaway_operations;
+    Button bin_consolidation, stored_stock, grt_scanning03, grt_scanning01, grt_putway_hu_in_bin, hu_tag_ext, v01_hu_trf_print, rdc_to_rdc_hu_putway, crate_putway;
     FragmentManager fm;
     Context con;
 
@@ -87,10 +86,8 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         View view = inflater.inflate(R.layout.fragment_inward, container, false);
         con = getContext();
         create_scan = (Button) view.findViewById(R.id.create_scan);
-        grc_putway = (Button) view.findViewById(R.id.grc_putway);
+        putaway_operations = (Button) view.findViewById(R.id.putaway_operations);
         bin_consolidation = (Button) view.findViewById(R.id.bin_consolidation);
-        ecom_putway = (Button) view.findViewById(R.id.ecom_putway);
-        putway = (Button) view.findViewById(R.id.putway);
         stored_stock = (Button) view.findViewById(R.id.stored_stock);
         grt_scanning03 = (Button) view.findViewById(R.id.grt_putway03);
         grt_scanning01 = (Button) view.findViewById(R.id.grt_scanning01);
@@ -101,9 +98,7 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
         crate_putway = (Button) view.findViewById(R.id.crate_putway);
 
         create_scan.setOnClickListener(this);
-        grc_putway.setOnClickListener(this);
-        putway.setOnClickListener(this);
-        ecom_putway.setOnClickListener(this);
+        putaway_operations.setOnClickListener(this);
         stored_stock.setOnClickListener(this);
         grt_scanning03.setOnClickListener(this);
         grt_scanning01.setOnClickListener(this);
@@ -160,17 +155,8 @@ public class InwardFragment extends Fragment implements View.OnClickListener {
                 fragment = new Stock_In_Out_Fragment();
                 break;
 
-            case R.id.grc_putway:
-//                box.getBox("Alert", "Implementation In Process");
-                fragment = new GRCPutwayFragment();
-                break;
-
-            case R.id.putway:
-                fragment = new TO_Creation_Fragment();
-                break;
-
-            case R.id.ecom_putway:
-                fragment  = new EcomPutwayFragment();
+            case R.id.putaway_operations:
+                fragment = new FragmentPutawayOperations();
                 break;
 
             case R.id.stored_stock:

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="2dp"
+        android:background="#000"
+        android:padding="5dp">
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Putway"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/putway"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ecom Putway"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:textAllCaps="false"
+            android:id="@+id/ecom_putway"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GRC Putway"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/grc_putway"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GRC Done-Putway Pending"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/grc_done_putway_pending"
+            android:background="#e71821" />
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -26,6 +26,8 @@ public class PlantNames {
     private static final String ENDPOINT = "/api/hht/plants";
 
     private static final HashMap<String, String> CACHE = new HashMap<>();
+    /** Names from SAP (ZGET_CUSTOMER_NAME_RFC); "" marks a code SAP had no name for. */
+    private static final Map<String, String> SAP_NAMES = new java.util.concurrent.ConcurrentHashMap<>();
     private static volatile boolean loaded  = false;
     private static volatile boolean loading = false;
 
@@ -41,8 +43,22 @@ public class PlantNames {
     /** Short name for a code, e.g. "KOLKATA-RDC", or "" if not found. */
     public static String get(String code) {
         if (code == null || code.trim().isEmpty()) return "";
-        String name = CACHE.get(code.trim().toUpperCase());
+        String key = code.trim().toUpperCase();
+        String sapName = SAP_NAMES.get(key);
+        if (sapName != null && !sapName.isEmpty()) return sapName;
+        String name = CACHE.get(key);
         return name != null ? name : "";
+    }
+
+    /** Store the SAP name for a code; it takes priority over the middleware name. */
+    public static void putSapName(String code, String name) {
+        if (code == null || code.trim().isEmpty()) return;
+        SAP_NAMES.put(code.trim().toUpperCase(), name == null ? "" : name.trim());
+    }
+
+    /** True once SAP has been asked for this code in this session. */
+    public static boolean hasSapName(String code) {
+        return code != null && SAP_NAMES.containsKey(code.trim().toUpperCase());
     }
 
     /**

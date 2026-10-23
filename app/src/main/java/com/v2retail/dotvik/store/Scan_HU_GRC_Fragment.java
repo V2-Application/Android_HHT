@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -22,28 +24,30 @@ import android.widget.TextView;
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
-import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.v2retail.ApplicationController;
+import com.v2retail.commons.GatewayUrls;
+import com.v2retail.commons.SapJsonObjectRequest;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.CameraCheck;
 import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.Tables;
 
-import java.io.UnsupportedEncodingException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 
 
@@ -87,6 +91,7 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
     int ScanQty = 0;
     int count = 0; 
     StringBuilder barcode_number = new StringBuilder();
+    private boolean suppressScannerWatch;
     Tables tables = new Tables();
     ArrayList<String> dtHu = tables.getBINTAble();
     ArrayList<String> dtMat = tables.getBINTAble();
@@ -180,32 +185,22 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
         scan_hu_et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH
-                    /*|| (keyEvent.getAction() == KeyEvent.KEYCODE_ENTER)*/) {
-
-                    String dat = scan_hu_et.getText().toString();
-                    if (dat != null || dat.length() > 0 || !dat.equals("")) {
-                        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                        imm.hideSoftInputFromWindow(scan_hu_et.getWindowToken(), 0);
-
-
-                        try {
-                            checkData(dat);
-                        } catch (Exception e) {
-                            box.getErrBox(e);
-                        }
-
-
-                        return true;
-                    } else {
-                        box.getBox("Alert", "Please Enter HU No.");
-                        return true;
-                    }
-
+                if (!isScanCommit(actionId, keyEvent)) {
+                    return false;
                 }
-                return false;
+                if (scan_hu_et.getText().toString().trim().isEmpty()) {
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH
+                            || actionId == EditorInfo.IME_ACTION_DONE
+                            || actionId == EditorInfo.IME_ACTION_NEXT) {
+                        box.getBox("Alert", "Please Enter HU No.");
+                    }
+                    return true;
+                }
+                submitScanHu();
+                return true;
             }
         });
+        watchScanner(scan_hu_et);
 
 
         if (mParam1 != null) {
@@ -289,9 +284,10 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
 
             if (!scanContent.equals("null") || !scanContent.equals("")) {
                 try {
+                    suppressScannerWatch = true;
                     scan_hu_et.setText(scanContent);
+                    suppressScannerWatch = false;
                     checkData(scanContent);
-                    ;
 
                 } catch (Exception e) {
                     box.getErrBox(e);
@@ -306,90 +302,140 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
 
     }
 
-    private void checkData(String scanContent) {
-        String no = barcode_number.toString();
-        ArrayList<String> No_list = new ArrayList<>();
+    private static boolean isScanCommit(int actionId, KeyEvent event) {
+        if (actionId == EditorInfo.IME_ACTION_SEARCH
+                || actionId == EditorInfo.IME_ACTION_DONE
+                || actionId == EditorInfo.IME_ACTION_NEXT) {
+            return true;
+        }
+        return event != null
+                && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                && event.getAction() == KeyEvent.ACTION_DOWN;
+    }
 
-        if (!scanContent.equals("null")) {
-            if (dtHu != null && dtHu.contains(scanContent)) {
-                if (dtMat.size() > 0) {
-                    if (dtMat.contains(scan_hu_et.getText().toString())) {
-                        box.getBox("Alert", "Already Scan");
-                        scan_hu_et.setText("");
-                    } else {
-                        ScanQty += 1;
-                        int tt = Integer.valueOf(ttl_hu_et.getText().toString());
-                        short_hu_et.setText(String.valueOf(tt - ScanQty));
-                        String str55 = scan_hu_et.getText().toString();
-                        dtMat.add(str55);
-                        scan_hu_et.setText("");
-                    }
-                } else {
-                    ScanQty += 1;
-                    int tt = Integer.valueOf(ttl_hu_et.getText().toString());
-                    short_hu_et.setText(String.valueOf(tt - ScanQty));
-                    String str55 = scan_hu_et.getText().toString();
-                    dtMat.add(str55);
+    private void watchScanner(final EditText field) {
+        field.addTextChangedListener(new TextWatcher() {
+            private boolean scannerReading;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = before == 0 && start == 0 && count > 3;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (suppressScannerWatch || !scannerReading || s.toString().trim().isEmpty()) {
+                    return;
                 }
+                scannerReading = false;
+                submitScanHu();
+            }
+        });
+    }
+
+    private void submitScanHu() {
+        String dat = scan_hu_et.getText().toString().trim();
+        if (dat.isEmpty()) {
+            return;
+        }
+        if (getActivity() != null) {
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(scan_hu_et.getWindowToken(), 0);
+            }
+        }
+        try {
+            checkData(dat);
+        } catch (Exception e) {
+            box.getErrBox(e);
+        }
+    }
+
+    private void checkData(String scanContent) {
+        if (scanContent == null) {
+            scanContent = "";
+        }
+        scanContent = scanContent.trim();
+        if (scanContent.isEmpty() || scanContent.equals("null")) {
+            box.getBox("Alert!", "Unable to Scan data / NO data input");
+            scan_hu_et.setText("");
+            scan_hu_et.requestFocus();
+            return;
+        }
+        if (dtHu != null && dtHu.contains(scanContent)) {
+            if (dtMat.contains(scanContent)) {
+                box.getBox("Alert", "Already Scan");
             } else {
-                box.getBox("Alert!", "Incorrect HU");
+                ScanQty += 1;
+                int tt = Integer.valueOf(ttl_hu_et.getText().toString());
+                short_hu_et.setText(String.valueOf(tt - ScanQty));
+                dtMat.add(scanContent);
             }
         } else {
-            box.getBox("Alert!", "Unable to Scan data / NO data input");
+            box.getBox("Alert!", "Incorrect HU");
         }
+        suppressScannerWatch = true;
         scan_hu_et.setText("");
+        suppressScannerWatch = false;
         scan_hu_et.requestFocus();
     }
 
     private void loadData() {
-        //  barcode_numbers=barcode_number.toString();
-        String addrec = "";
-        StringBuilder builder = new StringBuilder();
-        int i = 0;
-        if (dtMat.size() > 0)
-            while (dtMat.size() > i) {
-                builder.append("," + dtMat.get(i));
-                i++;
+        // Was legacy "savehus#WERKS,USER,HU..." to /ValueXMW; the Java backend no longer
+        // handles that opcode ("bapiname is required"), so call the RFC directly.
+        String rfc = "ZWM_STORE_HU_GRC";
+        String url = GatewayUrls.noAclJsonRfcUrl(URL, rfc);
+        final JSONObject params = new JSONObject();
+        try {
+            params.put("bapiname", rfc);
+            params.put("IM_WERKS", WERKS);
+            params.put("IM_LGNUM", "SDC");
+            params.put("IM_USER", USER);
+            JSONArray itData = new JSONArray();
+            for (String hu : dtMat) {
+                JSONObject row = new JSONObject();
+                row.put("HU_NO", hu);
+                itData.put(row);
             }
-        addrec = WERKS + "," + USER + builder.toString();
-        String valueRequestPayload = "savehus#" + addrec + "#<eol>";
-        Log.d(TAG, "payload : " + valueRequestPayload);
-        Log.d(TAG, "payload sent to server ");
-        sendAndRequestResponse(valueRequestPayload);
-
-
+            params.put("IT_DATA", itData);
+        } catch (JSONException e) {
+            dialog.dismiss();
+            box.getErrBox(e);
+            return;
+        }
+        Log.d(TAG, "URL ->" + url);
+        Log.d(TAG, "payload : " + params);
+        sendAndRequestResponse(url, params);
     }
 
-    private void sendAndRequestResponse(final String requestBody) {
+    private void sendAndRequestResponse(String url, final JSONObject params) {
 
-        RequestQueue mRequestQueue;
-        StringRequest mStringRequest;
-        //RequestQueue initialized
-        mRequestQueue = ApplicationController.getInstance().getRequestQueue();
+        RequestQueue mRequestQueue = ApplicationController.getInstance().getRequestQueue();
 
-        mStringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
-
+        JsonObjectRequest mJsonRequest = new SapJsonObjectRequest(Request.Method.POST, url, params, new Response.Listener<JSONObject>() {
 
             @Override
-            public void onResponse(String response) {
+            public void onResponse(JSONObject responsebody) {
+                dialog.dismiss();
+                Log.d(TAG, "response :" + responsebody);
 
-                response = response.substring(9, response.length());
-
-                Log.d(TAG, "response :" + response);
-
-                if (response == null) {
-                    dialog.dismiss();
+                if (responsebody == null) {
                     box.getBox("Error", "No response from Server");
-
-                } else if (response.equals("")) {
-                    dialog.dismiss();
+                    return;
+                }
+                JSONObject ret = responsebody.optJSONObject("EX_RETURN");
+                if (ret == null) {
                     box.getBox("Alert", "Empty response from server");
-                } else if (response.charAt(0) == ('S')) {
+                    return;
+                }
+                String type = ret.optString("TYPE", "");
+                String message = ret.optString("MESSAGE", "");
 
-
-                    Log.d(TAG, " Response :Data Saved " + response);
-                    response = response.substring(2, response.length());
-
+                if ("S".equals(type)) {
                     excess_hu_et.setText("");
                     scan_hu_et.setText("");
                     short_hu_et.setText("");
@@ -399,30 +445,15 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
                     if (dtMat != null)
                         dtMat.clear();
 
-                    dialog.dismiss();
-                    ;
-                    box.getBox("Response", response);
-
-                    Log.d(TAG, " Response : Data Saved :" + response);
+                    box.getBox("Response", message);
+                    Log.d(TAG, " Response : Data Saved :" + message);
                     fm.popBackStack();
-                    // clear();
-
-
-                } else if (response.charAt(0) == ('E')) {
-                    Log.d(TAG, " Response is Failure -> Invalid Invoice :" + response);
-
-                    dialog.dismiss();
-                    response = response.substring(2, response.length());
-                    box.getBox("Err", response);
-
+                } else if ("E".equals(type)) {
+                    box.getBox("Err", message);
                     clear();
                 } else {
-                    dialog.dismiss();
-
-                    box.getBox("Err", response);
-                    Log.d(TAG, " Response is unknown :" + response);
-
-
+                    box.getBox("Err", responsebody.toString());
+                    Log.d(TAG, " Response is unknown :" + responsebody);
                 }
             }
         }, new Response.ErrorListener() {
@@ -446,55 +477,23 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
                 } else err = error.toString();
 
                 dialog.dismiss();
-                ;
                 box.getBox("Error", err);
             }
         }) {
             @Override
             public String getBodyContentType() {
-                return "application/json; charset=utf-8";
+                return "application/json";
             }
 
             @Override
-            public byte[] getBody() throws AuthFailureError {
-                try {
-                    return requestBody == null ? null : requestBody.getBytes("utf-8");
-                } catch (UnsupportedEncodingException uee) {
-                    VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", requestBody, "utf-8");
-                    return null;
-                }
+            public byte[] getBody() {
+                return params.toString().getBytes();
             }
-
-            @Override
-            protected Response<String> parseNetworkResponse(NetworkResponse response) {
-
-                Response<String> res = super.parseNetworkResponse(response);
-                String data = res.result;
-                Log.i(TAG, data);
-
-                return res;
-            }
-
-
         };
-        mStringRequest.setRetryPolicy(new RetryPolicy() {
-            @Override
-            public int getCurrentTimeout() {
-                return 50000;
-            }
 
-            @Override
-            public int getCurrentRetryCount() {
-                return DefaultRetryPolicy.DEFAULT_MAX_RETRIES;
-            }
-
-            @Override
-            public void retry(VolleyError error) throws VolleyError {
-
-            }
-        });
-        mRequestQueue.add(mStringRequest);
-
+        // no retry on save — a retry could post the same HUs twice
+        mJsonRequest.setRetryPolicy(new DefaultRetryPolicy(50000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        mRequestQueue.add(mJsonRequest);
     }
 
 

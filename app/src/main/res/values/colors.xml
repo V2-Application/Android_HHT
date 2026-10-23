@@ -55,7 +55,7 @@
     <color name="lightGrey">#DCDCDC</color>
     <color name="redAccent">#fffaea</color>
     <color name="buttonColor">#1A1A1A</color>
-    <color name="buttonColortext">#FFFFFF</color>
+    <color name="hoRed">#E71821</color>    <color name="buttonColortext">#FFFFFF</color>
     <color name="viewBg">#F7F8F3</color>
     <color name="album_title">#4c4c4c</color>
     <color name="sales">#d5abea</color>

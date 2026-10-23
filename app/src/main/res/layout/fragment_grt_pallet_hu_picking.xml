@@ -25,6 +25,44 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
+                android:text="TVS Printer"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="8">
+
+                <EditText
+                    android:id="@+id/txt_grt_pallet_hu_picking_printer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/border"
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:padding="7dp"
                 android:text="Picklist"
                 android:textColor="@color/black"
                 android:textSize="16sp"
@@ -136,7 +174,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
                 android:padding="7dp"
-                android:text="HU"
+                android:text="Scan HU"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -153,6 +191,49 @@
                     android:background="@drawable/border"
                     android:imeOptions="actionDone"
                     android:inputType="textCapCharacters"
+                    android:maxLines="1"
+                    android:padding="7dp"
+                    android:singleLine="true"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            android:weightSum="12">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:padding="7dp"
+                android:text="HU"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="8">
+
+                <EditText
+                    android:id="@+id/txt_grt_pallet_hu_picking_hu_value"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/border"
+                    android:clickable="false"
+                    android:cursorVisible="false"
+                    android:enabled="false"
+                    android:focusable="false"
+                    android:focusableInTouchMode="false"
+                    android:inputType="none"
                     android:maxLines="1"
                     android:padding="7dp"
                     android:singleLine="true"
@@ -194,7 +275,7 @@
                     android:background="@drawable/table_header_cell_border"
                     android:gravity="center"
                     android:padding="6dp"
-                    android:text="Bin No"
+                    android:text="Bin"
                     android:textColor="@color/black"
                     android:textSize="15sp"
                     android:textStyle="bold" />
