@@ -47,7 +47,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,8 +57,8 @@ import java.util.Set;
 /**
  * Opens from GRC Done-Putway Pending. Next loads crate quantities through
  * {@link Vars#ZWM_CRATE_GET_QTY_RFC}. MSA Scan Bin loads bins through
- * {@link Vars#ZWM_CRATE_MSA_BIN_VAL_RFC} and shows them in random order
- * beside the crates. Bin Scan moves the scanned bin onto that crate's row.
+ * {@link Vars#ZWM_CRATE_MSA_BIN_VAL_RFC} and shows those bins in response
+ * order beside the crates. Bin Scan moves the scanned bin onto that crate's row.
  */
 public class FragmentMsaCratePutway extends Fragment implements View.OnClickListener {
 
@@ -320,15 +319,15 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
             txtMsaBin.requestFocus();
             return;
         }
-        placeBinsRandom();
+        placeBinsInSequence();
         txtCrate.requestFocus();
     }
 
     /**
-     * Keeps every crate and quantity in place, and fills the bin column in random order.
+     * Keeps every crate and quantity in place, and fills the bin column in RFC order.
      * A bin already assigned to a crate stays on that crate's row.
      */
-    private void placeBinsRandom() {
+    private void placeBinsInSequence() {
         Map<String, String> assignedBinByCrate = new LinkedHashMap<>();
         for (ScannedRow row : rows) {
             if (row.assigned && !TextUtils.isEmpty(row.crate) && !TextUtils.isEmpty(row.bin)) {
@@ -345,7 +344,6 @@ public class FragmentMsaCratePutway extends Fragment implements View.OnClickList
                 openBins.add(bin);
             }
         }
-        Collections.shuffle(openBins);
 
         List<CrateQty> crates = new ArrayList<>(crateCatalog.values());
         rows.clear();
