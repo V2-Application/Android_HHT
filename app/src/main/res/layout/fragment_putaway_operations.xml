@@ -49,6 +49,26 @@
             android:id="@+id/grc_done_putway_pending"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GRC Crate Details"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/grc_crate_details"
+            android:background="#e71821" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GRT Putway-MSA Bin"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/grt_putway_msa_bin"
+            android:background="#e71821" />
+
     </LinearLayout>
 
 </FrameLayout>

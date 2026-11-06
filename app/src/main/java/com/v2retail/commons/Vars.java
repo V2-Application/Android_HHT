@@ -209,6 +209,8 @@ public class Vars {
     public static String ZWM_CRATE_VALIDATION = "ZWM_CRATE_VALIDATION";
     /** GRC Done-Putway Pending — date lookup (IM_USER, IM_PLANT, IM_DATE → EX_RETURN, ET_DATA). */
     public static String ZWM_CRATE_GET_RFC = "ZWM_CRATE_GET_RFC";
+    /** GRC Crate Details — scan crate (IM_USER, IM_PLANT, IM_CRATE → EX_RETURN, ET_DATA[EBELN, MBLNR, CRATE_COUNT, VENDOR_NAME]). */
+    public static String ZWM_CRATE_GET_DATA_RFC = "ZWM_CRATE_GET_DATA_RFC";
     /** GRC Done-Putway Pending — scan MBLNR (IM_USER, IM_PLANT, IM_MBLNR → EX_RETURN, EX_NO_CRATE). */
     public static String ZWM_CRATE_PEN_RFC = "ZWM_CRATE_PEN_RFC";
     /** GRC Done-Putway Pending — empty bins (IM_USER, IM_PLANT → EX_RETURN, ET_DATA[SECTION, EMPTY_BIN]). */
@@ -217,6 +219,12 @@ public class Vars {
     public static String ZWM_CRATE_GET_QTY_RFC = "ZWM_CRATE_GET_QTY_RFC";
     /** MSA Crate Putway — MSA Scan Bin (IM_USER, IM_PLANT, IM_MSA_BIN → EX_RETURN, ET_DATA[LGPLA]). */
     public static String ZWM_CRATE_MSA_BIN_VAL_RFC = "ZWM_CRATE_MSA_BIN_VAL_RFC";
+    /** GRT Putway-MSA Bin — scan MSA bin (IM_USER, IM_PLANT, IM_BIN → EX_RETURN, ET_DATA[LGPLA]). */
+    public static String ZWM_GRT_PUTWAY_BIN_RFC = "ZWM_GRT_PUTWAY_BIN_RFC";
+    /** GRT Putway-MSA Bin — scan crate (IM_USER, IM_PLANT, IM_CRATE → EX_RETURN, EX_QTY, EX_CRATE). */
+    public static String ZWM_GRT_PUTWAY_CRATE_RFC = "ZWM_GRT_PUTWAY_CRATE_RFC";
+    /** GRT Putway-MSA Bin — save (IM_WERKS, IM_CRATE, IM_LGPLA, IM_USER → EX_RETURN). */
+    public static String ZWM_RFC_GRT_PUTWAY_POST = "ZWM_RFC_GRT_PUTWAY_POST";
     /** MSA Crate Putway — save (IM_USER, IM_PLANT, IM_EBELN, IM_BIN, IM_CRATE → EX_RETURN). */
     public static String ZWM_CRATE_PICKING_SAVE_RFC = "ZWM_CRATE_PICKING_SAVE_RFC";
     /** Crate Putway — scan crate validate (IM_USER, IM_PLANT, IM_CRATE) → EX_RETURN. */

@@ -14,7 +14,7 @@ import com.v2retail.dotvik.R;
 
 /**
  * Submenu under Inward. Opens Putway, Ecom Putway, GRC Putway,
- * and GRC Done-Putway Pending.
+ * GRC Done-Putway Pending, GRC Crate Details, and GRT Putway-MSA Bin.
  */
 public class FragmentPutawayOperations extends Fragment implements View.OnClickListener {
 
@@ -33,10 +33,14 @@ public class FragmentPutawayOperations extends Fragment implements View.OnClickL
         Button ecomPutway = view.findViewById(R.id.ecom_putway);
         Button grcPutway = view.findViewById(R.id.grc_putway);
         Button grcDonePutwayPending = view.findViewById(R.id.grc_done_putway_pending);
+        Button grcCrateDetails = view.findViewById(R.id.grc_crate_details);
+        Button grtPutwayMsaBin = view.findViewById(R.id.grt_putway_msa_bin);
         putway.setOnClickListener(this);
         ecomPutway.setOnClickListener(this);
         grcPutway.setOnClickListener(this);
         grcDonePutwayPending.setOnClickListener(this);
+        grcCrateDetails.setOnClickListener(this);
+        grtPutwayMsaBin.setOnClickListener(this);
         return view;
     }
 
@@ -67,6 +71,12 @@ public class FragmentPutawayOperations extends Fragment implements View.OnClickL
                 break;
             case R.id.grc_done_putway_pending:
                 fragment = FragmentGrcDonePutwayPending.newInstance();
+                break;
+            case R.id.grc_crate_details:
+                fragment = FragmentGrcCrateDetails.newInstance();
+                break;
+            case R.id.grt_putway_msa_bin:
+                fragment = FragmentGrtPutwayMsaBin.newInstance();
                 break;
         }
 
