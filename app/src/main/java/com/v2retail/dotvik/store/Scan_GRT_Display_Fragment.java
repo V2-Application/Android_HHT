@@ -595,11 +595,13 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         }
         JSONObject args = new JSONObject();
         try {
-            args.put("bapiname", Vars.ZWM_STORE_GRT_FROM_DISP_AREA);
-            args.put("IM_USER", USER);
+            args.put("bapiname", Vars.ZWM_ST_GRT_0018_TO_0005);
             args.put("IM_WERKS", WERKS);
             args.put("IM_LGORT_SRC", source);
             args.put("IM_LGORT_DEST", dest);
+            args.put("IM_WERKS_DES", WERKS);
+            args.put("IM_USER", USER);
+            args.put("IM_LGNUM", "SDC");
             args.put("IM_PACK_MAT", pack_mat_spinner.getSelectedItem().toString());
             args.put("IM_CATEGORY", category);
 
@@ -610,7 +612,7 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
                 arrItData.put(itDataJson);
             }
             args.put("IT_DATA", arrItData);
-            showProcessingAndSubmit(Vars.ZWM_STORE_GRT_FROM_DISP_AREA, REQUEST_SAVE, args);
+            showProcessingAndSubmit(Vars.ZWM_ST_GRT_0018_TO_0005, REQUEST_SAVE, args);
         } catch (JSONException e) {
             e.printStackTrace();
             if(dialog!=null) {
@@ -646,6 +648,8 @@ public class Scan_GRT_Display_Fragment extends Fragment implements View.OnClickL
         itDataJson.put("DELNUM", "");
         itDataJson.put("POSNR", "");
         itDataJson.put("GNATURE", "");
+        itDataJson.put("SAMMG", "");
+        itDataJson.put("PICK_STATUS", "");
         return itDataJson;
     }
 

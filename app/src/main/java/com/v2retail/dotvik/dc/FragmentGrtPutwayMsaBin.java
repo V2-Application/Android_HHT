@@ -51,8 +51,9 @@ import java.util.Locale;
 
 /**
  * GRT Putway-MSA Bin. Scanning an MSA bin calls {@link Vars#ZWM_GRT_PUTWAY_BIN_RFC}
- * and binds each returned LGPLA into the BIN column. Scanning a crate calls
- * {@link Vars#ZWM_GRT_PUTWAY_CRATE_RFC} and maps EX_CRATE and EX_QTY onto that bin.
+ * and binds each returned LGPLA into the BIN column. Scanning a bin, then one or
+ * more crates, calls {@link Vars#ZWM_GRT_PUTWAY_CRATE_RFC} and maps EX_CRATE and
+ * EX_QTY onto that same bin. Further crates stay on the bin until Save.
  * Save posts each mapped crate and bin through {@link Vars#ZWM_RFC_GRT_PUTWAY_POST}.
  */
 public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickListener {
@@ -78,8 +79,6 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
     private boolean loadInProgress;
     private boolean suppressScan;
     private int activeRequest;
-    /** Bin shown after the last crate map, so the next crate can take the next open bin. */
-    private String lastMappedBin = "";
     private final List<BinRow> pendingSave = new ArrayList<>();
     private String saveMessage = "";
 
@@ -200,7 +199,9 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                scannerReading = before == 0 && start == 0 && count > 3;
+                // A wedge scan either fills an empty field or replaces the whole value,
+                // so the previous crate can stay visible for the next scan.
+                scannerReading = start == 0 && count > 3 && count == s.length();
             }
 
             @Override
@@ -230,8 +231,10 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
             return;
         }
         if (!bin.equals(text(txtMsaBin))) {
+            suppressScan = true;
             txtMsaBin.setText(bin);
             txtMsaBin.setSelection(bin.length());
+            suppressScan = false;
         }
         JSONObject args = new JSONObject();
         try {
@@ -379,7 +382,6 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
             return;
         }
         bindBins(loaded);
-        lastMappedBin = "";
         txtBinNo.setText("");
         txtCrateNo.setText("");
         txtQty.setText("");
@@ -407,20 +409,14 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
             txtBinNo.requestFocus();
             return;
         }
-        if (!rows.get(index).crate.isEmpty()) {
-            UIFuncs.errorSound(getContext());
-            box.getBox("Alert", "This bin is already assigned to a crate.");
-            txtBinNo.setText("");
-            txtBinNo.requestFocus();
-            return;
-        }
         String matched = rows.get(index).bin;
         if (!matched.equals(text(txtBinNo))) {
+            suppressScan = true;
             txtBinNo.setText(matched);
             txtBinNo.setSelection(matched.length());
+            suppressScan = false;
         }
-        lastMappedBin = "";
-        txtCrateNo.requestFocus();
+        focusCrateKeepingValue();
     }
 
     private void loadCrate(String crate) {
@@ -508,22 +504,30 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
             txtBinNo.requestFocus();
             return;
         }
-        if (binIndex == -3) {
-            UIFuncs.errorSound(getContext());
-            box.getBox("Alert", "This bin is already assigned to a crate.");
-            txtBinNo.setText("");
-            txtBinNo.requestFocus();
-            return;
-        }
-        if (binIndex < 0) {
+        if (binIndex < 0 && binIndex != -3) {
             box.getBox("Alert", "No open bin left in the list.");
             clearCrateScan();
             return;
         }
-        BinRow target = rows.remove(binIndex);
-        target.crate = crate;
-        target.qty = qty;
-        rows.add(0, target);
+        String mappedBin;
+        if (binIndex == -3) {
+            int existing = indexOfBin(text(txtBinNo));
+            if (existing < 0) {
+                UIFuncs.errorSound(getContext());
+                box.getBox("Alert", "Bin not found in the list.");
+                txtBinNo.setText("");
+                txtBinNo.requestFocus();
+                return;
+            }
+            mappedBin = rows.get(existing).bin;
+            rows.add(0, new BinRow("1", mappedBin, crate, qty));
+        } else {
+            BinRow target = rows.remove(binIndex);
+            target.crate = crate;
+            target.qty = qty;
+            rows.add(0, target);
+            mappedBin = target.bin;
+        }
         renumberRows();
         if (adapter != null) {
             adapter.notifyDataSetChanged();
@@ -531,33 +535,35 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
         if (rowList != null) {
             rowList.scrollToPosition(0);
         }
-        lastMappedBin = target.bin;
         suppressScan = true;
-        txtBinNo.setText(target.bin);
+        txtBinNo.setText(mappedBin);
         txtQty.setText(qty);
-        txtCrateNo.setText("");
+        txtCrateNo.setText(crate);
+        if (!crate.isEmpty()) {
+            txtCrateNo.setSelection(crate.length());
+        }
         suppressScan = false;
-        txtCrateNo.requestFocus();
+        focusCrateKeepingValue();
     }
 
     /**
-     * BIN NO selects the bin when the user scanned one. Otherwise the first
-     * bin that does not yet have a crate is used.
-     * -2 bin not in the list, -3 bin already assigned, -1 no open bin.
+     * BIN NO stays the target for every following crate until the user scans
+     * a different bin or Save clears it. An empty BIN NO uses the first bin
+     * that does not yet have a crate.
+     * -2 bin not in the list, -3 bin already has a crate (add another row),
+     * -1 no open bin.
      */
     private int resolveBinIndex() {
         String scannedBin = text(txtBinNo);
-        boolean userPickedBin = !scannedBin.isEmpty()
-                && !binKey(scannedBin).equals(binKey(lastMappedBin));
-        if (userPickedBin) {
-            int index = indexOfBin(scannedBin);
-            if (index < 0) {
-                return -2;
+        if (!scannedBin.isEmpty()) {
+            int open = indexOfOpenBin(scannedBin);
+            if (open >= 0) {
+                return open;
             }
-            if (!rows.get(index).crate.isEmpty()) {
+            if (indexOfBin(scannedBin) >= 0) {
                 return -3;
             }
-            return index;
+            return -2;
         }
         for (int i = 0; i < rows.size(); i++) {
             if (rows.get(i).crate.isEmpty()) {
@@ -565,6 +571,32 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
             }
         }
         return -1;
+    }
+
+    private int indexOfOpenBin(String bin) {
+        String key = binKey(bin);
+        for (int i = 0; i < rows.size(); i++) {
+            if (key.equals(binKey(rows.get(i).bin)) && rows.get(i).crate.isEmpty()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Leave the scanned crate on screen and select it so the next scan replaces it. */
+    private void focusCrateKeepingValue() {
+        txtCrateNo.requestFocus();
+        txtCrateNo.post(this::selectCrateText);
+    }
+
+    private void selectCrateText() {
+        if (txtCrateNo == null || txtCrateNo.getText() == null) {
+            return;
+        }
+        int length = txtCrateNo.getText().length();
+        if (length > 0) {
+            txtCrateNo.setSelection(0, length);
+        }
     }
 
     private void renumberRows() {
@@ -714,11 +746,14 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
         txtCrateNo.setText("");
         txtQty.setText("");
         suppressScan = false;
-        lastMappedBin = "";
         String shown = saveMessage.isEmpty() ? "Saved successfully." : saveMessage;
         saveMessage = "";
-        box.getBox("Success", shown);
-        txtCrateNo.requestFocus();
+        box.getBox("Success", shown, (dialog, which) -> {
+            if (isAdded() && txtBinNo != null) {
+                txtBinNo.requestFocus();
+            }
+        });
+        txtBinNo.requestFocus();
     }
 
     private void removeSavedRow(BinRow saved) {
@@ -749,7 +784,6 @@ public class FragmentGrtPutwayMsaBin extends Fragment implements View.OnClickLis
         txtBinNo.setText("");
         txtCrateNo.setText("");
         txtQty.setText("");
-        lastMappedBin = "";
         pendingSave.clear();
         saveMessage = "";
         bindBins(new ArrayList<BinRow>());

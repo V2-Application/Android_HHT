@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_margin="2dp"
+            android:padding="5dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_weight=".6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Store"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:layout_weight="1.5"
+                    android:textSize="15sp"
+                    android:text="HD22"
+                    android:enabled="true"
+                    android:focusable="false"
+                    android:id="@+id/store_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter Store Name" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_weight=".6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Date"
+                    android:hint="Select Date"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:layout_weight="1.5"
+                    android:textSize="15sp"
+                    android:layout_width="0dp"
+                    android:id="@+id/date"
+                    android:inputType="date"
+                    android:enabled="true"
+                    android:focusable="false"
+                    android:layout_height="wrap_content"
+                    android:hint="Pick Date " />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_weight=".6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Source Sloc"
+                    android:textSize="15sp" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.5">
+                    <Spinner
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:id="@+id/source_sloc"
+                        android:spinnerMode="dropdown">
+                    </Spinner>
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_weight=".6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Dest Sloc"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:layout_weight="1.5"
+                    android:textSize="15dip"
+                    android:id="@+id/dest_sloc"
+                    android:layout_width="0dp"
+                    android:imeOptions="actionSearch"
+                    android:singleLine="true"
+                    android:inputType="number"
+                    android:lines="1"
+                    android:layout_height="wrap_content"
+                    android:background="#E0E0E0"
+                    android:textColor="#555555"
+                    android:padding="8dp"
+                    android:focusable="false"
+                    android:focusableInTouchMode="false"
+                    android:clickable="false"
+                    android:cursorVisible="false"
+                    android:hint="Enter Destination SLoc" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_weight=".6"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Category"
+                    android:textColor="@color/black"
+                    android:textSize="15sp" />
+
+                <RelativeLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.5">
+                    <Spinner
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:background="@android:drawable/btn_dropdown"
+                        android:id="@+id/dd_grt_display_category"
+                        android:spinnerMode="dropdown">
+                    </Spinner>
+                </RelativeLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/response"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_margin="2dp"
+                android:padding="5dp"
+                android:text="status:"
+                android:visibility="gone"
+                android:textColor="@color/colorPrimary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="5dp">
+
+            <Button
+                android:layout_weight="1.5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Back"
+                android:background="@drawable/shadow"
+                android:layout_margin="2dp"
+                android:id="@+id/back"
+                android:textSize="15sp" />
+
+            <Button
+                android:layout_weight="1.5"
+                android:textSize="15sp"
+                android:text="Next"
+                android:id="@+id/next"
+                android:layout_margin="2dp"
+                android:background="@drawable/shadow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

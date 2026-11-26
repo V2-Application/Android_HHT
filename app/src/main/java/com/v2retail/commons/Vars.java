@@ -164,6 +164,16 @@ public class Vars {
 
     public static String ZWM_STK_IROD_GANDOLA_0001 = "ZWM_STK_IROD_GANDOLA_0001";
     public static String ZWM_STORE_GRT_FROM_DISP_AREA = "ZWM_STORE_GRT_FROM_DISP_AREA";
+    /**
+     * Scan GRT Display — save 0018 → 0005
+     * (IM_WERKS, IM_LGORT_SRC, IM_LGORT_DEST, IM_WERKS_DES, IM_USER, IM_LGNUM, IM_PACK_MAT, IM_CATEGORY, IT_DATA).
+     */
+    public static String ZWM_ST_GRT_0018_TO_0005 = "ZWM_ST_GRT_0018_TO_0005";
+    /**
+     * Scan GRT Picking From Display — save 0001 → 0018
+     * (IM_WERKS, IM_LGORT_SRC, IM_LGORT_DEST, IM_WERKS_DES, IM_USER, IM_LGNUM, IM_PACK_MAT, IM_CATEGORY, IT_DATA).
+     */
+    public static String ZWM_ST_GRT_0001_TO_0018 = "ZWM_ST_GRT_0001_TO_0018";
     public static String ZWM_GET_PACKING_MATERIAL = "ZWM_GET_PACKING_MATERIAL";
     /** Store GRT Process — fetch picklist numbers for a source site. Returns table ET_PICKLIST_NO. */
     public static String ZWM_ST_GRT_PICKLIST_RFC = "ZWM_ST_GRT_PICKLIST_RFC";
@@ -211,6 +221,8 @@ public class Vars {
     public static String ZWM_CRATE_GET_RFC = "ZWM_CRATE_GET_RFC";
     /** GRC Crate Details — scan crate (IM_USER, IM_PLANT, IM_CRATE → EX_RETURN, ET_DATA[EBELN, MBLNR, CRATE_COUNT, VENDOR_NAME]). */
     public static String ZWM_CRATE_GET_DATA_RFC = "ZWM_CRATE_GET_DATA_RFC";
+    /** Crate Wise Putway — scan crate (IM_USER, IM_WERKS, IM_CRATE → EX_RETURN, ET_DATA[EBELN, CRATE, MBLNR]). */
+    public static String ZWM_CRATE_DETAILS_GET_RFC = "ZWM_CRATE_DETAILS_GET_RFC";
     /** GRC Done-Putway Pending — scan MBLNR (IM_USER, IM_PLANT, IM_MBLNR → EX_RETURN, EX_NO_CRATE). */
     public static String ZWM_CRATE_PEN_RFC = "ZWM_CRATE_PEN_RFC";
     /** GRC Done-Putway Pending — empty bins (IM_USER, IM_PLANT → EX_RETURN, ET_DATA[SECTION, EMPTY_BIN]). */
@@ -239,11 +251,11 @@ public class Vars {
     public static String ZWM_SAMPLE_ART_VAL = "ZWM_SAMPLE_ART_VAL";
     /** Store V11 to MSA Putaway — save (IM_USER, IM_PLANT, IM_BIN → EX_RETURN). */
     public static String ZWM_SAPMLE_V11_H01_SAVE_RFC = "ZWM_SAPMLE_V11_H01_SAVE_RFC";
-    /** Store V11 to MSA Putaway — save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
+    /** Store V11 to MSA Putaway — save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, IM_FILE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
     public static String ZWM_SAPMLE_PUTWAY_V11_H01 = "ZWM_SAPMLE_PUTWAY_V11_H01";
     /** HO Picking From MSA To (Smpl) — Putaway save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
     public static String ZWM_SAPMLE_PICKING_H01_V11 = "ZWM_SAPMLE_PICKING_H01_V11";
-    /** RePutway save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
+    /** RePutway save (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, IM_FILE, ET_DATA[EAN11, MATNR, MENGE] → EX_RETURN). */
     public static String ZWM_SAPMLE_RE_PUTWAY_V11_H01 = "ZWM_SAPMLE_RE_PUTWAY_V11_H01";
     /** Crate Putway — save crate to bin (IM_USER, IM_PLANT, IM_CRATE, IM_BIN) → EX_RETURN. */
     public static String ZWM_CRATE_STK_PUT_BIN_RFC = "ZWM_CRATE_STK_PUT_BIN_RFC";
@@ -254,6 +266,14 @@ public class Vars {
     public static String ZWM_ACTUAL_HU_SAVE = "ZWM_ACTUAL_HU_SAVE";
     /** Inward → V01 HU TRF PRINT — get HU (IM_USER, IM_PLANT, IM_PO, IM_CRATE → EX_RETURN, EX_HU). */
     public static String ZWM_V01_HUTRF_RFC = "ZWM_V01_HUTRF_RFC";
+    /** MSA & V01 Picklist Picking — V01-HU picklist numbers (IM_USER, IM_PLANT → EX_RETURN, ET_PICKLIST.PICK_NO). */
+    public static String ZWM_V01_GET_PICKLIST = "ZWM_V01_GET_PICKLIST";
+    /** V01 HU sorting — scan HU (IM_USER, IM_PLANT, IM_PICKLIST, IM_HU → EX_RETURN, ET_DATA). */
+    public static String ZWM_V01_HU_GET_RFC = "ZWM_V01_HU_GET_RFC";
+    /** V01 HU sorting — validate MSA bin (IM_USER, IM_PLANT, IM_LGPLA → EX_RETURN). */
+    public static String ZWM_V01_MSA_BIN_VALIDATE = "ZWM_V01_MSA_BIN_VALIDATE";
+    /** V01 HU sorting — save (IM_USER, IM_PLANT, IM_MSA_BIN, IM_HU, IM_PICKLIST, ET_DATA → EX_RETURN). */
+    public static String ZWM_V01_SAVE_RFC = "ZWM_V01_SAVE_RFC";
     /** Outward → GRT HU Creation Print — validate D. Plant (IM_PLANT → EX_RETURN). */
     public static String ZWM_GRT_PLANT_VALIDATE = "ZWM_GRT_PLANT_VALIDATE";
     /** Outward → GRT HU Creation Print — validate HU (IM_HU → EX_RETURN). */

@@ -79,8 +79,17 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GRT from Display"
+                android:text="GRT from (0018 to 0005)"
                 android:id="@+id/grt_from_Display"
+                android:layout_margin="5dp"
+                android:textColor="#fff"
+                android:background="#e71821" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="GRT Picking From Display"
+                android:id="@+id/grt_picking_from_display"
                 android:layout_margin="5dp"
                 android:textColor="#fff"
                 android:background="#e71821" />

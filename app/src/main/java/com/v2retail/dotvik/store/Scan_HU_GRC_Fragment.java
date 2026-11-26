@@ -49,6 +49,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 /**
@@ -65,6 +66,7 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
     private static final String ARG_PARAM1 = "TTL_HU";
     private static final String ARG_PARAM2 = "store_name";
     private static final String ARG_PARAM3 = "hu_list";
+    private static final String ARG_HU_ALIAS = "hu_alias";
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -89,12 +91,14 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
     int ttlhu = 0;
     int shorthu = 0;
     int ScanQty = 0;
+    int excessQty = 0;
     int count = 0; 
     StringBuilder barcode_number = new StringBuilder();
     private boolean suppressScannerWatch;
     Tables tables = new Tables();
     ArrayList<String> dtHu = tables.getBINTAble();
     ArrayList<String> dtMat = tables.getBINTAble();
+    HashMap<String, String> huAlias = new HashMap<>();
     private OnFragmentInteractionListener mListener;
 
 
@@ -134,6 +138,10 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
             dtHu = (ArrayList<String>) getArguments().getSerializable(ARG_PARAM3);
+            Object aliasArg = getArguments().getSerializable(ARG_HU_ALIAS);
+            if (aliasArg instanceof HashMap) {
+                huAlias = (HashMap<String, String>) aliasArg;
+            }
             //mParam3 = getArguments().getString(ARG_PARAM3);
             if (mParam1 != null) {
                 ttlhu = Integer.valueOf(mParam1);
@@ -366,18 +374,73 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
             scan_hu_et.requestFocus();
             return;
         }
-        if (dtHu != null && dtHu.contains(scanContent)) {
-            if (dtMat.contains(scanContent)) {
+        String scanned = HU_GRC_Process_Fragment.normalizeHu(scanContent);
+        if (scanned.isEmpty()) {
+            box.getBox("Alert!", "Unable to Scan data / NO data input");
+            clearScanField();
+            return;
+        }
+        String expected = resolveExpectedHu(scanned);
+        if (expected != null) {
+            if (dtMat.contains(expected)) {
                 box.getBox("Alert", "Already Scan");
             } else {
                 ScanQty += 1;
                 int tt = Integer.valueOf(ttl_hu_et.getText().toString());
-                short_hu_et.setText(String.valueOf(tt - ScanQty));
-                dtMat.add(scanContent);
+                short_hu_et.setText(String.valueOf(Math.max(0, tt - ScanQty)));
+                dtMat.add(expected);
+            }
+        } else if (isTenSeriesHu(scanned)) {
+            if (dtMat.contains(scanned)) {
+                box.getBox("Alert", "Already Scan");
+            } else {
+                excessQty += 1;
+                excess_hu_et.setText(String.valueOf(excessQty));
+                dtMat.add(scanned);
             }
         } else {
+            Log.d(TAG, "Incorrect HU: " + scanned + " list=" + dtHu);
             box.getBox("Alert!", "Incorrect HU");
         }
+        clearScanField();
+    }
+
+    /**
+     * Invoice HU, its 10/20-series twin, or an external id on the same row.
+     * Returns the HU number that will be posted on save.
+     */
+    private String resolveExpectedHu(String scanned) {
+        if (huAlias != null && huAlias.containsKey(scanned)) {
+            String canonical = huAlias.get(scanned);
+            if (canonical != null && !canonical.isEmpty()) {
+                return canonical;
+            }
+        }
+        if (dtHu == null) {
+            return null;
+        }
+        String twin = HU_GRC_Process_Fragment.seriesAlias(scanned);
+        String twinMatch = null;
+        for (String raw : dtHu) {
+            String expected = HU_GRC_Process_Fragment.normalizeHu(raw);
+            if (expected.isEmpty()) {
+                continue;
+            }
+            if (expected.equals(scanned)) {
+                return expected;
+            }
+            if (twinMatch == null && !twin.isEmpty() && expected.equals(twin)) {
+                twinMatch = expected;
+            }
+        }
+        return twinMatch;
+    }
+
+    private static boolean isTenSeriesHu(String hu) {
+        return hu.length() >= 8 && hu.length() <= 20 && hu.startsWith("10");
+    }
+
+    private void clearScanField() {
         suppressScannerWatch = true;
         scan_hu_et.setText("");
         suppressScannerWatch = false;
@@ -441,6 +504,7 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
                     short_hu_et.setText("");
                     ttl_hu_et.setText("");
                     ScanQty = 0;
+                    excessQty = 0;
                     count = 0;
                     if (dtMat != null)
                         dtMat.clear();
@@ -502,6 +566,7 @@ public class Scan_HU_GRC_Fragment extends Fragment implements View.OnClickListen
         short_hu_et.setText("");
         excess_hu_et.setText("");
         scan_hu_et.setText("");
+        excessQty = 0;
     }
 
     @Override

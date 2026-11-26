@@ -2,6 +2,7 @@ package com.v2retail.dotvik.store;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -70,6 +71,8 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
     private static final int REQUEST_MSA_CATEGORY = 5401;
+    /** GRT Display always posts display stock from 0018 into dest sloc 0005. */
+    private static final String FIXED_DEST_SLOC = "0005";
 
     private String TAG = GRT_From_DisplayFragment.class.getName();
     // TODO: Rename and change types of parameters
@@ -378,13 +381,24 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
             Log.d(TAG, "USER->" + USER);
 
         List<String> locations = new ArrayList<>();
-        locations.add("0001");
-        locations.add("0006");
+        locations.add("0018");
 
 
         date_et = (EditText) view.findViewById(R.id.date);
         store_name_et = (EditText) view.findViewById(R.id.store_name);
         dest_sloc_et = (EditText) view.findViewById(R.id.dest_sloc);
+        // GRT Display posts 0018 → 0005 only. Keep Dest Sloc visible but not editable.
+        dest_sloc_et.setText(FIXED_DEST_SLOC);
+        dest_sloc_et.setFocusable(false);
+        dest_sloc_et.setFocusableInTouchMode(false);
+        dest_sloc_et.setClickable(false);
+        dest_sloc_et.setLongClickable(false);
+        dest_sloc_et.setCursorVisible(false);
+        dest_sloc_et.setKeyListener(null);
+        dest_sloc_et.setBackgroundColor(Color.parseColor("#E0E0E0"));
+        dest_sloc_et.setTextColor(Color.parseColor("#555555"));
+        int pad = (int) (8 * getResources().getDisplayMetrics().density);
+        dest_sloc_et.setPadding(pad, pad, pad, pad);
 
         source_sloc_et = view.findViewById(R.id.source_sloc);
         source_sloc_et.setSelection(0);
@@ -419,7 +433,6 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
             getCategoryList();
         }
         source_sloc_et.setSelection(0);
-        dest_sloc_et.requestFocus();
         return view;
     }
 
@@ -486,9 +499,9 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
         String source = source_sloc_et.getSelectedItem() != null
                 ? source_sloc_et.getSelectedItem().toString().trim()
                 : "";
-        String dest = dest_sloc_et.getText() != null
-                ? dest_sloc_et.getText().toString().trim()
-                : "";
+        // Destination is fixed for this screen (0018 → 0005). Ignore typed or scanned overrides.
+        String dest = FIXED_DEST_SLOC;
+        dest_sloc_et.setText(dest);
 
         // Only enforce client-side list validation when a sloc list was actually fetched.
         // On the Azure middleware the lists may be empty (no getsloc RFC); in that case the
@@ -498,24 +511,8 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
             return;
         }
 
-        if (!dest_bin_table.isEmpty() && !containsTrimmed(dest_bin_table, dest)) {
-            box.getBox("Alert", "Invalid Destination!");
-            return;
-        }
-
         if (source == null || source.equals("") || source.length() < 0) {
             box.getBox("Alert", "Please Scan/Fill source");
-            return;
-        }
-        if (dest == null || dest.equals("") || dest.length() < 0) {
-            box.getBox("Alert", "Please Scan/Fill destination");
-            return;
-        }
-        //Version 11.81
-        //if (dest.equals("0002") || dest.equals("0005")) {
-        if (dest.equals("0002")) {
-            box.getBox("Alert", "Invalid destination");
-            dest_sloc_et.setText("");
             return;
         }
         if (source.equals("0002")) {
@@ -539,7 +536,7 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
         Fragment fragment = new Scan_GRT_Display_Fragment();
         fragment.setArguments(args);
         source_sloc_et.setSelection(0);
-        dest_sloc_et.setText("");
+        dest_sloc_et.setText(FIXED_DEST_SLOC);
         if(dialog != null){
             dialog.dismiss();
         }
@@ -587,15 +584,10 @@ public class GRT_From_DisplayFragment extends Fragment implements View.OnClickLi
                         break;
                     case "dest":
                         Log.v(TAG, "scanContent dest = " + scanContent);
-                        dest_sloc_et.setText(scanContent);
-                        // Skip client-side validation when no dest list was fetched (Azure);
-                        // the next screen validates the destination server-side.
-                        if (dest_bin_table.isEmpty() || dest_bin_table.contains(scanContent))
-                            dest_sloc_et.setText(scanContent);
-                        else {
-                            box.getBox("Alert", "Invalid Destination!");
+                        dest_sloc_et.setText(FIXED_DEST_SLOC);
+                        if (scanContent != null && !FIXED_DEST_SLOC.equals(scanContent.trim())) {
+                            box.getBox("Alert", "Destination is fixed to " + FIXED_DEST_SLOC);
                         }
-
                         break;
                 }
 

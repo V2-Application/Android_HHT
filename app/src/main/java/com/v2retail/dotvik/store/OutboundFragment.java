@@ -38,6 +38,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
     Button procees_to_display;
 
     Button grt_from_display;
+    Button grt_picking_from_display;
     Button grt_from_msa;
     Button baseStock;
     Button picking_with_consolidation;
@@ -101,6 +102,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
         procees_to_display = (Button) view.findViewById(R.id.processTodisplay);
         baseStock = (Button) view.findViewById(R.id.base_stock);
         grt_from_display = (Button) view.findViewById(R.id.grt_from_Display);
+        grt_picking_from_display = (Button) view.findViewById(R.id.grt_picking_from_display);
         grt_from_msa = (Button) view.findViewById(R.id.grt_from_msa);
         picking_with_consolidation = (Button) view.findViewById(R.id.button_picking_with_consolidation);
         carticle_process = view.findViewById(R.id.carticle_process);
@@ -114,6 +116,7 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
         sloc_to_sloc_withouth_wm.setOnClickListener(this);
         procees_to_display.setOnClickListener(this);
         grt_from_display.setOnClickListener(this);
+        grt_picking_from_display.setOnClickListener(this);
         grt_from_msa.setOnClickListener(this);
         baseStock.setOnClickListener(this);
         picking_with_consolidation.setOnClickListener(this);
@@ -184,6 +187,9 @@ public class OutboundFragment extends Fragment implements View.OnClickListener,
                 break;
             case R.id.grt_from_Display:
                 fragment = new GRT_From_DisplayFragment();
+                break;
+            case R.id.grt_picking_from_display:
+                fragment = new GRT_Picking_From_DisplayFragment();
                 break;
             case R.id.base_stock:
                 fragment = new DisplayAreaProcessFragment();

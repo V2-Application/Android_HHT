@@ -477,6 +477,16 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
         }
         return false;
     }
+    /** Production SAP prefixes ET_PACK_MAT with a column-name row; the JSON adapter does not. */
+    private static boolean isPackHeaderRow(JSONObject row) {
+        if (row == null) {
+            return true;
+        }
+        String maktx = row.optString("MAKTX", "").trim();
+        String matnr = row.optString("MATNR", "").trim();
+        return "MAKTX".equalsIgnoreCase(maktx) || "MATNR".equalsIgnoreCase(matnr);
+    }
+
     private void fetchPackingMaterial() {
         final RequestQueue mRequestQueue;
         String rfc = "ZWM_GET_PACKING_MATERIAL";
@@ -508,14 +518,23 @@ public class PapperLessPicking extends Fragment implements IBarcodeResult, Obser
                 try {
                     Log.d("responsePick", responsebody.toString());
 
+                    pickStringList.clear();
+                    mETPACKMAT.clear();
                     pickStringList.add("Select Packing Material");
 
                     Gson gson= new Gson();
                     JSONArray jsonArray=responsebody.getJSONArray("ET_PACK_MAT");
-                    for(int i=1;i<jsonArray.length();i++) {
-                            Log.d("pick", jsonArray.getString(i));
+                    for (int i = 0; i < jsonArray.length(); i++) {
                             JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                            if (isPackHeaderRow(jsonObject1)) {
+                                continue;
+                            }
+                            Log.d("pick", jsonObject1.toString());
                             ETPACKMAT mETDATA = gson.fromJson(jsonObject1.toString(), ETPACKMAT.class);
+                            if (mETDATA == null || mETDATA.getMATNR() == null
+                                    || mETDATA.getMATNR().trim().isEmpty()) {
+                                continue;
+                            }
                             pickStringList.add(mETDATA.getMATNR());
                             mETPACKMAT.add(mETDATA);
                     }

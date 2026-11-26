@@ -60,7 +60,10 @@ import java.util.Map;
  * Scan Crate validates through {@link Vars#ZWM_SAMPLE_CRATE_VAL}.
  * Scan Ean validates through {@link Vars#ZWM_SAMPLE_ART_VAL}.
  * Save posts Putaway through {@link Vars#ZWM_SAPMLE_PUTWAY_V11_H01}
- * and RePutway through {@link Vars#ZWM_SAPMLE_RE_PUTWAY_V11_H01}.
+ * (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, IM_FILE, ET_DATA)
+ * and RePutway through {@link Vars#ZWM_SAPMLE_RE_PUTWAY_V11_H01}
+ * (IM_USER, IM_PLANT, IM_BIN, IM_CRATE, IM_FILE, ET_DATA).
+ * Scan Document is sent as IM_FILE (CHAR10) on both saves.
  */
 public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickListener {
 
@@ -82,6 +85,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
 
     private EditText txtBin;
     private EditText txtCrate;
+    private EditText txtDocument;
     private EditText txtEan;
     private EditText txtArticle;
     private EditText txtQty;
@@ -91,6 +95,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
 
     private String pendingBin = "";
     private String pendingCrate = "";
+    private String pendingDocument = "";
     private String pendingEan = "";
     private String currentMatnr = "";
     private final Map<String, ScanItem> scannedItems = new LinkedHashMap<>();
@@ -99,6 +104,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
     private boolean binValidated = false;
     private boolean crateValidationInProgress = false;
     private boolean crateValidated = false;
+    private boolean documentScanned = false;
     private boolean articleValidationInProgress = false;
     private boolean articleValidated = false;
     private boolean saveInProgress = false;
@@ -125,6 +131,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
 
         txtBin = view.findViewById(R.id.txt_v11_msa_putway_bin);
         txtCrate = view.findViewById(R.id.txt_v11_msa_putway_crate);
+        txtDocument = view.findViewById(R.id.txt_v11_msa_putway_document);
         txtEan = view.findViewById(R.id.txt_v11_msa_putway_ean);
         txtArticle = view.findViewById(R.id.txt_v11_msa_putway_article);
         txtQty = view.findViewById(R.id.txt_v11_msa_putway_qty);
@@ -141,6 +148,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
 
         addBinEvents();
         addCrateEvents();
+        addDocumentEvents();
         addEanEvents();
         clearFields();
         txtBin.requestFocus();
@@ -199,6 +207,11 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
             txtCrate.requestFocus();
             return;
         }
+        if (!documentScanned || TextUtils.isEmpty(pendingDocument)) {
+            box.getBox("Alert", "Please scan Document.");
+            txtDocument.requestFocus();
+            return;
+        }
         if (scannedItems.isEmpty()) {
             box.getBox("Alert", "Please scan at least one article.");
             txtEan.requestFocus();
@@ -222,6 +235,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
             args.put("IM_PLANT", WERKS);
             args.put("IM_BIN", pendingBin);
             args.put("IM_CRATE", pendingCrate);
+            args.put("IM_FILE", pendingDocument);
             args.put("ET_DATA", etData);
             setModeEnabled(false);
             showProcessingAndSubmit(saveRfc, REQUEST_SAVE, args);
@@ -410,7 +424,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
         txtCrate.setText(crate);
         txtCrate.setEnabled(false);
         txtCrate.setBackgroundResource(R.drawable.apsw_input_readonly);
-        txtEan.requestFocus();
+        txtDocument.requestFocus();
     }
 
     private void onCrateRejected() {
@@ -421,6 +435,72 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
         txtCrate.setEnabled(true);
         txtCrate.setBackgroundResource(R.drawable.bg_input);
         txtCrate.requestFocus();
+    }
+
+    private void addDocumentEvents() {
+        txtDocument.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean enterKey = event != null
+                        && event.getAction() == KeyEvent.ACTION_DOWN
+                        && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+                if (actionId == EditorInfo.IME_ACTION_DONE
+                        || actionId == EditorInfo.IME_ACTION_NEXT
+                        || enterKey) {
+                    UIFuncs.hideKeyboard(getActivity());
+                    String value = UIFuncs.toUpperTrim(txtDocument);
+                    if (!value.isEmpty()) {
+                        acceptDocument(value);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        txtDocument.addTextChangedListener(new TextWatcher() {
+            boolean scannerReading = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scannerReading = (before == 0 && start == 0) && count > 3;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String value = s.toString().trim().toUpperCase();
+                if (!value.isEmpty() && scannerReading) {
+                    acceptDocument(value);
+                }
+            }
+        });
+    }
+
+    private void acceptDocument(String document) {
+        if (documentScanned || !txtDocument.isEnabled()) {
+            return;
+        }
+        if (!crateValidated) {
+            box.getBox("Alert", "Please scan Crate first.");
+            txtDocument.setText("");
+            txtCrate.requestFocus();
+            return;
+        }
+        if (TextUtils.isEmpty(document)) {
+            box.getBox("Alert", "Please scan Document.");
+            txtDocument.requestFocus();
+            return;
+        }
+        documentScanned = true;
+        pendingDocument = document;
+        txtDocument.setText(document);
+        txtDocument.setEnabled(false);
+        txtDocument.setBackgroundResource(R.drawable.apsw_input_readonly);
+        txtEan.requestFocus();
     }
 
     private void addEanEvents() {
@@ -480,6 +560,12 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
             box.getBox("Alert", "Please scan Crate first.");
             txtEan.setText("");
             txtCrate.requestFocus();
+            return;
+        }
+        if (!documentScanned) {
+            box.getBox("Alert", "Please scan Document first.");
+            txtEan.setText("");
+            txtDocument.requestFocus();
             return;
         }
         validateArticle(ean);
@@ -739,6 +825,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
     private void clearFields() {
         pendingBin = "";
         pendingCrate = "";
+        pendingDocument = "";
         pendingEan = "";
         currentMatnr = "";
         scannedItems.clear();
@@ -747,6 +834,7 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
         binValidated = false;
         crateValidationInProgress = false;
         crateValidated = false;
+        documentScanned = false;
         articleValidationInProgress = false;
         articleValidated = false;
         saveInProgress = false;
@@ -756,6 +844,9 @@ public class FragmentV11ToMsaPutway extends Fragment implements View.OnClickList
         txtCrate.setText("");
         txtCrate.setEnabled(true);
         txtCrate.setBackgroundResource(R.drawable.bg_input);
+        txtDocument.setText("");
+        txtDocument.setEnabled(true);
+        txtDocument.setBackgroundResource(R.drawable.bg_input);
         txtEan.setText("");
         txtEan.setEnabled(true);
         txtEan.setBackgroundResource(R.drawable.bg_input);

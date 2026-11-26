@@ -3,6 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -69,6 +75,18 @@
             android:id="@+id/grt_putway_msa_bin"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Crate Wise Putway"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/crate_wise_putway"
+            android:background="#e71821" />
+
     </LinearLayout>
+
+    </ScrollView>
 
 </FrameLayout>

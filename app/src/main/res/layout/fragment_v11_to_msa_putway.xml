@@ -28,7 +28,7 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="112dp"
+                    android:layout_width="130dp"
                     android:layout_height="wrap_content"
                     android:text="Scan Bin"
                     android:textColor="@color/textPrimary"
@@ -61,7 +61,7 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="112dp"
+                    android:layout_width="130dp"
                     android:layout_height="wrap_content"
                     android:text="Scan Crate"
                     android:textColor="@color/textPrimary"
@@ -94,7 +94,41 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="112dp"
+                    android:layout_width="130dp"
+                    android:layout_height="wrap_content"
+                    android:text="Scan File"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/txt_v11_msa_putway_document"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input"
+                    android:hint="Scan File"
+                    android:imeOptions="actionDone"
+                    android:inputType="text"
+                    android:maxLength="10"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:singleLine="true"
+                    android:textColor="@color/textPrimary"
+                    android:textColorHint="@color/textHint"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="130dp"
                     android:layout_height="wrap_content"
                     android:text="Scan Ean"
                     android:textColor="@color/textPrimary"
@@ -127,7 +161,7 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="112dp"
+                    android:layout_width="130dp"
                     android:layout_height="wrap_content"
                     android:text="Article"
                     android:textColor="@color/textPrimary"
@@ -160,7 +194,7 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="112dp"
+                    android:layout_width="130dp"
                     android:layout_height="wrap_content"
                     android:text="Scan Qty"
                     android:textColor="@color/textPrimary"

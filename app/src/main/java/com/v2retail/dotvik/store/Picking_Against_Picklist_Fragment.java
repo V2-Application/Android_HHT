@@ -3,14 +3,11 @@ package com.v2retail.dotvik.store;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -26,30 +23,29 @@ import android.widget.TextView;
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
-import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
 import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
-import com.android.volley.VolleyLog;
-import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.v2retail.ApplicationController;
-import com.v2retail.commons.UIFuncs;
+import com.v2retail.commons.SapJsonObjectRequest;
+import com.v2retail.commons.SapJsonRows;
 import com.v2retail.dotvik.R;
 import com.v2retail.util.AlertBox;
 import com.v2retail.util.EditTextDate;
 import com.v2retail.util.SharedPreferencesData;
 import com.v2retail.util.Tables;
 
-import java.io.UnsupportedEncodingException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -61,6 +57,7 @@ import java.util.List;
  * create an instance of this fragment.
  */
 public class Picking_Against_Picklist_Fragment extends Fragment implements View.OnClickListener {
+    private static final String RFC_GET_PICKLIST = "ZWM_STORE_GET_PICKLIST";
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -254,109 +251,72 @@ public class Picking_Against_Picklist_Fragment extends Fragment implements View.
     }
 
     private void networkCall() {
-        String pick_list = pick_list_et.getText().toString().trim();
-        if (TextUtils.isEmpty( pick_list_et.getText().toString().trim())&& pick_list.equals("")) {
-
+        String pickList = pick_list_et.getText().toString().trim();
+        if (TextUtils.isEmpty(pickList)) {
             box.getBox("Alert", "Please enter pick list first");
             return;
         }
-        pick_list = Store_name_et.getText().toString().trim();
-        if (TextUtils.isEmpty( Store_name_et.getText().toString().trim())&& pick_list.equals("")) {
-
+        String store = Store_name_et.getText().toString().trim();
+        if (TextUtils.isEmpty(store)) {
             box.getBox("Alert", "Start Again , Store Name not Found");
+            return;
+        }
+        if (TextUtils.isEmpty(URL)) {
+            box.getBox("Err", "Server URL not found");
             return;
         }
         dialog.setMessage("Please wait...");
         dialog.setCancelable(false);
         dialog.show();
-
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    searchData();
-                } catch (Exception e) {
-                    dialog.dismiss();
-                    box.getErrBox(e);
-                }
-            }
-        }, 2000);
+        getPickList(store, pickList);
     }
 
-    private void searchData() {
-        //hugetdetails#1005827668#HD22#1/2/2009#<eol>
+    private void getPickList(String store, String pickList) {
+        final JSONObject params = new JSONObject();
+        try {
+            params.put("bapiname", RFC_GET_PICKLIST);
+            params.put("IM_WERKS", store);
+            params.put("IM_PICNR", pickList);
+            params.put("IM_LGORT", "0002");
+            params.put("IM_LGNUM", "SDC");
+        } catch (JSONException e) {
+            dismissDialog();
+            box.getErrBox(e);
+            return;
+        }
 
-        String addrec = Store_name_et.getText().toString().trim() + "#" + pick_list_et.getText().toString().trim() + "#" + date.getText().toString().trim();
+        String url = URL.substring(0, URL.lastIndexOf("/"))
+                + "/noacljsonrfcadaptor?bapiname=" + RFC_GET_PICKLIST + "&aclclientid=android";
+        Log.d(TAG, "URL->" + url);
+        Log.d(TAG, "payload ->" + params);
 
-        String valueRequestPayload = "getstorepicklist#" + addrec + "#<eol>";
-        Log.d(TAG, "payload : " + valueRequestPayload);
-        Log.d(TAG, "payload sent to server ");
-        sendAndRequestResponse(valueRequestPayload);
-
-    }
-
-    private void sendAndRequestResponse(final String requestBody) {
-        RequestQueue mRequestQueue;
-        StringRequest mStringRequest;
-        //RequestQueue initialized
-        mRequestQueue = ApplicationController.getInstance().getRequestQueue();
-
-        mStringRequest = new StringRequest(Request.Method.POST, URL, new Response.Listener<String>() {
-
-
-            @Override
-            public void onResponse(String response) {
-
-                response = response.substring(9, response.length());
-
-                Log.d(TAG, "response :" + response);
-
-                if (response == null) {
-
-                    dialog.dismiss();
-                    box.getBox("Err", "No response from Server");
-
-                } else if (response.equals("")) {
-                    dialog.dismiss();
-                    box.getBox("Err", "Empty response from Server/Unable to connect server");
-
-                } else if (response.charAt(0) == ('S')) {
-                    try {
-                        loadDataFromServer(response);
-
-                    } catch (Exception e) {
-                        box.getErrBox(e);
+        RequestQueue mRequestQueue = ApplicationController.getInstance().getRequestQueue();
+        JsonObjectRequest request = new SapJsonObjectRequest(Request.Method.POST, url, params,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject responsebody) {
+                        dismissDialog();
+                        Log.d(TAG, "response ->" + responsebody);
+                        if (responsebody == null || responsebody.length() == 0) {
+                            box.getBox("Err", "Empty response from Server/Unable to connect server");
+                            return;
+                        }
+                        try {
+                            if (isErrorReturn(responsebody)) {
+                                return;
+                            }
+                            openScanScreen(responsebody);
+                        } catch (Exception e) {
+                            box.getErrBox(e);
+                        }
                     }
-
-
-                } else if (response.charAt(0) == ('E')) {
-                    Log.d(TAG, " Response is Failure ->  " + response);
-
-                    response = response.substring(2, response.length());
-                    dialog.dismiss();
-                    box.getBox("Response", response);
-
-                } else {
-
-                    Log.d(TAG, " Response is unknown :" + response);
-
-                    dialog.dismiss();
-                    box.getBox("Err", response);
-
-
-                }
-            }
-        }, new Response.ErrorListener() {
+                }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
                 Log.i(TAG, "Error :" + error.toString());
-                String err = "";
-
+                String err;
                 if (error instanceof TimeoutError || error instanceof NoConnectionError) {
                     err = "Communication Error!";
-
                 } else if (error instanceof AuthFailureError) {
                     err = "Authentication Error!";
                 } else if (error instanceof ServerError) {
@@ -365,123 +325,166 @@ public class Picking_Against_Picklist_Fragment extends Fragment implements View.
                     err = "Network Error!";
                 } else if (error instanceof ParseError) {
                     err = "Parse Error!";
-                } else err = error.toString();
-
-                dialog.dismiss();
+                } else {
+                    err = error.toString();
+                }
+                dismissDialog();
                 box.getBox("Err", err);
             }
         }) {
             @Override
             public String getBodyContentType() {
-                return "application/json; charset=utf-8";
+                return "application/json";
             }
 
             @Override
-            public byte[] getBody() throws AuthFailureError {
-                try {
-                    return requestBody == null ? null : requestBody.getBytes("utf-8");
-                } catch (UnsupportedEncodingException uee) {
-                    VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", requestBody, "utf-8");
-                    return null;
-                }
+            public byte[] getBody() {
+                return params.toString().getBytes();
             }
-
-            @Override
-            protected Response<String> parseNetworkResponse(NetworkResponse response) {
-
-                Response<String> res = super.parseNetworkResponse(response);
-                String data = res.result;
-                Log.i(TAG, data);
-
-                return res;
-            }
-
-
         };
-        mStringRequest.setRetryPolicy(new RetryPolicy() {
-            @Override
-            public int getCurrentTimeout() {
-                return 50000;
-            }
-
-            @Override
-            public int getCurrentRetryCount() {
-                return DefaultRetryPolicy.DEFAULT_MAX_RETRIES;
-            }
-
-            @Override
-            public void retry(VolleyError error) throws VolleyError {
-
-            }
-        });
-        mRequestQueue.add(mStringRequest);
-
+        request.setRetryPolicy(new DefaultRetryPolicy(30000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        mRequestQueue.add(request);
     }
 
-    private void loadDataFromServer(String resp) {
-//Response:
-//
-        //S#000000001130033500#30.000#0.000#0.000#00-1603A4#!
-// 300#000000001130033500#19074363#1##300#000000001130033500#19075652#15##300#000000001130033500#19075653#15##
-        Log.d(TAG, "loading Server data :");
-        resp = resp.substring(2, resp.length());
-        String arrayRcvdData[] = resp.split("!");
-        String[] arrayPOData = arrayRcvdData[0].split("#");
-        String[] eanData = arrayRcvdData[1].split("##");
-
-
-        //testing purpose
-        List<String> data_list = Arrays.asList(arrayPOData);
-        Log.d(TAG, "po data :" + data_list);
-
-        data_list = Arrays.asList(eanData);
-        Log.d(TAG, "ean data :" + data_list);
-
-        // dtPO=tables.getPOTAble("");
-
-        for (int lk = 0; lk <= arrayPOData.length - 4; ) {
-
-            dtPO.get(0).add(arrayPOData[lk]);
-            dtPO.get(1).add(arrayPOData[lk + 1]);
-            dtPO.get(2).add(arrayPOData[lk + 2]);
-            dtPO.get(3).add(arrayPOData[lk + 3]);
-
-            lk = lk + 4;
+    private boolean isErrorReturn(JSONObject responsebody) throws JSONException {
+        if (!responsebody.has("EX_RETURN") || responsebody.isNull("EX_RETURN")) {
+            return false;
         }
-
-
-        for (int lk = 0; lk < eanData.length; lk++) {
-            String ar[] = eanData[lk].split("#");
-
-            for (int i = 0, j = 0; j < ar.length; i++, j++) {
-                dtEAN.get(i).add(ar[j]);
+        Object ret = responsebody.get("EX_RETURN");
+        JSONObject returnobj = null;
+        if (ret instanceof JSONObject) {
+            returnobj = (JSONObject) ret;
+        } else if (ret instanceof JSONArray && ((JSONArray) ret).length() > 0) {
+            returnobj = ((JSONArray) ret).optJSONObject(0);
+        }
+        if (returnobj == null) {
+            return false;
+        }
+        String type = returnobj.optString("TYPE", "").trim();
+        if ("E".equalsIgnoreCase(type) || "A".equalsIgnoreCase(type)) {
+            String message = returnobj.optString("MESSAGE", "").trim();
+            if (message.isEmpty()) {
+                message = "Error from server";
             }
-
+            box.getBox("Response", message);
+            return true;
         }
-        Log.d(TAG, "DTean :" + dtEAN);
-        Log.d(TAG, "DTPO :" + dtPO);
-        Log.d(TAG, "picklist_number :" + pick_list_et.getText().toString());
+        return false;
+    }
 
+    private void openScanScreen(JSONObject responsebody) throws JSONException {
+        loadData();
+        int pickCount = fillPickList(responsebody.optJSONArray("ET_PICKLIST"));
+        int eanCount = fillEan(responsebody.optJSONArray("ET_EAN_DATA"));
+        Log.d(TAG, "DTPO :" + dtPO);
+        Log.d(TAG, "DTean :" + dtEAN);
+        if (pickCount == 0) {
+            box.getBox("Alert", "No pick list data found");
+            return;
+        }
+        if (eanCount == 0) {
+            box.getBox("Alert", "No barcode data found for this pick list");
+            return;
+        }
 
         Bundle args = new Bundle();
         args.putSerializable("po_list", dtPO);
         args.putSerializable("ean_list", dtEAN);
-        args.putSerializable("picklist_number", pick_list_et.getText().toString());
+        args.putSerializable("picklist_number", pick_list_et.getText().toString().trim());
 
-        dialog.dismiss();
         Fragment fragment = new Scan_Picking_against_picking_Process_Fragment();
         fragment.setArguments(args);
-        if (fragment != null) {
-
-            FragmentTransaction ft = getFragmentManager().beginTransaction();
-            ft.replace(R.id.home, fragment, "picking_against_picking");
-            ft.addToBackStack("picking_against_picking");
-            ft.commit();
-        }
-
-
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        ft.replace(R.id.home, fragment, "picking_against_picking");
+        ft.addToBackStack("picking_against_picking");
+        ft.commit();
     }
 
+    private int fillPickList(JSONArray rows) throws JSONException {
+        if (rows == null) {
+            return 0;
+        }
+        int count = 0;
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row == null || SapJsonRows.isMetadataRow(row, "MATERIAL", "BIN", "PLANT")) {
+                continue;
+            }
+            String material = row.optString("MATERIAL", "").trim();
+            String bin = row.optString("BIN", "").trim();
+            if (material.isEmpty()) {
+                continue;
+            }
+            dtPO.get(0).add(material);
+            dtPO.get(1).add(firstQty(row, "AVL_STOCK", "OPEN_STOCK", "PICK_QTY"));
+            dtPO.get(2).add(firstQty(row, "OPEN_STOCK", "PICK_QTY", "SCAN_QTY"));
+            dtPO.get(3).add(bin);
+            count++;
+        }
+        return count;
+    }
+
+    private int fillEan(JSONArray rows) throws JSONException {
+        if (rows == null) {
+            return 0;
+        }
+        int count = 0;
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row == null || SapJsonRows.isMetadataRow(row, "MATNR", "EAN11")) {
+                continue;
+            }
+            String matnr = row.optString("MATNR", "").trim();
+            String ean = row.optString("EAN11", "").trim();
+            if (matnr.isEmpty() || ean.isEmpty()) {
+                continue;
+            }
+            dtEAN.get(0).add(row.optString("MANDT", "").trim());
+            dtEAN.get(1).add(matnr);
+            dtEAN.get(2).add(ean);
+            dtEAN.get(3).add(wholeNumber(row.optString("UMREZ", "1")));
+            dtEAN.get(4).add(row.optString("EANNR", "").trim());
+            count++;
+        }
+        return count;
+    }
+
+    private String firstQty(JSONObject row, String... keys) {
+        for (String key : keys) {
+            if (!row.has(key) || row.isNull(key)) {
+                continue;
+            }
+            String value = row.optString(key, "").trim();
+            if (!value.isEmpty()) {
+                return value;
+            }
+        }
+        return "0";
+    }
+
+    private String wholeNumber(String value) {
+        if (value == null) {
+            return "1";
+        }
+        String number = value.trim();
+        if (number.isEmpty()) {
+            return "1";
+        }
+        int dot = number.indexOf('.');
+        if (dot >= 0) {
+            number = number.substring(0, dot);
+        }
+        if (number.isEmpty()) {
+            return "1";
+        }
+        return number;
+    }
+
+    private void dismissDialog() {
+        if (dialog != null && dialog.isShowing()) {
+            dialog.dismiss();
+        }
+    }
 
     /**
      * This interface must be implemented by activities that contain this

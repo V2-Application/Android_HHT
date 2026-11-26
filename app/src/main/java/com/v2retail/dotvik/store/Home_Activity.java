@@ -26,6 +26,8 @@ public class Home_Activity extends AppCompatActivity
         InboundFragment.OnFragmentInteractionListener,
         StockTakeFragment.OnFragmentInteractionListener,
         GRT_From_DisplayFragment.OnFragmentInteractionListener,
+        GRT_Picking_From_DisplayFragment.OnFragmentInteractionListener,
+        Scan_GRT_Picking_From_DisplayFragment.OnFragmentInteractionListener,
         GRT_From_MSAFragment.OnFragmentInteractionListener,
         MenuFragmentStore.OnFragmentInteractionListener,
         MenuFragmentStoreDisplay.OnFragmentInteractionListener,

@@ -3,6 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -57,6 +61,17 @@
             android:id="@+id/direct_picking_v01_0001_article_transfer_0008_0001"
             android:background="#e71821" />
 
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MSA &amp; V01 Picklist Picking"
+            android:layout_margin="5dp"
+            android:textColor="#fff"
+            android:id="@+id/direct_picking_v01_hu_sorting"
+            android:background="#e71821" />
+
     </LinearLayout>
+
+    </ScrollView>
 
 </FrameLayout>

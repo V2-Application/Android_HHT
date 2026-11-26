@@ -49,6 +49,7 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -349,6 +350,54 @@ public class HU_GRC_Process_Fragment extends Fragment {
         return huNo.contains("Handling Unit");
     }
 
+    /** Digits only, without leading zeros. Empty when the value is not an HU number. */
+    static String normalizeHu(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String digits = raw.trim().replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) {
+            return "";
+        }
+        return UIFuncs.removeLeadingZeros(digits);
+    }
+
+    /**
+     * 10-series and 20-series labels are the same HU with a different leading pair
+     * (1008676065 and 2008676065).
+     */
+    static String seriesAlias(String hu) {
+        if (hu == null || hu.length() < 3) {
+            return "";
+        }
+        if (hu.startsWith("10")) {
+            return "20" + hu.substring(2);
+        }
+        if (hu.startsWith("20")) {
+            return "10" + hu.substring(2);
+        }
+        return "";
+    }
+
+    private static String canonicalHu(JSONObject row) {
+        String[] keys = {"HU_NO", "SAP_HU", "EXIDV", "EXT_HU"};
+        for (String key : keys) {
+            String hu = normalizeHu(row.optString(key, ""));
+            if (!hu.isEmpty()) {
+                return hu;
+            }
+        }
+        return "";
+    }
+
+    private static void registerExactHu(HashMap<String, String> aliases, String raw, String canonical) {
+        String hu = normalizeHu(raw);
+        if (hu.isEmpty() || canonical.isEmpty()) {
+            return;
+        }
+        aliases.put(hu, canonical);
+    }
+
     private static int etHusStartIndex(JSONArray arr) throws JSONException {
         if (arr == null || arr.length() == 0) {
             return 0;
@@ -419,19 +468,41 @@ public class HU_GRC_Process_Fragment extends Fragment {
                                         } else {
                                             JSONArray arrHu = responsebody.getJSONArray("ET_HUS");
                                             List<String> hus = new ArrayList<>();
+                                            HashMap<String, String> huAlias = new HashMap<>();
+                                            List<String> aliasSources = new ArrayList<>();
                                             int start = etHusStartIndex(arrHu);
                                             for (int i = start; i < arrHu.length(); i++) {
                                                 JSONObject row = arrHu.getJSONObject(i);
                                                 if (isEtHusHeaderRow(row)) {
                                                     continue;
                                                 }
-                                                hus.add(UIFuncs.removeLeadingZeros(row.getString("HU_NO")));
+                                                String canonical = canonicalHu(row);
+                                                if (canonical.isEmpty()) {
+                                                    continue;
+                                                }
+                                                hus.add(canonical);
+                                                String[] keys = {"HU_NO", "SAP_HU", "EXIDV", "EXT_HU"};
+                                                for (String key : keys) {
+                                                    String id = normalizeHu(row.optString(key, ""));
+                                                    if (id.isEmpty()) {
+                                                        continue;
+                                                    }
+                                                    registerExactHu(huAlias, id, canonical);
+                                                    aliasSources.add(id);
+                                                }
+                                            }
+                                            for (String id : aliasSources) {
+                                                String twin = seriesAlias(id);
+                                                if (!twin.isEmpty() && !huAlias.containsKey(twin)) {
+                                                    huAlias.put(twin, huAlias.get(id));
+                                                }
                                             }
                                             if (!hus.isEmpty()) {
                                                 Bundle args=new Bundle();
                                                 args.putString("TTL_HU", String.valueOf(hus.size()));
                                                 args.putString("store_name",WERKS);
                                                 args.putSerializable("hu_list", (Serializable) hus);
+                                                args.putSerializable("hu_alias", huAlias);
                                                 Fragment fragment = new Scan_HU_GRC_Fragment();
                                                 fragment.setArguments(args);
                                                 FragmentTransaction ft = getParentFragmentManager().beginTransaction();
